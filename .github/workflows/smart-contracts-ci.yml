@@ -1,0 +1,22 @@
+name: Smart Contracts CI
+
+on:
+  push:
+    paths:
+      - 'smart-contracts/**'
+  pull_request:
+    paths:
+      - 'smart-contracts/**'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        submodules: recursive
+    - name: Install Foundry
+      uses: foundry-rs/foundry-toolchain@v1
+    - name: Run tests
+      run: cd smart-contracts && forge test

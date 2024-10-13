@@ -1,0 +1,13 @@
+{
+  "name": "@authentico/smart-contracts",
+  "version": "1.0.0",
+  "description": "Smart contracts for Authentico",
+  "scripts": {
+    "compile": "forge build",
+    "test": "forge test",
+    "deploy": "forge script script/DeployContracts.s.sol:DeployContracts --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast"
+  },
+  "devDependencies": {
+    "@openzeppelin/contracts": "^4.9.3"
+  }
+}

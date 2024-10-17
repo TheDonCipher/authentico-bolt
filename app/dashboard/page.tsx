@@ -104,7 +104,7 @@ const Dashboard = () => {
   if (!activeAccount) {
     return null;
   }
-  // Function to format the account address
+  // Function to display account status
   const formatAddress = (activeAccount: any) => {
     if (activeAccount) {
       return 'Connected'

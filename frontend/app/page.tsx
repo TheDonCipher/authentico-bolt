@@ -37,7 +37,7 @@ const NeubrutalistLanding = () => {
     if (account) {
       // Check if the user is an organization or individual
       // This is a placeholder. Replace with actual logic to determine user type.
-      const isOrganization = true; // Set to true for testing organization flow
+      const isOrganization = false; // Set to true for testing organization flow
       if (isOrganization) {
         router.push('/organization-dashboard');
       } else {

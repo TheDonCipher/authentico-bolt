@@ -36,14 +36,14 @@ services:
       - "3003:3003"
     environment:
       - NODE_ENV=development
-      - DATABASE_URL=postgresql://user:password@db:5432/authentico_users
+      - DATABASE_URL=postgresql://authentico_user:password@db:5432/authentico_users
     depends_on:
       - db
 
   db:
     image: postgres:13
     environment:
-      POSTGRES_USER: user
+      POSTGRES_USER: authentico_user
       POSTGRES_PASSWORD: password
       POSTGRES_DB: authentico_users
     volumes:

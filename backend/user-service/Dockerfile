@@ -16,6 +16,12 @@ COPY . .
 # Build the application
 RUN npm run build
 
+# Generate Prisma client
+RUN npx prisma generate
+
+# Run Prisma migrations
+RUN npx prisma migrate deploy
+
 # Expose the port the app runs on
 EXPOSE 3003
 

@@ -28,12 +28,44 @@ const wallets = [
 const NeubrutalistLanding = () => {
   const account = useActiveAccount();
   const router = useRouter();
+  const [showOrgSignUp, setShowOrgSignUp] = useState(false);
+  const [showIndSignUp, setShowIndSignUp] = useState(false);
+  const [orgDetails, setOrgDetails] = useState({ orgName: '', email: '' });
+  const [indDetails, setIndDetails] = useState({ name: '', email: '' });
 
   React.useEffect(() => {
     if (account) {
-      router.push('/dashboard');
+      // Check if the user is an organization or individual
+      // This is a placeholder. Replace with actual logic to determine user type.
+      const isOrganization = true; // Set to true for testing organization flow
+      if (isOrganization) {
+        router.push('/organization-dashboard');
+      } else {
+        router.push('/dashboard');
+      }
     }
   }, [account, router]);
+
+  const handleOrganizationSignUp = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    // Placeholder for backend integration
+    console.log("Organization sign-up form submitted", orgDetails);
+    // Redirect to organization dashboard
+    router.push('/organization-dashboard');
+  };
+
+  const handleIndividualSignUp = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    // Placeholder for backend integration
+    console.log("Individual sign-up form submitted", indDetails);
+    // Redirect to individual dashboard
+    router.push('/dashboard');
+  };
+
+  const handleInputChange = <T extends { [key: string]: string }>(e: React.ChangeEvent<HTMLInputElement>, setDetails: React.Dispatch<React.SetStateAction<T>>) => {
+      const { name, value } = e.target;
+      setDetails(prevDetails => ({ ...prevDetails, [name]: value }));
+    };
 
   return (
     <div className="min-h-screen bg-[#F0EAD6] text-[#2C3E50] flex flex-col relative">
@@ -49,42 +81,27 @@ const NeubrutalistLanding = () => {
         <motion.header 
           initial={{ y: -100 }}
           animate={{ y: 0 }}
-          transition={{ type: "spring", stiffness: 100 }}
-          className="bg-[#4A6741] p-4 sticky top-0 z-20 border-b-8 border-[#2C3E50]"
+          transition={{ type: "spring", stiffness: 73 }}
+          className="bg-[#5784c2] p-4 sticky top-0 z-20 border-b-8 border-[#2C3E50]"
         >
           <div className="container mx-auto flex justify-between items-center">
             <h1 className="text-3xl font-black text-white">AUTHENTICO</h1>
             <nav>
               <ul className="flex space-x-4 items-center">
                 {account && (
-                  <li>
-                    <Link href="/dashboard" className="hover:bg-[#5D8C5D] transition duration-300 p-2 border-4 border-white text-white font-bold">
-                      Go to Dashboard
-                    </Link>
-                  </li>
+                  <>
+                    <li>
+                      <Link href="/dashboard" className="hover:bg-[#5D8C5D] transition duration-300 p-2 border-4 border-white text-white font-bold">
+                        Go to Dashboard
+                      </Link>
+                    </li>
+                    <li>
+                      <Link href="/organization-dashboard" className="hover:bg-[#5D8C5D] transition duration-300 p-2 border-4 border-white text-white font-bold">
+                        Go to Organization Dashboard
+                      </Link>
+                    </li>
+                  </>
                 )}
-                <li>
-                  <ConnectButton
-                    client={client}
-                    wallets={wallets}
-                    theme={darkTheme({
-                      colors: {
-                        accentText: "#ffffff", 
-                        accentButtonBg: "#4A6741",
-                        primaryButtonBg: "#009688",
-                      },
-                      fontFamily: "Archivo"
-                    })}
-                    connectButton={{ label: "Sign In" }}
-                    connectModal={{
-                      size: "wide",
-                      welcomeScreen: {
-                        title: "Welcome to Authentico",
-                        subtitle: "Secure document verification powered by blockchain",
-                      },
-                    }}
-                  />
-                </li>
               </ul>
             </nav>
           </div>
@@ -105,44 +122,126 @@ const NeubrutalistLanding = () => {
             <p className="text-xl md:text-2xl mb-12 max-w-2xl mx-auto bg-[#E5DCC3] p-4 border-4 border-[#2C3E50] transform rotate-1">
               Authentico leverages cutting-edge blockchain technology to provide tamper-proof document authentication.
             </p>
-            <motion.a 
-              href="#" 
-              className="bg-[#4A6741] text-white text-xl font-bold py-3 px-6 border-4 border-[#2C3E50] hover:bg-[#5D8C5D] transition duration-300 inline-block transform -rotate-1"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              Start Verifying Now
-            </motion.a>
           </motion.section>
 
-          {/* How It Works Section */}
+          {/* Sign Up Section */}
           <motion.section 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.5, delay: 0.2 }}
-            className="mb-20"
+            className="mb-20 text-center"
           >
-            <h3 className="text-4xl font-black mb-12 text-center bg-[#4A6741] text-white p-4 border-8 border-[#2C3E50] inline-block transform rotate-2">HOW IT WORKS</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              <ProcessStep 
-                number={1}
-                title="Upload Document"
-                description="Securely upload your document to our platform"
-              />
-              <ProcessStep 
-                number={2}
-                title="Blockchain Verification"
-                description="Our system verifies the document using blockchain technology"
-              />
-              <ProcessStep 
-                number={3}
-                title="Receive Certificate"
-                description="Get a tamper-proof certificate of authenticity"
-              />
+            <h3 className="text-4xl font-black mb-8 bg-[#4A6741] text-white p-4 border-8 border-[#2C3E50] inline-block transform -rotate-2">SIGN UP</h3>
+            <div className="flex justify-center space-x-8">
+              {/* Individual Sign-Up Button */}
+              <motion.button 
+                onClick={() => setShowIndSignUp(prev => !prev)}
+                className="bg-[#4A6741] text-white text-xl font-bold py-3 px-6 border-4 border-[#2C3E50] hover:bg-[#5D8C5D] transition duration-300 inline-block transform rotate-1"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                Sign Up as Individual
+              </motion.button>
+
+              {/* Organization Sign-Up Button */}
+              <motion.button 
+                onClick={() => setShowOrgSignUp(prev => !prev)}
+                className="bg-[#4A6741] text-white text-xl font-bold py-3 px-6 border-4 border-[#2C3E50] hover:bg-[#5D8C5D] transition duration-300 inline-block transform rotate-1"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                Sign Up as Organization
+              </motion.button>
             </div>
           </motion.section>
 
-          {/* Features Section */}
+          {/* Individual Sign-Up Form */}
+          {showIndSignUp && (
+            <motion.section 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.5, delay: 0.4 }}
+              className="mb-20 text-center"
+            >
+              <h4 className="text-2xl font-black mb-4">Individual Sign-Up</h4>
+              <form onSubmit={handleIndividualSignUp} className="max-w-md mx-auto bg-[#E5DCC3] p-8 border-4 border-[#2C3E50]">
+                <div className="mb-4">
+                  <label htmlFor="name" className="block text-left font-bold mb-2">Name</label>
+                  <input type="text" id="name" name="name" className="w-full p-2 border-2 border-[#2C3E50]" value={indDetails.name} onChange={(e) => handleInputChange(e, setIndDetails)} required />
+                </div>
+                <div className="mb-4">
+                  <label htmlFor="email" className="block text-left font-bold mb-2">Email</label>
+                  <input type="email" id="email" name="email" className="w-full p-2 border-2 border-[#2C3E50]" value={indDetails.email} onChange={(e) => handleInputChange(e, setIndDetails)} required />
+                </div>
+                <ConnectButton
+                  client={client}
+                  wallets={wallets}
+                  theme={darkTheme({
+                    colors: {
+                      accentText: "#ffffff",
+                      primaryButtonText: "#ffffff",
+                      accentButtonBg: "#4A6741",
+                      primaryButtonBg: "#4A6741",
+                    },
+                    fontFamily: "Archivo"
+                  })}
+                  connectButton={{ label: "Connect Blockchain Wallet" }}
+                  connectModal={{
+                    size: "wide",
+                    welcomeScreen: {
+                      title: "Welcome to Authentico",
+                      subtitle: "Secure document verification powered by blockchain",
+                    },
+                  }}
+                />
+              </form>
+            </motion.section>
+          )}
+
+          {/* Organization Sign-Up Form */}
+          {showOrgSignUp && (
+            <motion.section 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.5, delay: 0.4 }}
+              className="mb-20 text-center"
+            >
+              <h4 className="text-2xl font-black mb-4">Organization Sign-Up</h4>
+              <form onSubmit={handleOrganizationSignUp} className="max-w-md mx-auto bg-[#E5DCC3] p-8 border-4 border-[#2C3E50]">
+                <div className="mb-4">
+                  <label htmlFor="orgName" className="block text-left font-bold mb-2">Organization Name</label>
+                  <input type="text" id="orgName" name="orgName" className="w-full p-2 border-2 border-[#2C3E50]" value={orgDetails.orgName} onChange={(e) => handleInputChange(e, setOrgDetails)} required />
+                </div>
+                <div className="mb-4">
+                  <label htmlFor="email" className="block text-left font-bold mb-2">Email</label>
+                  <input type="email" id="email" name="email" className="w-full p-2 border-2 border-[#2C3E50]" value={orgDetails.email} onChange={(e) => handleInputChange(e, setOrgDetails)} required />
+                </div>
+                <ConnectButton
+                  client={client}
+                  wallets={wallets}
+                  theme={darkTheme({
+                    colors: {
+                      accentText: "#ffffff",
+                      primaryButtonText: "#ffffff",
+                      accentButtonBg: "#4A6741",
+                      primaryButtonBg: "#4A6741",
+                    },
+                    fontFamily: "Archivo"
+                  })}
+                  connectButton={{ label: "Connect Blockchain Wallet" }}
+                  connectModal={{
+                    size: "wide",
+                    welcomeScreen: {
+                      title: "Welcome to Authentico",
+                      subtitle: "Secure document verification powered by blockchain",
+                    },
+                  }}
+                />
+              </form>
+            </motion.section>
+          )}
+
+          {/* How It Works Section */}
           <motion.section 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -196,27 +295,6 @@ const NeubrutalistLanding = () => {
               />
             </div>
           </motion.section>
-
-          {/* Call to Action for Organizations */}
-          <motion.section 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.5, delay: 0.8 }}
-            className="mb-20 text-center"
-          >
-            <h3 className="text-4xl font-black mb-8 bg-[#4A6741] text-white p-4 border-8 border-[#2C3E50] inline-block transform -rotate-2">FOR ORGANIZATIONS</h3>
-            <p className="text-xl mb-8 max-w-2xl mx-auto">
-              Streamline your document verification process and enhance security with Authentico's blockchain-powered platform.
-            </p>
-            <motion.a 
-              href="#" 
-              className="bg-[#4A6741] text-white text-xl font-bold py-3 px-6 border-4 border-[#2C3E50] hover:bg-[#5D8C5D] transition duration-300 inline-block transform rotate-1"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              Sign Up Your Organization
-            </motion.a>
-          </motion.section>
         </main>
 
         {/* Footer */}
@@ -258,7 +336,14 @@ const NeubrutalistLanding = () => {
   );
 };
 
-const FeatureCard = ({ icon, title, description, color }) => (
+interface FeatureCardProps {
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+  color: string;
+}
+
+const FeatureCard: React.FC<FeatureCardProps> = ({ icon, title, description, color }) => (
   <motion.div 
     className={`${color} p-6 flex flex-col items-center text-center border-8 border-[#2C3E50] transform hover:rotate-2 transition-transform duration-300`}
     whileHover={{ scale: 1.05 }}
@@ -269,7 +354,13 @@ const FeatureCard = ({ icon, title, description, color }) => (
   </motion.div>
 );
 
-const ProcessStep = ({ number, title, description }) => (
+interface ProcessStepProps {
+  number: number;
+  title: string;
+  description: string;
+}
+
+const ProcessStep: React.FC<ProcessStepProps> = ({ number, title, description }) => (
   <motion.div 
     className="bg-[#E5DCC3] p-6 border-8 border-[#2C3E50] flex flex-col items-center text-center"
     whileHover={{ scale: 1.05 }}
@@ -282,7 +373,12 @@ const ProcessStep = ({ number, title, description }) => (
   </motion.div>
 );
 
-const FAQItem = ({ question, answer }) => {
+interface FAQItemProps {
+  question: string;
+  answer: string;
+}
+
+const FAQItem: React.FC<FAQItemProps> = ({ question, answer }) => {
   const [isOpen, setIsOpen] = useState(false);
 
   return (

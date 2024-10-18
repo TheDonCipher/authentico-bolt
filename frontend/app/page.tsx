@@ -9,6 +9,7 @@ import { createWallet, inAppWallet } from "thirdweb/wallets";
 import { client } from "./client";
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
+import { setCookie } from 'nookies';
 
 const wallets = [
   createWallet("io.metamask"),
@@ -46,21 +47,49 @@ const NeubrutalistLanding = () => {
     }
   }, [account, router]);
 
-  const handleOrganizationSignUp = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    // Placeholder for backend integration
-    console.log("Organization sign-up form submitted", orgDetails);
-    // Redirect to organization dashboard
-    router.push('/organization-dashboard');
-  };
+const handleOrganizationSignUp = async (event: React.FormEvent<HTMLFormElement>) => {
+  event.preventDefault();
+  try {
+    const response = await fetch('/api/user/signup/organization', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(orgDetails),
+    });
+    if (response.ok) {
+      const user = await response.json();
+      setCookie(null, 'user', JSON.stringify(user), { path: '/' });
+      router.push('/organization-dashboard');
+    } else {
+      console.error('Failed to sign up organization');
+    }
+  } catch (error) {
+    console.error('Error:', error);
+  }
+};
 
-  const handleIndividualSignUp = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    // Placeholder for backend integration
-    console.log("Individual sign-up form submitted", indDetails);
-    // Redirect to individual dashboard
-    router.push('/dashboard');
-  };
+const handleIndividualSignUp = async (event: React.FormEvent<HTMLFormElement>) => {
+  event.preventDefault();
+  try {
+    const response = await fetch('/api/user/signup/individual', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(indDetails),
+    });
+    if (response.ok) {
+      const user = await response.json();
+      setCookie(null, 'user', JSON.stringify(user), { path: '/' });
+      router.push('/dashboard');
+    } else {
+      console.error('Failed to sign up individual');
+    }
+  } catch (error) {
+    console.error('Error:', error);
+  }
+};
 
   const handleInputChange = <T extends { [key: string]: string }>(e: React.ChangeEvent<HTMLInputElement>, setDetails: React.Dispatch<React.SetStateAction<T>>) => {
       const { name, value } = e.target;

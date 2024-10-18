@@ -1,30 +1,21 @@
-// backend/user-service/prisma/seed.ts
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '@prisma/client'
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient()
 
 async function main() {
   await prisma.user.createMany({
     data: [
-      {
-        name: 'John Doe',
-        email: 'john.doe@example.com',
-        userType: 'individual',
-      },
-      {
-        name: 'Jane Smith',
-        email: 'jane.smith@example.com',
-        userType: 'organization',
-      },
+      { name: 'Alice', email: 'alice@example.com', userType: 'individual' },
+      { name: 'Bob', email: 'bob@example.com', userType: 'organization' },
     ],
-  });
+  })
 }
 
 main()
   .catch((e) => {
-    console.error(e);
-    process.exit(1);
+    console.error(e)
+    process.exit(1)
   })
   .finally(async () => {
-    await prisma.$disconnect();
-  });
+    await prisma.$disconnect()
+  })

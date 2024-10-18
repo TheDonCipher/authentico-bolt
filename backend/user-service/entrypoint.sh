@@ -1,5 +1,4 @@
 #!/bin/sh
-
 # Wait for the database to be ready
 wait-for-it.sh db:5432 -- echo "Postgres is up - executing command"
 
@@ -7,7 +6,7 @@ wait-for-it.sh db:5432 -- echo "Postgres is up - executing command"
 npx prisma migrate deploy
 
 # Seed the database
-npx ts-node prisma/seed.ts
+npx prisma db seed
 
 # Start the application
 exec "$@"

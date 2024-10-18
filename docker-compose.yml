@@ -39,6 +39,8 @@ services:
       - DATABASE_URL=postgresql://authentico_user:password@db:5432/authentico_users
     depends_on:
       - db
+    volumes:
+      - ./backend/user-service/prisma:/app/prisma
     networks:
       - default
 

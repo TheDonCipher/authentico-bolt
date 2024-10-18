@@ -17,6 +17,7 @@
   },
   "devDependencies": {
     "concurrently": "^8.2.0",
-    "lerna": "^7.1.4"
+    "lerna": "^7.1.4",
+    "ts-node": "^10.9.2"
   }
 }

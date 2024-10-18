@@ -6,4 +6,8 @@ EXCEPTION
 END $$;
 
 ALTER ROLE authentico_user WITH PASSWORD 'password';
+<<<<<<< HEAD
 CREATE DATABASE authentico_users OWNER authentico_user;
+=======
+CREATE DATABASE authentico_users OWNER authentico_user;
+>>>>>>> cf12c2b723c40de76570756c7719230dabd434ba

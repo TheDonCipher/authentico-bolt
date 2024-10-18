@@ -26,5 +26,12 @@ RUN npx prisma generate
 # Expose the port the app runs on
 EXPOSE 3003
 
-# Start the application with wait-for-it.sh
-CMD ["sh", "-c", "wait-for-it.sh db:5432 -- sh -c 'npx prisma migrate deploy && npx ts-node prisma/seed.ts && node dist/main'"]
+# Add an entrypoint script to handle database preparation
+COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
+# Use the entrypoint script to prepare the database and start the application
+ENTRYPOINT ["entrypoint.sh"]
+
+# Start the application
+CMD ["node", "dist/main"]

@@ -1,7 +1,7 @@
 /* eslint-disable */
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Shield, Database, Key, Github, Linkedin, Twitter, ChevronDown } from 'lucide-react';
 import { ConnectButton, darkTheme, useActiveAccount } from "thirdweb/react";
@@ -33,68 +33,82 @@ const NeubrutalistLanding = () => {
   const [showIndSignUp, setShowIndSignUp] = useState(false);
   const [orgDetails, setOrgDetails] = useState({ orgName: '', email: '' });
   const [indDetails, setIndDetails] = useState({ name: '', email: '' });
+  const [userType, setUserType] = useState<string | null>(null);
 
-  React.useEffect(() => {
-    if (account) {
-      // Check if the user is an organization or individual
-      // This is a placeholder. Replace with actual logic to determine user type.
-      const isOrganization = false; // Set to true for testing organization flow
-      if (isOrganization) {
-        router.push('/organization-dashboard');
-      } else {
-        router.push('/dashboard');
+  // Fetch user data and redirect based on user type
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const response = await fetch(`/api/user/${account?.address}`);
+        if (response.ok) {
+          const user = await response.json();
+          setUserType(user.userType);
+          if (user.userType === 'organization') {
+            router.push('/organization-dashboard');
+          } else {
+            router.push('/dashboard');
+          }
+        } else {
+          console.error('Failed to fetch user data');
+        }
+      } catch (error) {
+        console.error('Error fetching user data:', error);
       }
+    };
+
+    if (account) {
+      fetchUserData();
     }
   }, [account, router]);
 
-const handleOrganizationSignUp = async (event: React.FormEvent<HTMLFormElement>) => {
-  event.preventDefault();
-  try {
-    const response = await fetch('/api/user/signup/organization', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(orgDetails),
-    });
-    if (response.ok) {
-      const user = await response.json();
-      setCookie(null, 'user', JSON.stringify(user), { path: '/' });
-      router.push('/organization-dashboard');
-    } else {
-      console.error('Failed to sign up organization');
+  const handleOrganizationSignUp = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    try {
+      const response = await fetch('/api/user/signup/organization', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(orgDetails),
+      });
+      if (response.ok) {
+        const user = await response.json();
+        setCookie(null, 'user', JSON.stringify(user), { path: '/' });
+        router.push('/organization-dashboard');
+      } else {
+        console.error('Failed to sign up organization');
+      }
+    } catch (error) {
+      console.error('Error:', error);
     }
-  } catch (error) {
-    console.error('Error:', error);
-  }
-};
+  };
 
-const handleIndividualSignUp = async (event: React.FormEvent<HTMLFormElement>) => {
-  event.preventDefault();
-  try {
-    const response = await fetch('/api/user/signup/individual', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(indDetails),
-    });
-    if (response.ok) {
-      const user = await response.json();
-      setCookie(null, 'user', JSON.stringify(user), { path: '/' });
-      router.push('/dashboard');
-    } else {
-      console.error('Failed to sign up individual');
+  const handleIndividualSignUp = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    try {
+      const response = await fetch('/api/user/signup/individual', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(indDetails),
+      });
+      if (response.ok) {
+        const user = await response.json();
+        setCookie(null, 'user', JSON.stringify(user), { path: '/' });
+        router.push('/dashboard');
+      } else {
+        console.error('Failed to sign up individual');
+      }
+    } catch (error) {
+      console.error('Error:', error);
     }
-  } catch (error) {
-    console.error('Error:', error);
-  }
-};
+  };
 
   const handleInputChange = <T extends { [key: string]: string }>(e: React.ChangeEvent<HTMLInputElement>, setDetails: React.Dispatch<React.SetStateAction<T>>) => {
-      const { name, value } = e.target;
-      setDetails(prevDetails => ({ ...prevDetails, [name]: value }));
-    };
+    const { name, value } = e.target;
+    setDetails(prevDetails => ({ ...prevDetails, [name]: value }));
+  };
 
   return (
     <div className="min-h-screen bg-[#F0EAD6] text-[#2C3E50] flex flex-col relative">
@@ -119,16 +133,20 @@ const handleIndividualSignUp = async (event: React.FormEvent<HTMLFormElement>) =
               <ul className="flex space-x-4 items-center">
                 {account && (
                   <>
-                    <li>
-                      <Link href="/dashboard" className="hover:bg-[#5D8C5D] transition duration-300 p-2 border-4 border-white text-white font-bold">
-                        Go to Dashboard
-                      </Link>
-                    </li>
-                    <li>
-                      <Link href="/organization-dashboard" className="hover:bg-[#5D8C5D] transition duration-300 p-2 border-4 border-white text-white font-bold">
-                        Go to Organization Dashboard
-                      </Link>
-                    </li>
+                    {userType === 'individual' && (
+                      <li>
+                        <Link href="/dashboard" className="hover:bg-[#5D8C5D] transition duration-300 p-2 border-4 border-white text-white font-bold">
+                          Go to Dashboard
+                        </Link>
+                      </li>
+                    )}
+                    {userType === 'organization' && (
+                      <li>
+                        <Link href="/organization-dashboard" className="hover:bg-[#5D8C5D] transition duration-300 p-2 border-4 border-white text-white font-bold">
+                          Go to Organization Dashboard
+                        </Link>
+                      </li>
+                    )}
                   </>
                 )}
               </ul>

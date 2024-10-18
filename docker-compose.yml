@@ -39,6 +39,8 @@ services:
       - DATABASE_URL=postgresql://authentico_user:password@db:5432/authentico_users
     depends_on:
       - db
+    networks:
+      - default
 
   db:
     image: postgres:13
@@ -48,8 +50,27 @@ services:
       POSTGRES_DB: authentico_users
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql  # Add this line to run the init script
     ports:
       - "5432:5432"
+    networks:
+      - default
 
 volumes:
   postgres_data:
+
+networks:
+  default:
+
+
+
+
+
+
+
+
+
+
+
+
+

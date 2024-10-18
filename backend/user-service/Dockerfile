@@ -7,8 +7,17 @@ RUN npm install
 
 COPY . .
 
-RUN npm run build
+RUN npm run build --verbose
+RUN ls -la dist
+RUN find dist -type f -exec cat {} +
 
 RUN npx prisma generate
 
-CMD ["sh", "-c", "npx prisma migrate deploy && npx prisma db seed && npm run start:prod"]
+COPY wait-for-it.sh /usr/local/bin/wait-for-it.sh
+COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+
+RUN chmod +x /usr/local/bin/wait-for-it.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
+ENTRYPOINT ["sh", "/usr/local/bin/entrypoint.sh"]
+CMD ["npm", "run", "start:prod"]

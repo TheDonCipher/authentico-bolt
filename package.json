@@ -9,15 +9,17 @@
   ],
   "scripts": {
     "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\" \"npm run dev:smart-contracts\"",
-    "dev:frontend": "cd frontend && npm run dev",
-    "dev:backend": "concurrently \"cd backend/document-service && npm run start:dev\" \"cd backend/verification-service && npm run start:dev\" \"cd backend/user-service && npm run start:dev\"",
-    "dev:smart-contracts": "cd smart-contracts && npm run compile",
-    "build": "lerna run build",
-    "test": "lerna run test"
+    "dev:frontend": "npm run dev --workspace=frontend",
+    "dev:backend": "concurrently \"npm run start:dev --workspace=backend/document-service\" \"npm run start:dev --workspace=backend/verification-service\" \"npm run start:dev --workspace=backend/user-service\"",
+    "dev:smart-contracts": "npm run compile --workspace=smart-contracts",
+    "build": "npm run build --workspaces --if-present",
+    "test": "npm test --workspaces --if-present",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\""
   },
   "devDependencies": {
     "concurrently": "^8.2.0",
     "lerna": "^7.1.4",
-    "ts-node": "^10.9.2"
+    "ts-node": "^10.9.2",
+    "prettier": "^2.8.8"
   }
 }

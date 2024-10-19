@@ -22,9 +22,10 @@ const config: Config = {
     '^.+\\.(js|jsx)$': 'babel-jest',
   },
   transformIgnorePatterns: [
-    '/node_modules/(?!@passwordless-id/webauthn)',
+    '/node_modules/(?!@passwordless-id/webauthn|thirdweb)',
   ],
   testPathIgnorePatterns: ['<rootDir>/.next/', '<rootDir>/node_modules/'],
+  extensionsToTreatAsEsm: ['.ts', '.tsx'],
 };
 
 export default createJestConfig(config);

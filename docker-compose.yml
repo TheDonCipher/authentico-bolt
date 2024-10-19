@@ -7,6 +7,9 @@ services:
       - "3000:3000"
     environment:
       - NODE_ENV=development
+      - NEXT_PUBLIC_THIRDWEB_CLIENT_ID=${NEXT_PUBLIC_THIRDWEB_CLIENT_ID}
+      - DATABASE_URL=${DATABASE_URL}
+      - BACKEND_URL=${BACKEND_URL}
     depends_on:
       - user-service
 
@@ -62,7 +65,7 @@ services:
 
   cypress:
     build:
-      context: .
+      context: ./frontend
       dockerfile: Dockerfile.cypress
     depends_on:
       - frontend

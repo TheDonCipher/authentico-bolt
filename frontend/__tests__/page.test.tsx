@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { useRouter } from 'next/navigation';
-import NeubrutalistLanding from './page';
+import NeubrutalistLanding from '../app/dashboard/page';
 import { setCookie } from 'nookies';
 
 jest.mock('next/navigation', () => ({

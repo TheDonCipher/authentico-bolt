@@ -15,6 +15,7 @@
   "dependencies": {
     "axios": "^1.7.7",
     "framer-motion": "^11.11.8",
+    "hexoid": "^2.0.0",
     "lucide-react": "^0.428.0",
     "next": "14.1.0",
     "nookies": "^2.5.2",

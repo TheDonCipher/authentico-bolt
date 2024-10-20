@@ -1,85 +1,57 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { UserController } from './user.controller';
-import { UserService } from './user.service';
+import { INestApplication } from '@nestjs/common';
+import * as request from 'supertest';
+import { AppModule } from '../src/app.module';
+import { PrismaService } from '../src/prisma/prisma.service';
 
-describe('UserController', () => {
-  let controller: UserController;
-  let service: UserService;
+describe('UserController (e2e)', () => {
+  let app: INestApplication;
+  let prisma: PrismaService;
 
-  beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
-      controllers: [UserController],
-      providers: [
-        {
-          provide: UserService,
-          useValue: {
-            createUser: jest.fn(),
-          },
-        },
-      ],
+  beforeAll(async () => {
+    const moduleFixture: TestingModule = await Test.createTestingModule({
+      imports: [AppModule],
     }).compile();
 
-    controller = module.get<UserController>(UserController);
-    service = module.get<UserService>(UserService);
+    app = moduleFixture.createNestApplication();
+    prisma = app.get<PrismaService>(PrismaService);
+    await app.init();
   });
 
-  it('should be defined', () => {
-    expect(controller).toBeDefined();
+  afterAll(async () => {
+    await prisma.user.deleteMany({});
+    await app.close();
   });
 
-  describe('signUpIndividual', () => {
-    it('should call UserService.createUser with individual user data', async () => {
-      const createUserSpy = jest.spyOn(service, 'createUser').mockResolvedValue({
-        id: 1,
-        name: 'John Doe',
-        email: 'john.doe@example.com',
-        userType: 'individual',
-      });
+  it('/users (POST) - individual', async () => {
+    const response = await request(app.getHttpServer())
+      .post('/users')
+      .send({ name: 'John Doe', email: 'john.doe@example.com', userType: 'individual' })
+      .expect(201);
 
-      const result = await controller.signUpIndividual({
-        name: 'John Doe',
-        email: 'john.doe@example.com',
-      });
-
-      expect(createUserSpy).toHaveBeenCalledWith({
-        name: 'John Doe',
-        email: 'john.doe@example.com',
-        userType: 'individual',
-      });
-      expect(result).toEqual({
-        id: 1,
-        name: 'John Doe',
-        email: 'john.doe@example.com',
-        userType: 'individual',
-      });
+    const user = await prisma.user.findUnique({
+      where: { email: 'john.doe@example.com' },
     });
+
+    expect(user).toBeDefined();
+    expect(user.name).toBe('John Doe');
+    expect(user.email).toBe('john.doe@example.com');
+    expect(user.userType).toBe('individual');
   });
 
-  describe('signUpOrganization', () => {
-    it('should call UserService.createUser with organization user data', async () => {
-      const createUserSpy = jest.spyOn(service, 'createUser').mockResolvedValue({
-        id: 1,
-        name: 'Acme Corp',
-        email: 'contact@acme.com',
-        userType: 'organization',
-      });
+  it('/users (POST) - organization', async () => {
+    const response = await request(app.getHttpServer())
+      .post('/users')
+      .send({ name: 'Acme Corp', email: 'contact@acme.com', userType: 'organization' })
+      .expect(201);
 
-      const result = await controller.signUpOrganization({
-        orgName: 'Acme Corp',
-        email: 'contact@acme.com',
-      });
-
-      expect(createUserSpy).toHaveBeenCalledWith({
-        name: 'Acme Corp',
-        email: 'contact@acme.com',
-        userType: 'organization',
-      });
-      expect(result).toEqual({
-        id: 1,
-        name: 'Acme Corp',
-        email: 'contact@acme.com',
-        userType: 'organization',
-      });
+    const user = await prisma.user.findUnique({
+      where: { email: 'contact@acme.com' },
     });
+
+    expect(user).toBeDefined();
+    expect(user.name).toBe('Acme Corp');
+    expect(user.email).toBe('contact@acme.com');
+    expect(user.userType).toBe('organization');
   });
 });

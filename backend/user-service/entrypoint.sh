@@ -18,14 +18,6 @@ npx prisma generate
 echo "Seeding the database..."
 npx prisma db seed
 
-# List current directory contents
-echo "Current directory contents:"
-ls -la
-
-# List dist directory contents
-echo "Dist directory contents:"
-ls -la dist
-
 # Display Node.js and npm versions
 echo "Node.js version:"
 node --version

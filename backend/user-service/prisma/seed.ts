@@ -9,8 +9,8 @@ async function main() {
   // Seed the database
   await prisma.user.createMany({
     data: [
-      { name: 'Alice', email: 'alice@example.com', userType: 'individual' },
-      { name: 'Bob', email: 'bob@example.com', userType: 'organization' },
+      { name: 'Alice', email: 'alice@example.com', userType: 'individual', walletAddress: '0x1234567890123456789012345678901234567890' },
+      { name: 'Bob', email: 'bob@example.com', userType: 'organization', walletAddress: '0x0987654321098765432109876543210987654321' },
     ],
   })
 }

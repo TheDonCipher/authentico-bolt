@@ -5,9 +5,15 @@ import { PrismaService } from '../prisma/prisma.service';
 export class UserService {
   constructor(private prisma: PrismaService) {}
 
-  async createUser(data: { name: string; email: string; userType: string }) {
+  async createUser(data: { name: string; email: string; userType: string; walletAddress: string }) {
     return this.prisma.user.create({
       data,
+    });
+  }
+
+  async getUserByWalletAddress(walletAddress: string) {
+    return this.prisma.user.findFirst({
+      where: { walletAddress },
     });
   }
 

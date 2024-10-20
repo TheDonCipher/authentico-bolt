@@ -9,7 +9,11 @@ import { createWallet, inAppWallet } from "thirdweb/wallets";
 import { client } from "./client";
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
+<<<<<<< HEAD
 import LoadingSpinner from '../components/ui/LoadingSpinner';
+=======
+import LoadingSpinner from './components/ui/LoadingSpinner';
+>>>>>>> ed9f3f6 (Sign up implemented)
 
 const wallets = [
   createWallet("io.metamask"),
@@ -207,39 +211,41 @@ const NeubrutalistLanding = () => {
                 <label htmlFor="email" className="block text-left font-bold mb-2">Email</label>
                 <input type="email" id="email" name="email" className="w-full p-2 border-2 border-[#2C3E50]" value={indDetails.email} onChange={(e) => handleInputChange(e, setIndDetails)} required />
               </div>
-              <ConnectButton
-                client={client}
-                wallets={wallets}
-                theme={darkTheme({
-                  colors: {
-                    accentText: "#ffffff",
-                    primaryButtonText: "#ffffff",
-                    accentButtonBg: "#4A6741",
-                    primaryButtonBg: "#4A6741",
-                  },
-                  fontFamily: "Archivo"
-                })}
-                connectButton={{ label: "Connect Blockchain Wallet" }}
-                connectModal={{
-                  size: "wide",
-                  welcomeScreen: {
-                    title: "Welcome to Authentico",
-                    subtitle: "Secure document verification powered by blockchain",
-                  },
-                }}
-              />
-              <button 
-                type="submit" 
-                className={`w-full bg-[#4A6741] text-white text-xl font-bold py-3 px-6 border-4 border-[#2C3E50] hover:bg-[#5D8C5D] transition duration-300 inline-flex items-center justify-center ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <>
-                    <LoadingSpinner />
-                    Signing Up...
-                  </>
-                ) : 'Sign Up'}
-              </button>
+              <div className="flex flex-col items-center space-y-4">
+                <ConnectButton
+                  client={client}
+                  wallets={wallets}
+                  theme={darkTheme({
+                    colors: {
+                      accentText: "#ffffff",
+                      primaryButtonText: "#ffffff",
+                      accentButtonBg: "#4A6741",
+                      primaryButtonBg: "#4A6741",
+                    },
+                    fontFamily: "Archivo"
+                  })}
+                  connectButton={{ label: "Connect Blockchain Wallet" }}
+                  connectModal={{
+                    size: "wide",
+                    welcomeScreen: {
+                      title: "Welcome to Authentico",
+                      subtitle: "Secure document verification powered by blockchain",
+                    },
+                  }}
+                />
+                <button 
+                  type="submit" 
+                  className={`w-full bg-[#4A6741] text-white text-xl font-bold py-3 px-6 border-4 border-[#2C3E50] hover:bg-[#5D8C5D] transition duration-300 inline-flex items-center justify-center ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <>
+                      <LoadingSpinner />
+                      Signing Up...
+                    </>
+                  ) : 'Sign Up'}
+                </button>
+              </div>
             </form>
           </motion.section>
         )}

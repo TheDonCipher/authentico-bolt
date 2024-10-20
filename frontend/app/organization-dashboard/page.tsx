@@ -3,10 +3,24 @@
 
 import React from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Shield, Database, Key, FileText, Users, Settings } from 'lucide-react';
+import { FileText, Users, Settings, LogOut } from 'lucide-react';
+import { useActiveAccount, useDisconnect, useActiveWallet } from "thirdweb/react";
 
 const OrganizationDashboard = () => {
+  const router = useRouter();
+  const activeAccount = useActiveAccount();
+  const { disconnect } = useDisconnect();
+  const wallet = useActiveWallet();
+
+  const handleSignOut = async () => {
+    if (wallet) {
+      await disconnect(wallet);
+      router.push('/');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#F0EAD6] text-[#2C3E50] flex flex-col relative">
       {/* Background Pattern */}
@@ -32,6 +46,14 @@ const OrganizationDashboard = () => {
                   <Link href="/" className="hover:bg-[#5D8C5D] transition duration-300 p-2 border-4 border-white text-white font-bold">
                     Home
                   </Link>
+                </li>
+                <li>
+                  <button 
+                    onClick={handleSignOut}
+                    className="bg-red-600 text-white font-bold py-2 px-4 border-4 border-white hover:bg-red-700 transition duration-300"
+                  >
+                    <LogOut className="inline-block mr-2" /> Sign Out
+                  </button>
                 </li>
               </ul>
             </nav>

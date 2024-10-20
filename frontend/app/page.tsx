@@ -9,8 +9,7 @@ import { createWallet, inAppWallet } from "thirdweb/wallets";
 import { client } from "./client";
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { setCookie } from 'nookies';
-import LoadingSpinner from '../../components/ui/LoadingSpinner.tsx';
+import LoadingSpinner from '../components/ui/LoadingSpinner';
 
 const wallets = [
   createWallet("io.metamask"),

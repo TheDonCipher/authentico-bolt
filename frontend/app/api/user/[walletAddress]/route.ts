@@ -15,7 +15,8 @@ export async function GET(
     } else if (response.status === 404) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     } else {
-      return NextResponse.json({ error: 'An error occurred' }, { status: 500 });
+      const errorData = await response.json();
+      return NextResponse.json({ error: errorData.message || 'An error occurred' }, { status: response.status });
     }
   } catch (error) {
     console.error('Error fetching user:', error);

@@ -9,11 +9,8 @@ import { createWallet, inAppWallet } from "thirdweb/wallets";
 import { client } from "./client";
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-<<<<<<< HEAD
-import LoadingSpinner from '../components/ui/LoadingSpinner';
-=======
 import LoadingSpinner from './components/ui/LoadingSpinner';
->>>>>>> ed9f3f6 (Sign up implemented)
+
 
 const wallets = [
   createWallet("io.metamask"),

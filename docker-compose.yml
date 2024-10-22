@@ -63,18 +63,18 @@ services:
     networks:
       - default
 
-  cypress:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile.cypress
-    depends_on:
-      - frontend
-    environment:
-      - CYPRESS_baseUrl=http://frontend:3000
-    networks:
-      - default
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+#  cypress:
+#    build:
+#      context: ./frontend
+#      dockerfile: Dockerfile.cypress
+#    depends_on:
+#      - frontend
+#    environment:
+#      - CYPRESS_baseUrl=http://frontend:3000
+#    networks:
+#      - default
+#    extra_hosts:
+#      - "host.docker.internal:host-gateway"
 
 volumes:
   postgres_data:

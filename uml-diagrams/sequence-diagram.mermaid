@@ -1,0 +1,36 @@
+sequenceDiagram
+    participant U as User
+    participant F as Frontend
+    participant DS as Document Service
+    participant AI as AI Service
+    participant BC as Blockchain
+    participant NS as Notification Service
+    participant VO as Verifying Organization
+
+    U->>F: Upload Document
+    F->>DS: Submit Document
+    DS->>AI: Pre-screen Document
+    AI-->>DS: Pre-screening Results
+    
+    alt Pre-screening Passed
+        DS->>BC: Store Document Hash
+        BC-->>DS: Transaction Confirmed
+        DS->>VO: Request Verification
+        DS->>NS: Create Notification
+        NS-->>U: Notify Document Received
+        
+        VO->>DS: Review Document
+        
+        alt Document Approved
+            DS->>BC: Update Verification Status
+            BC-->>DS: Transaction Confirmed
+            DS->>NS: Create Notification
+            NS-->>U: Notify Verification Complete
+        else Document Rejected
+            DS->>NS: Create Notification
+            NS-->>U: Notify Rejection with Reason
+        end
+    else Pre-screening Failed
+        DS->>NS: Create Notification
+        NS-->>U: Notify Pre-screening Failed
+    end

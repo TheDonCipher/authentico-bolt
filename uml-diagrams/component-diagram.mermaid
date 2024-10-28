@@ -1,0 +1,40 @@
+C4Component
+    title Authentico System Architecture
+
+    Container_Boundary(frontend, "Frontend") {
+        Component(nextApp, "Next.js App", "TypeScript, React", "Main web application")
+        Component(pwa, "Progressive Web App", "Service Workers", "Mobile-friendly version")
+        Component(web3, "Web3 Integration", "thirdweb", "Blockchain connectivity")
+    }
+
+    Container_Boundary(backend, "Backend Services") {
+        Component(docService, "Document Service", "NestJS", "Handles document processing")
+        Component(userService, "User Service", "NestJS", "Manages user accounts")
+        Component(notification, "Notification Service", "WebSocket", "Real-time updates")
+        Component(ai, "AI Service", "TensorFlow.js", "Document processing & verification")
+    }
+
+    Container_Boundary(blockchain, "Blockchain Layer") {
+        Component(smartContracts, "Smart Contracts", "Solidity", "Document verification contracts")
+        Component(zkp, "Zero-Knowledge Proofs", "zk-SNARKs", "Privacy-preserving verification")
+    }
+
+    Container_Boundary(storage, "Storage") {
+        Component(db, "Database", "Prisma, PostgreSQL", "Persistent storage")
+        Component(ipfs, "IPFS", "Decentralized Storage", "Document storage")
+    }
+
+    Rel(nextApp, web3, "Uses")
+    Rel(nextApp, docService, "API calls")
+    Rel(nextApp, userService, "API calls")
+    Rel(nextApp, notification, "WebSocket")
+    
+    Rel(docService, ai, "Uses")
+    Rel(docService, smartContracts, "Interacts")
+    Rel(docService, db, "Stores data")
+    Rel(docService, ipfs, "Stores documents")
+    
+    Rel(userService, db, "Stores data")
+    Rel(userService, smartContracts, "Interacts")
+    
+    Rel(web3, smartContracts, "Interacts")

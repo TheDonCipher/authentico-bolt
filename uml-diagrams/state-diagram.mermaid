@@ -1,0 +1,49 @@
+stateDiagram-v2
+    [*] --> Uploaded: User uploads document
+    
+    state "Pre-screening" as PS {
+        [*] --> InProgress
+        InProgress --> Failed: AI detects issues
+        InProgress --> Passed: AI verification successful
+    }
+    
+    Uploaded --> PS: Submit for pre-screening
+    
+    PS --> Rejected: Pre-screening failed
+    Rejected --> Uploaded: User re-uploads
+    
+    PS --> Pending: Awaiting verification
+    
+    state "Under Review" as UR {
+        [*] --> InitialReview
+        InitialReview --> DataValidation
+        DataValidation --> BlockchainVerification
+        BlockchainVerification --> FinalCheck
+    }
+    
+    Pending --> UR: Organization starts review
+    
+    UR --> NeedsRevision: Issues found
+    NeedsRevision --> Pending: User updates document
+    
+    UR --> Verified: All checks passed
+    
+    state Verified {
+        [*] --> Active
+        Active --> Expired: Time limit reached
+        Active --> Revoked: Manual revocation
+        Expired --> Renewed: Renewal requested
+        Renewed --> Active: New verification
+    }
+    
+    Verified --> [*]: Document archived
+    
+    note right of PS
+        AI-powered document
+        pre-screening phase
+    end note
+    
+    note right of Verified
+        Document has passed
+        all verifications
+    end note

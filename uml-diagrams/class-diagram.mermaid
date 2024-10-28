@@ -1,0 +1,60 @@
+classDiagram
+    class User {
+        +string id
+        +string email
+        +string walletAddress
+        +UserType type
+        +DateTime createdAt
+        +verifyDocument(Document)
+        +uploadDocument(Document)
+        +shareDocument(Document, User)
+    }
+
+    class Organization {
+        +string id
+        +string name
+        +OrganizationType type
+        +string[] verificationDomains
+        +verifyDocuments()
+        +manageTeam()
+        +viewAnalytics()
+    }
+
+    class Document {
+        +string id
+        +string name
+        +string hash
+        +DocumentStatus status
+        +DateTime uploadedAt
+        +string ownerId
+        +generateQR()
+        +verify()
+        +share(User)
+    }
+
+    class Verification {
+        +string id
+        +string documentId
+        +string verifierId
+        +VerificationStatus status
+        +DateTime verifiedAt
+        +string[] comments
+        +approve()
+        +reject(string reason)
+    }
+
+    class DocumentAccess {
+        +string documentId
+        +string userId
+        +AccessLevel level
+        +DateTime grantedAt
+        +DateTime expiresAt
+        +grant()
+        +revoke()
+    }
+
+    User <|-- Organization
+    User "1" -- "*" Document : owns
+    Document "1" -- "*" Verification : has
+    Document "1" -- "*" DocumentAccess : controls
+    Organization "1" -- "*" Verification : performs

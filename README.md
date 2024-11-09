@@ -67,12 +67,14 @@ authentico/
 ## Setup
 
 1. Clone the repository:
+
    ```
    git clone <repository-url>
    cd authentico
    ```
 
 2. Install dependencies:
+
    ```
    npm install
    npx lerna bootstrap
@@ -83,6 +85,7 @@ authentico/
    - Fill in the necessary environment variables
 
 4. Start the development servers:
+
    ```
    npm run dev
    ```
@@ -94,16 +97,19 @@ authentico/
 We use Lerna to manage our monorepo structure. Here are some common commands:
 
 - Run a command across all packages:
+
   ```
   npx lerna run <command>
   ```
 
 - Run a command for specific packages:
+
   ```
   npx lerna run <command> --scope=@authentico/<package-name>
   ```
 
 - Add a dependency to a specific package:
+
   ```
   npx lerna add <package-name> --scope=@authentico/<service-name>
   ```
@@ -113,11 +119,13 @@ We use Lerna to manage our monorepo structure. Here are some common commands:
 Docker is used for consistent development environments and easier deployment:
 
 - Start all services:
+
   ```
   docker-compose up
   ```
 
 - Rebuild containers after changes:
+
   ```
   docker-compose up --build
   ```
@@ -177,11 +185,13 @@ These workflows automatically run tests and build processes.
 ## Testing
 
 - Run tests for all packages:
+
   ```
   npm test
   ```
 
 - Run tests for a specific package:
+
   ```
   cd <package-directory>
   npm test

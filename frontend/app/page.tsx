@@ -1,6 +1,8 @@
 /* eslint-disable */
 'use client';
-
+import reviewng from './img/roller-skating.svg'
+import sittingreading from './img/sitting-reading.svg'
+import reviewingDoc from './img/hero.png'
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Shield, Database, Key, Github, Linkedin, Twitter, ChevronDown, Upload, Search, Users, Wallet } from 'lucide-react';
@@ -9,6 +11,7 @@ import { createWallet, inAppWallet } from "thirdweb/wallets";
 import { client } from "./client";
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
+import Image from 'next/image';
 
 const wallets = [
   createWallet("io.metamask"),
@@ -167,7 +170,14 @@ const NeubrutalistLanding = () => {
     }
     setAuthError(null);
   };
-
+       const [seeStart,setseeStart]=useState("hidden")
+function toogleShow() {
+if(seeStart=="hidden"){
+setseeStart("flex overflow-y-hidden")
+return
+}
+ setseeStart("hidden ") 
+}
   // Function to show wallet connection message
   const handleWalletConnection = () => {
     setShowWalletMessage(true);
@@ -184,23 +194,61 @@ const NeubrutalistLanding = () => {
   }, [account]);
 
   return (
-    <div className="min-h-screen bg-[#F0EAD6] text-[#2C3E50] flex flex-col relative">
+    <div className="min-h-screen bg-[#F0EAD6] text-[#2C3E50] flex flex-col relative overflow-x-hidden">
       {/* Background Pattern */}
       <div className="absolute inset-0 z-0 opacity-5" style={{
         backgroundImage: `url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%234A6741' fill-opacity='0.4' fill-rule='evenodd'%3E%3Ccircle cx='3' cy='3' r='3'/%3E%3Ccircle cx='13' cy='13' r='3'/%3E%3C/g%3E%3C/svg%3E")`,
         backgroundSize: '20px 20px'
       }}></div>
 
-      <main className="container mx-auto px-4 py-8 relative z-10">
+<NavBar toogleShow={toogleShow}/>
+      <main className="w-screen flex flex-col flex-1 relative z-10">
         {/* Improved Title Section */}
-        <div className="bg-[#F0F4F8] p-8 rounded-lg shadow-lg mb-8 w-full">
-          <h1 className="text-5xl md:text-6xl font-extrabold mb-4 text-center text-[#2C3E50]">Welcome to Authentico</h1>
-          <h2 className="text-2xl md:text-3xl font-semibold mb-6 text-center text-[#4A6741]">Your Trusted Partner in Secure Document Verification</h2>
-        </div>
 
-<div className="flex flex-col md:flex-row justify-between mb-12 space-y-4 md:space-y-0 md:space-x-8">
+        <div className="bg-[#F0F4F8] p-8 justify-center items-center flex flex-1 flex-col rounded-lg shadow-lg  w-full">
+<div className='flex flex-col gap-2'>
+<div className='flex justify-center flex-col'>
+            <h1 className='font-bold text-6xl text-center'>Transform your document security</h1>
+            <h1 className='font-bold text-6xl text-center'>with Authentico</h1>
+
+</div>
+<div className=' justify-center flex items-center '>
+
+<p 
+className='text-center flex justify-center w-1/2'>
+Enhance your security and efficiency with our AI-powered document authentication solution. Our innovative technology leverages machine learning to verify the authenticity of documents in real-time, reducing the risk of fraud and ensuring compliance. 
+
+</p>
+</div>
+
+<div className='flex justify-center items-center gap-4'>
+<button
+onClick={toogleShow}
+     className="border-black border-2 p-3 bg-[#fef29f] font-bold hover:bg-[#79F7FF] hover:shadow-[2px_2px_0px_rgba(0,0,0,1)] active:bg-[#00E1EF] rounded-md"
+     >
+Get Started
+  </button>
+<button
+     className="border-black w-28 border-2 p-3 font-bold hover:bg-[#79F7FF] hover:shadow-[2px_2px_0px_rgba(0,0,0,1)] active:bg-[#00E1EF] rounded-md"
+     >
+Pricing
+  </button>
+
+</div>
+<div className='flex -my-10 w-screen justify-between'>
+
+<Image width={323} height={323} src={reviewng} alt="users"/>
+<Image width={323} height={323} src={sittingreading} alt="users"/>
+</div> 
+</div>
+       </div>
+
+<div className={seeStart+" backdrop-blur-md absolute items-center top-0 w-screen h-screen flex-col md:flex-row justify-center mb-12 space-y-4 md:space-y-0 md:space-x-8"}>
   {/* Left Column: Wallet Connection Instructions and Buttons */}
-  <div className="flex-1 bg-white p-6 rounded-lg shadow-md border border-gray-200">
+  <div className=" absolute top-4 left-1/3 flex-1 bg-white p-6 rounded-lg w shadow-md border border-gray-200">
+    <div className='flex justify-end'>
+<button onClick={toogleShow}>X</button>
+</div>
     <h3 className="text-2xl font-bold mb-4 text-[#2C3E50]">Get Started with Authentico</h3>
     <p className="font-bold text-lg text-[#1E3A8A] mb-4">Follow these steps:</p>
     <ol className="list-decimal list-inside mb-6 text-gray-600">
@@ -368,7 +416,7 @@ const NeubrutalistLanding = () => {
         </AnimatePresence>
 
         {/* How it works section */}
-        <section className="mb-20">
+        <section className="mb-20 p-8">
           <h3 className="text-3xl font-black mb-8 text-center">How It Works</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <ProcessStep number={1} title="Upload" description="Securely upload your documents to our platform." />
@@ -378,7 +426,7 @@ const NeubrutalistLanding = () => {
         </section>
 
         {/* Features section */}
-        <section className="mb-20">
+        <section className="mb-20 p-8">
           <h3 className="text-3xl font-black mb-8 text-center">Features</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <FeatureCard 
@@ -403,7 +451,7 @@ const NeubrutalistLanding = () => {
         </section>
 
         {/* For Who section */}
-        <section className="mb-20">
+        <section className="mb-20 p-8">
           <h3 className="text-3xl font-black mb-8 text-center">Who Is It For?</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <motion.div 
@@ -426,7 +474,7 @@ const NeubrutalistLanding = () => {
         </section>
 
         {/* FAQ section with smoother animations */}
-        <section className="mb-20">
+        <section className="mb-20 p-8">
           <h3 className="text-3xl font-black mb-8 text-center">Frequently Asked Questions</h3>
           <div className="space-y-4">
             <FAQItem 
@@ -563,4 +611,38 @@ const Toast: React.FC<{ type: 'success' | 'error'; message: string }> = ({ type,
   </motion.div>
 );
 
+
+interface INavbar{
+toogleShow:()=>void;
+}
+export const NavBar = ({toogleShow}:INavbar)=> {
+  return (
+ <nav className='flex justify-evenly sticky top-0 z-40 bg-[#ede8d3] p-4 rounded gap-2 list-none  border-4 border-b-black'>
+
+<div className='flex justify-center items-center'>
+
+<li className='flex justify-center items-center'><button className='font-bold text-2xl'>Authentico</button></li>
+</div>
+<div className='flex gap-7 w-1/2 items-center font-bold  list-none justify-evenly'>
+<li><button>Home</button></li>
+<li><button>Guide</button></li>
+<li><button>Features</button></li>
+<li><button>FaQ</button></li>
+
+
+</div>
+<div className='flex gap-4'>
+
+<button className='outline-black p-3  '>
+
+Login
+</button>
+<button onClick={toogleShow} className='outline-black rounded-md  outline p-3 bg-[#a6fafe] '>
+
+Sign Up
+</button>
+</div>
+</nav> 
+  )
+}
 export default NeubrutalistLanding;

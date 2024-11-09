@@ -176,7 +176,7 @@ if(seeStart=="hidden"){
 setseeStart("flex overflow-y-hidden")
 return
 }
- setseeStart("hidden ") 
+ setseeStart("hidden ")
 }
   // Function to show wallet connection message
   const handleWalletConnection = () => {
@@ -214,9 +214,9 @@ return
 </div>
 <div className=' justify-center flex items-center '>
 
-<p 
+<p
 className='text-center flex justify-center w-1/2'>
-Enhance your security and efficiency with our AI-powered document authentication solution. Our innovative technology leverages machine learning to verify the authenticity of documents in real-time, reducing the risk of fraud and ensuring compliance. 
+Enhance your security and efficiency with our AI-powered document authentication solution. Our innovative technology leverages machine learning to verify the authenticity of documents in real-time, reducing the risk of fraud and ensuring compliance.
 
 </p>
 </div>
@@ -239,7 +239,7 @@ Pricing
 
 <Image width={323} height={323} src={reviewng} alt="users"/>
 <Image width={323} height={323} src={sittingreading} alt="users"/>
-</div> 
+</div>
 </div>
        </div>
 
@@ -255,7 +255,7 @@ Pricing
       <li className="mb-2">Connect your wallet using the button below</li>
       <li className="mb-2">Sign in if you're a returning user, or sign up if you're new</li>
     </ol>
-    
+
     {/* Connect Button */}
     <div className="mb-6">
       <ConnectButton
@@ -263,7 +263,7 @@ Pricing
         wallets={wallets}
         theme={darkTheme({
           colors: {
-            accentText: "#ffffff", 
+            accentText: "#ffffff",
             accentButtonBg: "#4f46e5",
             primaryButtonBg: "#3730a3",
           },
@@ -279,7 +279,7 @@ Pricing
         }}
       />
     </div>
-    
+
     {/* User Feedback for Successful Wallet Connection */}
     {account && (
       <div className="mb-6 text-center">
@@ -289,7 +289,7 @@ Pricing
 
     {/* Sign-in and Sign-up Buttons */}
     <div className="space-y-4">
-      <motion.button 
+      <motion.button
         onClick={handleSignIn}
         className={`w-full bg-[#4A6741] text-white text-lg font-bold py-3 px-6 rounded-lg border-2 border-[#2C3E50] hover:bg-[#5D8C5D] transition duration-300 flex items-center justify-center ${!account ? 'opacity-50 cursor-not-allowed' : ''}`}
         whileHover={{ scale: 1.05 }}
@@ -308,7 +308,7 @@ Pricing
           </>
         )}
       </motion.button>
-      <motion.button 
+      <motion.button
         onClick={() => {
           setShowIndSignUp(true);
           setShowOrgSignUp(false);
@@ -321,7 +321,7 @@ Pricing
       >
         Sign Up as Individual
       </motion.button>
-      <motion.button 
+      <motion.button
         onClick={() => {
           setShowOrgSignUp(true);
           setShowIndSignUp(false);
@@ -340,7 +340,7 @@ Pricing
   {/* Right Column: Sign-up Forms */}
   <div className="flex-1">
     {showIndSignUp && (
-      <motion.section 
+      <motion.section
         id="indSignUpForm"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -358,8 +358,8 @@ Pricing
             <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">Email</label>
             <input type="email" id="email" name="email" className="w-full p-2 border border-gray-300 rounded-md focus:ring-[#4A6741] focus:border-[#4A6741]" value={indDetails.email} onChange={(e) => handleInputChange(e, setIndDetails)} required />
           </div>
-          <button 
-            type="submit" 
+          <button
+            type="submit"
             className={`w-full bg-[#4A6741] text-white text-lg font-bold py-3 px-6 rounded-lg border-2 border-[#2C3E50] hover:bg-[#5D8C5D] transition duration-300 ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
             disabled={isLoading}
           >
@@ -370,7 +370,7 @@ Pricing
     )}
 
     {showOrgSignUp && (
-      <motion.section 
+      <motion.section
         id="orgSignUpForm"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -388,8 +388,8 @@ Pricing
             <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">Email</label>
             <input type="email" id="email" name="email" className="w-full p-2 border border-gray-300 rounded-md focus:ring-[#4A6741] focus:border-[#4A6741]" value={orgDetails.email} onChange={(e) => handleInputChange(e, setOrgDetails)} required />
           </div>
-          <button 
-            type="submit" 
+          <button
+            type="submit"
             className={`w-full bg-[#4A6741] text-white text-lg font-bold py-3 px-6 rounded-lg border-2 border-[#2C3E50] hover:bg-[#5D8C5D] transition duration-300 ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
             disabled={isLoading}
           >
@@ -429,19 +429,19 @@ Pricing
         <section className="mb-20 p-8">
           <h3 className="text-3xl font-black mb-8 text-center">Features</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <FeatureCard 
+            <FeatureCard
               icon={<Upload size={48} />}
               title="Secure Upload and Verify"
               description="Upload and verify your documents with confidence using our blockchain-powered system."
               color="bg-[#4A6741]"
             />
-            <FeatureCard 
+            <FeatureCard
               icon={<Database size={48} />}
               title="Intuitive Dashboard"
               description="Manage all your documents effortlessly with our user-friendly dashboard."
               color="bg-[#5D8C5D]"
             />
-            <FeatureCard 
+            <FeatureCard
               icon={<Search size={48} />}
               title="Advanced Document Lookup"
               description="Find and access your verified documents quickly with our powerful search functionality."
@@ -454,7 +454,7 @@ Pricing
         <section className="mb-20 p-8">
           <h3 className="text-3xl font-black mb-8 text-center">Who Is It For?</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <motion.div 
+            <motion.div
               className="bg-[#E5DCC3] p-6 border-8 border-[#2C3E50] flex flex-col items-center text-center"
               whileHover={{ scale: 1.05 }}
             >
@@ -462,7 +462,7 @@ Pricing
               <h4 className="text-xl font-black mb-2">Individuals</h4>
               <p className="font-bold">Securely store and share your personal documents, from certificates to IDs.</p>
             </motion.div>
-            <motion.div 
+            <motion.div
               className="bg-[#E5DCC3] p-6 border-8 border-[#2C3E50] flex flex-col items-center text-center"
               whileHover={{ scale: 1.05 }}
             >
@@ -477,16 +477,16 @@ Pricing
         <section className="mb-20 p-8">
           <h3 className="text-3xl font-black mb-8 text-center">Frequently Asked Questions</h3>
           <div className="space-y-4">
-            <FAQItem 
-              question="How secure is Authentico?" 
+            <FAQItem
+              question="How secure is Authentico?"
               answer="Authentico uses advanced blockchain technology to ensure the highest level of security for your documents."
             />
-            <FAQItem 
-              question="What types of documents can I verify?" 
+            <FAQItem
+              question="What types of documents can I verify?"
               answer="You can verify a wide range of documents, including educational certificates, IDs, and official records."
             />
-            <FAQItem 
-              question="How long does the verification process take?" 
+            <FAQItem
+              question="How long does the verification process take?"
               answer="The verification process is typically completed within 24-48 hours, depending on the complexity of the document."
             />
           </div>
@@ -530,7 +530,7 @@ interface FeatureCardProps {
 }
 
 const FeatureCard: React.FC<FeatureCardProps> = ({ icon, title, description, color }) => (
-  <motion.div 
+  <motion.div
     className={`${color} p-8 flex flex-col items-center text-center border-8 border-[#2C3E50] transform hover:rotate-2 transition-all duration-300 rounded-lg`}
     whileHover={{ scale: 1.05, boxShadow: "0 10px 20px rgba(0,0,0,0.2)" }}
   >
@@ -547,7 +547,7 @@ interface ProcessStepProps {
 }
 
 const ProcessStep: React.FC<ProcessStepProps> = ({ number, title, description }) => (
-  <motion.div 
+  <motion.div
     className="bg-[#E5DCC3] p-6 border-8 border-[#2C3E50] flex flex-col items-center text-center"
     whileHover={{ scale: 1.05 }}
   >
@@ -563,7 +563,7 @@ const FAQItem: React.FC<{ question: string; answer: string }> = ({ question, ans
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <motion.div 
+    <motion.div
       className="border-4 border-[#2C3E50] bg-[#E5DCC3]"
       initial={false}
       animate={{ backgroundColor: isOpen ? "#F0EAD6" : "#E5DCC3" }}
@@ -573,7 +573,7 @@ const FAQItem: React.FC<{ question: string; answer: string }> = ({ question, ans
         onClick={() => setIsOpen(!isOpen)}
       >
         {question}
-        <ChevronDown 
+        <ChevronDown
           className={`transform transition-transform ${isOpen ? "rotate-180" : ""}`}
         />
       </button>
@@ -642,7 +642,7 @@ Login
 Sign Up
 </button>
 </div>
-</nav> 
+</nav>
   )
 }
 export default NeubrutalistLanding;

@@ -1,0 +1,14 @@
+{
+  "name": "hardhat-project",
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "hardhat": "^2.22.8"
+  },
+  "dependencies": {
+    "@aave/protocol-v2": "^1.0.1",
+    "@chainlink/contracts": "^1.2.0",
+    "@openzeppelin/contracts": "^4.9.3",
+    "ethers": "^5.7.2",
+    "fs": "^0.0.1-security"
+  }
+}

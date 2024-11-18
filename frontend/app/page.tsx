@@ -293,51 +293,60 @@ const NeubrutalistLanding = () => {
 
             {/* Sign-in and Sign-up Buttons */}
             <div className="space-y-4">
-              <motion.button
-                onClick={handleSignIn}
-                className={`w-full bg-[#4A6741] text-white text-lg font-bold py-3 px-6 rounded-lg border-2 border-[#2C3E50] hover:bg-[#5D8C5D] transition duration-300 flex items-center justify-center ${!account ? 'opacity-50 cursor-not-allowed' : ''}`}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                disabled={isSigningIn || !account}
-              >
-                {isSigningIn ? (
-                  <>
-                    <LoadingSpinner />
-                    <span>Signing In...</span>
-                  </>
-                ) : (
-                  <>
-                    <Wallet className="inline-block mr-2" />
-                    <span>Sign In</span>
-                  </>
-                )}
-              </motion.button>
-              <motion.button
-                onClick={() => {
-                  setShowIndSignUp(true);
-                  setShowOrgSignUp(false);
-                  document.getElementById('indSignUpForm')?.scrollIntoView({ behavior: 'smooth' });
-                }}
-                className={`w-full bg-[#5D8C5D] text-white text-lg font-bold py-3 px-6 rounded-lg border-2 border-[#2C3E50] hover:bg-[#4A6741] transition duration-300 ${!account ? 'opacity-50 cursor-not-allowed' : ''}`}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                disabled={!account}
-              >
-                Sign Up as Individual
-              </motion.button>
-              <motion.button
-                onClick={() => {
-                  setShowOrgSignUp(true);
-                  setShowIndSignUp(false);
-                  document.getElementById('orgSignUpForm')?.scrollIntoView({ behavior: 'smooth' });
-                }}
-                className={`w-full bg-[#5D8C5D] text-white text-lg font-bold py-3 px-6 rounded-lg border-2 border-[#2C3E50] hover:bg-[#4A6741] transition duration-300 ${!account ? 'opacity-50 cursor-not-allowed' : ''}`}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                disabled={!account}
-              >
-                Sign Up as Organization
-              </motion.button>
+              {
+
+                !account &&
+                <motion.button
+                  onClick={handleSignIn}
+                  className={`w-full bg-[#4A6741] text-white text-lg font-bold py-3 px-6 rounded-lg border-2 border-[#2C3E50] hover:bg-[#5D8C5D] transition duration-300 flex items-center justify-center ${!account ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  disabled={isSigningIn || !account}
+                >
+                  {isSigningIn ? (
+                    <>
+                      <LoadingSpinner />
+                      <span>Signing In...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Wallet className="inline-block mr-2" />
+                      <span>Sign In</span>
+                    </>
+                  )}
+                </motion.button>
+              }
+              {
+
+
+                account && <div className='flex flex-col gap-2'>              <motion.button
+                  onClick={() => {
+                    setShowIndSignUp(true);
+                    setShowOrgSignUp(false);
+                    document.getElementById('indSignUpForm')?.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                  className={`w-full bg-[#5D8C5D] text-white text-lg font-bold py-3 px-6 rounded-lg border-2 border-[#2C3E50] hover:bg-[#4A6741] transition duration-300 ${!account ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  disabled={!account}
+                >
+                  Sign Up as Individual
+                </motion.button>
+                  <motion.button
+                    onClick={() => {
+                      setShowOrgSignUp(true);
+                      setShowIndSignUp(false);
+                      document.getElementById('orgSignUpForm')?.scrollIntoView({ behavior: 'smooth' });
+                    }}
+                    className={`w-full bg-[#5D8C5D] text-white text-lg font-bold py-3 px-6 rounded-lg border-2 border-[#2C3E50] hover:bg-[#4A6741] transition duration-300 ${!account ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    disabled={!account}
+                  >
+                    Sign Up as Organization
+                  </motion.button>
+                </div>
+              }
             </div>
           </div>
 
@@ -349,7 +358,7 @@ const NeubrutalistLanding = () => {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.5 }}
-                className="bg-white p-6 rounded-lg shadow-md border border-gray-200"
+                className="bg-white py-24 px-6 rounded-lg shadow-md border border-gray-200 w-1/2  absolute top-3  left-1/4 "
               >
                 <h4 className="text-2xl font-bold mb-4 text-center text-[#2C3E50]">Individual Sign-Up</h4>
                 <p className="text-center mb-6 text-gray-600">Complete the form below to sign up as an individual user.</p>
@@ -379,7 +388,7 @@ const NeubrutalistLanding = () => {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.5 }}
-                className="bg-white p-6 rounded-lg shadow-md border border-gray-200"
+                className="bg-white py-24 px-6 rounded-lg shadow-md border border-gray-200 w-1/2  absolute top-3  left-1/4 "
               >
                 <h4 className="text-2xl font-bold mb-4 text-center text-[#2C3E50]">Organization Sign-Up</h4>
                 <p className="text-center mb-6 text-gray-600">Complete the form below to sign up as an organization.</p>

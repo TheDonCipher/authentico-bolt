@@ -172,7 +172,7 @@ const NeubrutalistLanding = () => {
   };
   const [seeStart, setseeStart] = useState("hidden")
   function toogleShow() {
-    if (seeStart == "hidden") {
+    if (seeStart == "hidden" || seeStart == "hidden ") {
       setseeStart("flex overflow-y-hidden")
       return
     }

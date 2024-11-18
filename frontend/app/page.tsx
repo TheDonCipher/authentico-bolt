@@ -170,14 +170,14 @@ const NeubrutalistLanding = () => {
     }
     setAuthError(null);
   };
-       const [seeStart,setseeStart]=useState("hidden")
-function toogleShow() {
-if(seeStart=="hidden"){
-setseeStart("flex overflow-y-hidden")
-return
-}
- setseeStart("hidden ")
-}
+  const [seeStart, setseeStart] = useState("hidden")
+  function toogleShow() {
+    if (seeStart == "hidden") {
+      setseeStart("flex overflow-y-hidden")
+      return
+    }
+    setseeStart("hidden ")
+  }
   // Function to show wallet connection message
   const handleWalletConnection = () => {
     setShowWalletMessage(true);
@@ -201,205 +201,209 @@ return
         backgroundSize: '20px 20px'
       }}></div>
 
-<NavBar toogleShow={toogleShow}/>
+
+      <div className='sticky top-0'>
+        <NavBar toogleShow={toogleShow} />
+
+      </div>
       <main className="w-screen flex flex-col flex-1 relative z-10">
         {/* Improved Title Section */}
 
         <div className="bg-[#F0F4F8] p-8 justify-center items-center flex flex-1 flex-col rounded-lg shadow-lg  w-full">
-<div className='flex flex-col gap-2'>
-<div className='flex justify-center flex-col'>
-            <h1 className='font-bold text-6xl text-center'>Transform your document security</h1>
-            <h1 className='font-bold text-6xl text-center'>with Authentico</h1>
+          <div className='flex flex-col gap-2'>
+            <div className='flex justify-center flex-col'>
+              <h1 className='font-bold text-6xl text-center'>Transform your document security</h1>
+              <h1 className='font-bold text-6xl text-center'>with Authentico</h1>
 
-</div>
-<div className=' justify-center flex items-center '>
+            </div>
+            <div className=' justify-center flex items-center '>
 
-<p
-className='text-center flex justify-center w-1/2'>
-Enhance your security and efficiency with our AI-powered document authentication solution. Our innovative technology leverages machine learning to verify the authenticity of documents in real-time, reducing the risk of fraud and ensuring compliance.
+              <p
+                className='text-center flex justify-center w-1/2'>
+                Enhance your security and efficiency with our AI-powered document authentication solution. Our innovative technology leverages machine learning to verify the authenticity of documents in real-time, reducing the risk of fraud and ensuring compliance.
 
-</p>
-</div>
+              </p>
+            </div>
 
-<div className='flex justify-center items-center gap-4'>
-<button
-onClick={toogleShow}
-     className="border-black border-2 p-3 bg-[#fef29f] font-bold hover:bg-[#79F7FF] hover:shadow-[2px_2px_0px_rgba(0,0,0,1)] active:bg-[#00E1EF] rounded-md"
-     >
-Get Started
-  </button>
-<button
-     className="border-black w-28 border-2 p-3 font-bold hover:bg-[#79F7FF] hover:shadow-[2px_2px_0px_rgba(0,0,0,1)] active:bg-[#00E1EF] rounded-md"
-     >
-Pricing
-  </button>
+            <div className='flex justify-center items-center gap-4'>
+              <button
+                onClick={toogleShow}
+                className="border-black border-2 p-3 bg-[#fef29f] font-bold hover:bg-[#79F7FF] hover:shadow-[2px_2px_0px_rgba(0,0,0,1)] active:bg-[#00E1EF] rounded-md"
+              >
+                Get Started
+              </button>
+              <button
+                className="border-black w-28 border-2 p-3 font-bold hover:bg-[#79F7FF] hover:shadow-[2px_2px_0px_rgba(0,0,0,1)] active:bg-[#00E1EF] rounded-md"
+              >
+                Pricing
+              </button>
 
-</div>
-<div className='flex -my-10 w-screen justify-between'>
+            </div>
+            <div className='flex -my-10 w-screen justify-between'>
 
-<Image width={323} height={323} src={reviewng} alt="users"/>
-<Image width={323} height={323} src={sittingreading} alt="users"/>
-</div>
-</div>
-       </div>
-
-<div className={seeStart+" backdrop-blur-md absolute items-center top-0 w-screen h-screen flex-col md:flex-row justify-center mb-12 space-y-4 md:space-y-0 md:space-x-8"}>
-  {/* Left Column: Wallet Connection Instructions and Buttons */}
-  <div className=" absolute top-4 left-1/3 flex-1 bg-white p-6 rounded-lg w shadow-md border border-gray-200">
-    <div className='flex justify-end'>
-<button onClick={toogleShow}>X</button>
-</div>
-    <h3 className="text-2xl font-bold mb-4 text-[#2C3E50]">Get Started with Authentico</h3>
-    <p className="font-bold text-lg text-[#1E3A8A] mb-4">Follow these steps:</p>
-    <ol className="list-decimal list-inside mb-6 text-gray-600">
-      <li className="mb-2">Connect your wallet using the button below</li>
-      <li className="mb-2">Sign in if you're a returning user, or sign up if you're new</li>
-    </ol>
-
-    {/* Connect Button */}
-    <div className="mb-6">
-      <ConnectButton
-        client={client}
-        wallets={wallets}
-        theme={darkTheme({
-          colors: {
-            accentText: "#ffffff",
-            accentButtonBg: "#4f46e5",
-            primaryButtonBg: "#3730a3",
-          },
-          fontFamily: "Archivo"
-        })}
-        connectButton={{ label: "Connect Wallet" }}
-        connectModal={{
-          size: "wide",
-          welcomeScreen: {
-            title: "Welcome to Authentico",
-            subtitle: "Secure document verification powered by blockchain",
-          },
-        }}
-      />
-    </div>
-
-    {/* User Feedback for Successful Wallet Connection */}
-    {account && (
-      <div className="mb-6 text-center">
-        <p className="text-green-600 font-bold">Wallet connected successfully!</p>
-      </div>
-    )}
-
-    {/* Sign-in and Sign-up Buttons */}
-    <div className="space-y-4">
-      <motion.button
-        onClick={handleSignIn}
-        className={`w-full bg-[#4A6741] text-white text-lg font-bold py-3 px-6 rounded-lg border-2 border-[#2C3E50] hover:bg-[#5D8C5D] transition duration-300 flex items-center justify-center ${!account ? 'opacity-50 cursor-not-allowed' : ''}`}
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-        disabled={isSigningIn || !account}
-      >
-        {isSigningIn ? (
-          <>
-            <LoadingSpinner />
-            <span>Signing In...</span>
-          </>
-        ) : (
-          <>
-            <Wallet className="inline-block mr-2" />
-            <span>Sign In</span>
-          </>
-        )}
-      </motion.button>
-      <motion.button
-        onClick={() => {
-          setShowIndSignUp(true);
-          setShowOrgSignUp(false);
-          document.getElementById('indSignUpForm')?.scrollIntoView({ behavior: 'smooth' });
-        }}
-        className={`w-full bg-[#5D8C5D] text-white text-lg font-bold py-3 px-6 rounded-lg border-2 border-[#2C3E50] hover:bg-[#4A6741] transition duration-300 ${!account ? 'opacity-50 cursor-not-allowed' : ''}`}
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-        disabled={!account}
-      >
-        Sign Up as Individual
-      </motion.button>
-      <motion.button
-        onClick={() => {
-          setShowOrgSignUp(true);
-          setShowIndSignUp(false);
-          document.getElementById('orgSignUpForm')?.scrollIntoView({ behavior: 'smooth' });
-        }}
-        className={`w-full bg-[#5D8C5D] text-white text-lg font-bold py-3 px-6 rounded-lg border-2 border-[#2C3E50] hover:bg-[#4A6741] transition duration-300 ${!account ? 'opacity-50 cursor-not-allowed' : ''}`}
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-        disabled={!account}
-      >
-        Sign Up as Organization
-      </motion.button>
-    </div>
-  </div>
-
-  {/* Right Column: Sign-up Forms */}
-  <div className="flex-1">
-    {showIndSignUp && (
-      <motion.section
-        id="indSignUpForm"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.5 }}
-        className="bg-white p-6 rounded-lg shadow-md border border-gray-200"
-      >
-        <h4 className="text-2xl font-bold mb-4 text-center text-[#2C3E50]">Individual Sign-Up</h4>
-        <p className="text-center mb-6 text-gray-600">Complete the form below to sign up as an individual user.</p>
-        <form onSubmit={handleIndividualSignUp} className="space-y-4">
-          <div>
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">Name</label>
-            <input type="text" id="name" name="name" className="w-full p-2 border border-gray-300 rounded-md focus:ring-[#4A6741] focus:border-[#4A6741]" value={indDetails.name} onChange={(e) => handleInputChange(e, setIndDetails)} required />
+              <Image width={323} height={323} src={reviewng} alt="users" />
+              <Image width={323} height={323} src={sittingreading} alt="users" />
+            </div>
           </div>
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-            <input type="email" id="email" name="email" className="w-full p-2 border border-gray-300 rounded-md focus:ring-[#4A6741] focus:border-[#4A6741]" value={indDetails.email} onChange={(e) => handleInputChange(e, setIndDetails)} required />
-          </div>
-          <button
-            type="submit"
-            className={`w-full bg-[#4A6741] text-white text-lg font-bold py-3 px-6 rounded-lg border-2 border-[#2C3E50] hover:bg-[#5D8C5D] transition duration-300 ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
-            disabled={isLoading}
-          >
-            {isLoading ? 'Signing Up...' : 'Sign Up'}
-          </button>
-        </form>
-      </motion.section>
-    )}
+        </div>
 
-    {showOrgSignUp && (
-      <motion.section
-        id="orgSignUpForm"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.5 }}
-        className="bg-white p-6 rounded-lg shadow-md border border-gray-200"
-      >
-        <h4 className="text-2xl font-bold mb-4 text-center text-[#2C3E50]">Organization Sign-Up</h4>
-        <p className="text-center mb-6 text-gray-600">Complete the form below to sign up as an organization.</p>
-        <form onSubmit={handleOrganizationSignUp} className="space-y-4">
-          <div>
-            <label htmlFor="orgName" className="block text-sm font-medium text-gray-700 mb-1">Organization Name</label>
-            <input type="text" id="orgName" name="orgName" className="w-full p-2 border border-gray-300 rounded-md focus:ring-[#4A6741] focus:border-[#4A6741]" value={orgDetails.orgName} onChange={(e) => handleInputChange(e, setOrgDetails)} required />
+        <div className={seeStart + " backdrop-blur-md absolute items-center top-0 w-screen h-screen flex-col md:flex-row justify-center mb-12 space-y-4 md:space-y-0 md:space-x-8"}>
+          {/* Left Column: Wallet Connection Instructions and Buttons */}
+          <div className=" absolute top-4 left-1/3 flex-1 bg-white p-6 rounded-lg w shadow-md border border-gray-200">
+            <div className='flex justify-end'>
+              <button onClick={toogleShow}>X</button>
+            </div>
+            <h3 className="text-2xl font-bold mb-4 text-[#2C3E50]">Get Started with Authentico</h3>
+            <p className="font-bold text-lg text-[#1E3A8A] mb-4">Follow these steps:</p>
+            <ol className="list-decimal list-inside mb-6 text-gray-600">
+              <li className="mb-2">Connect your wallet using the button below</li>
+              <li className="mb-2">Sign in if you're a returning user, or sign up if you're new</li>
+            </ol>
+
+            {/* Connect Button */}
+            <div className="mb-6">
+              <ConnectButton
+                client={client}
+                wallets={wallets}
+                theme={darkTheme({
+                  colors: {
+                    accentText: "#ffffff",
+                    accentButtonBg: "#4f46e5",
+                    primaryButtonBg: "#3730a3",
+                  },
+                  fontFamily: "Archivo"
+                })}
+                connectButton={{ label: "Connect Wallet" }}
+                connectModal={{
+                  size: "wide",
+                  welcomeScreen: {
+                    title: "Welcome to Authentico",
+                    subtitle: "Secure document verification powered by blockchain",
+                  },
+                }}
+              />
+            </div>
+
+            {/* User Feedback for Successful Wallet Connection */}
+            {account && (
+              <div className="mb-6 text-center">
+                <p className="text-green-600 font-bold">Wallet connected successfully!</p>
+              </div>
+            )}
+
+            {/* Sign-in and Sign-up Buttons */}
+            <div className="space-y-4">
+              <motion.button
+                onClick={handleSignIn}
+                className={`w-full bg-[#4A6741] text-white text-lg font-bold py-3 px-6 rounded-lg border-2 border-[#2C3E50] hover:bg-[#5D8C5D] transition duration-300 flex items-center justify-center ${!account ? 'opacity-50 cursor-not-allowed' : ''}`}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                disabled={isSigningIn || !account}
+              >
+                {isSigningIn ? (
+                  <>
+                    <LoadingSpinner />
+                    <span>Signing In...</span>
+                  </>
+                ) : (
+                  <>
+                    <Wallet className="inline-block mr-2" />
+                    <span>Sign In</span>
+                  </>
+                )}
+              </motion.button>
+              <motion.button
+                onClick={() => {
+                  setShowIndSignUp(true);
+                  setShowOrgSignUp(false);
+                  document.getElementById('indSignUpForm')?.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className={`w-full bg-[#5D8C5D] text-white text-lg font-bold py-3 px-6 rounded-lg border-2 border-[#2C3E50] hover:bg-[#4A6741] transition duration-300 ${!account ? 'opacity-50 cursor-not-allowed' : ''}`}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                disabled={!account}
+              >
+                Sign Up as Individual
+              </motion.button>
+              <motion.button
+                onClick={() => {
+                  setShowOrgSignUp(true);
+                  setShowIndSignUp(false);
+                  document.getElementById('orgSignUpForm')?.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className={`w-full bg-[#5D8C5D] text-white text-lg font-bold py-3 px-6 rounded-lg border-2 border-[#2C3E50] hover:bg-[#4A6741] transition duration-300 ${!account ? 'opacity-50 cursor-not-allowed' : ''}`}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                disabled={!account}
+              >
+                Sign Up as Organization
+              </motion.button>
+            </div>
           </div>
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-            <input type="email" id="email" name="email" className="w-full p-2 border border-gray-300 rounded-md focus:ring-[#4A6741] focus:border-[#4A6741]" value={orgDetails.email} onChange={(e) => handleInputChange(e, setOrgDetails)} required />
+
+          {/* Right Column: Sign-up Forms */}
+          <div className="flex-1">
+            {showIndSignUp && (
+              <motion.section
+                id="indSignUpForm"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.5 }}
+                className="bg-white p-6 rounded-lg shadow-md border border-gray-200"
+              >
+                <h4 className="text-2xl font-bold mb-4 text-center text-[#2C3E50]">Individual Sign-Up</h4>
+                <p className="text-center mb-6 text-gray-600">Complete the form below to sign up as an individual user.</p>
+                <form onSubmit={handleIndividualSignUp} className="space-y-4">
+                  <div>
+                    <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                    <input type="text" id="name" name="name" className="w-full p-2 border border-gray-300 rounded-md focus:ring-[#4A6741] focus:border-[#4A6741]" value={indDetails.name} onChange={(e) => handleInputChange(e, setIndDetails)} required />
+                  </div>
+                  <div>
+                    <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                    <input type="email" id="email" name="email" className="w-full p-2 border border-gray-300 rounded-md focus:ring-[#4A6741] focus:border-[#4A6741]" value={indDetails.email} onChange={(e) => handleInputChange(e, setIndDetails)} required />
+                  </div>
+                  <button
+                    type="submit"
+                    className={`w-full bg-[#4A6741] text-white text-lg font-bold py-3 px-6 rounded-lg border-2 border-[#2C3E50] hover:bg-[#5D8C5D] transition duration-300 ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    disabled={isLoading}
+                  >
+                    {isLoading ? 'Signing Up...' : 'Sign Up'}
+                  </button>
+                </form>
+              </motion.section>
+            )}
+
+            {showOrgSignUp && (
+              <motion.section
+                id="orgSignUpForm"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.5 }}
+                className="bg-white p-6 rounded-lg shadow-md border border-gray-200"
+              >
+                <h4 className="text-2xl font-bold mb-4 text-center text-[#2C3E50]">Organization Sign-Up</h4>
+                <p className="text-center mb-6 text-gray-600">Complete the form below to sign up as an organization.</p>
+                <form onSubmit={handleOrganizationSignUp} className="space-y-4">
+                  <div>
+                    <label htmlFor="orgName" className="block text-sm font-medium text-gray-700 mb-1">Organization Name</label>
+                    <input type="text" id="orgName" name="orgName" className="w-full p-2 border border-gray-300 rounded-md focus:ring-[#4A6741] focus:border-[#4A6741]" value={orgDetails.orgName} onChange={(e) => handleInputChange(e, setOrgDetails)} required />
+                  </div>
+                  <div>
+                    <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                    <input type="email" id="email" name="email" className="w-full p-2 border border-gray-300 rounded-md focus:ring-[#4A6741] focus:border-[#4A6741]" value={orgDetails.email} onChange={(e) => handleInputChange(e, setOrgDetails)} required />
+                  </div>
+                  <button
+                    type="submit"
+                    className={`w-full bg-[#4A6741] text-white text-lg font-bold py-3 px-6 rounded-lg border-2 border-[#2C3E50] hover:bg-[#5D8C5D] transition duration-300 ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    disabled={isLoading}
+                  >
+                    {isLoading ? 'Signing Up...' : 'Sign Up'}
+                  </button>
+                </form>
+              </motion.section>
+            )}
           </div>
-          <button
-            type="submit"
-            className={`w-full bg-[#4A6741] text-white text-lg font-bold py-3 px-6 rounded-lg border-2 border-[#2C3E50] hover:bg-[#5D8C5D] transition duration-300 ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
-            disabled={isLoading}
-          >
-            {isLoading ? 'Signing Up...' : 'Sign Up'}
-          </button>
-        </form>
-      </motion.section>
-    )}
-  </div>
-</div>
+        </div>
 
         {/* Improved Error Message Toast */}
         {authError && (
@@ -612,37 +616,37 @@ const Toast: React.FC<{ type: 'success' | 'error'; message: string }> = ({ type,
 );
 
 
-interface INavbar{
-toogleShow:()=>void;
+interface INavbar {
+  toogleShow: () => void;
 }
-export const NavBar = ({toogleShow}:INavbar)=> {
+const NavBar = ({ toogleShow }: INavbar) => {
   return (
- <nav className='flex justify-evenly sticky top-0 z-40 bg-[#ede8d3] p-4 rounded gap-2 list-none  border-4 border-b-black'>
+    <nav className='flex justify-evenly sticky top-0 z-40 bg-[#ede8d3] p-4 rounded gap-2 list-none  border-4 border-b-black'>
 
-<div className='flex justify-center items-center'>
+      <div className='flex justify-center items-center'>
 
-<li className='flex justify-center items-center'><button className='font-bold text-2xl'>Authentico</button></li>
-</div>
-<div className='flex gap-7 w-1/2 items-center font-bold  list-none justify-evenly'>
-<li><button>Home</button></li>
-<li><button>Guide</button></li>
-<li><button>Features</button></li>
-<li><button>FaQ</button></li>
+        <li className='flex justify-center items-center'><button className='font-bold text-2xl'>Authentico</button></li>
+      </div>
+      <div className='flex gap-7 w-1/2 items-center font-bold  list-none justify-evenly'>
+        <li><button>Home</button></li>
+        <li><button>Guide</button></li>
+        <li><button>Features</button></li>
+        <li><button>FaQ</button></li>
 
 
-</div>
-<div className='flex gap-4'>
+      </div>
+      <div className='flex gap-4'>
 
-<button className='outline-black p-3  '>
+        <button className='outline-black p-3  '>
 
-Login
-</button>
-<button onClick={toogleShow} className='outline-black rounded-md  outline p-3 bg-[#a6fafe] '>
+          Login
+        </button>
+        <button onClick={toogleShow} className='outline-black rounded-md  outline p-3 bg-[#a6fafe] '>
 
-Sign Up
-</button>
-</div>
-</nav>
+          Sign Up
+        </button>
+      </div>
+    </nav>
   )
 }
 export default NeubrutalistLanding;

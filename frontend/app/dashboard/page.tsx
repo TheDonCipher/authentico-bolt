@@ -63,7 +63,7 @@ const Dashboard = () => {
     { id: 2, name: 'Driving License', status: 'pending', similarity: 92, verifyingOrg: 'Ministry of Transport and Public Works' },
     { id: 3, name: 'Laptop Receipt', status: 'rejected', similarity: 78, verifyingOrg: 'Home Corp', rejectionReason: 'Incomplete information' },
   ]);
-  
+
   const activeAccount = useActiveAccount();
   const router = useRouter();
   const { disconnect } = useDisconnect();
@@ -71,7 +71,7 @@ const Dashboard = () => {
 
   useEffect(() => {
     if (!activeAccount) {
-      router.push('/');
+      // router.push('/');
     }
   }, [activeAccount, router]);
 
@@ -102,7 +102,7 @@ const Dashboard = () => {
   }, [documents]);
 
   if (!activeAccount) {
-    return null;
+    // return null;
   }
   // Function to display account status
   const formatAddress = (activeAccount: any) => {
@@ -115,7 +115,7 @@ const Dashboard = () => {
   const handleSignOut = async () => {
     if (wallet) {
       await disconnect(wallet);
-      router.push('/');
+      // router.push('/');
     }
   };
 
@@ -135,37 +135,41 @@ const Dashboard = () => {
     setIsUploadDialogOpen(false);
   };
 
-/*   const handleShare = () => {
-    if (selectedDocument) {
-      // In a real application, you would generate a unique link here
-      const shareLink = `https://authentico.com/share/${selectedDocument?.id}`;
-      navigator.clipboard.writeText(shareLink)
-        .then(() => {
-          alert('Share link copied to clipboard!');
-          setIsShareDialogOpen(false);
-        })
-        .catch((err) => {
-          console.error('Failed to copy to clipboard:', err);
-          alert('Failed to copy share link. Please try again.');
-        });
-    } else {
-      console.error('No document selected for sharing');
-    }
-  }; */
-
+  /*   const handleShare = () => {
+      if (selectedDocument) {
+        // In a real application, you would generate a unique link here
+        const shareLink = `https://authentico.com/share/${selectedDocument?.id}`;
+        navigator.clipboard.writeText(shareLink)
+          .then(() => {
+            alert('Share link copied to clipboard!');
+            setIsShareDialogOpen(false);
+          })
+          .catch((err) => {
+            console.error('Failed to copy to clipboard:', err);
+            alert('Failed to copy share link. Please try again.');
+          });
+      } else {
+        console.error('No document selected for sharing');
+      }
+    }; */
+  // TODO:move the avatar to the top corner
+  // TODO:write the light mode equivalent
+  // TODO:remove the whites
+  // TODO:round up the cards
+  // TODO:Statistics should be on the landing page
+  // TODO: remove the your docs tag
   return (
     <div className="min-h-screen bg-gray-900 text-white flex flex-col md:flex-row">
       {/* Sidebar */}
-      <aside className="w-full md:w-64 bg-indigo-900 p-6 border-b-8 md:border-b-0 md:border-r-8 border-white flex flex-col h-screen">
+      <aside className="w-full md:w-80 bg-indigo-900 p-6  md:border-b-0  flex flex-col h-screen">
         <h1 className="text-2xl font-black mb-8">AUTHENTICO</h1>
-        
         {/* User Profile Section */}
-        <div className="mb-8 text-center">
-          <div className="w-20 h-20 rounded-full bg-gray-700 mx-auto mb-2 flex items-center justify-center">
-            <User size={40} />
-          </div>
-          <p className="font-bold">{formatAddress(activeAccount)}</p>
-        </div>
+        {/* <div className="mb-8 text-center flex items-center "> */}
+        {/*   <div className="w-20 h-20 rounded-full bg-gray-700 mx-auto mb-2 flex items-center justify-center"> */}
+        {/*     <User size={40} /> */}
+        {/*   </div> */}
+        {/*   <p className="font-bold">{formatAddress(activeAccount)}</p> */}
+        {/* </div> */}
 
         {/* Navigation */}
         <nav className="mb-8">
@@ -213,7 +217,7 @@ const Dashboard = () => {
         <h2 className="text-3xl md:text-4xl font-black mb-6 md:mb-8 bg-indigo-800 p-4 border-8 border-white inline-block transform -rotate-2">
           {activeTab.toUpperCase()}
         </h2>
-        
+
         {activeTab === 'documents' && (
           <div className="bg-gray-800 p-4 md:p-6 border-8 border-white">
             <h3 className="text-xl md:text-2xl font-black mb-4">Your Documents</h3>
@@ -228,8 +232,8 @@ const Dashboard = () => {
                   <div className="mb-4">
                     <p className="text-sm mb-1">Similarity to common documents:</p>
                     <div className="w-full bg-gray-600 rounded-full h-2.5">
-                      <div 
-                        className="bg-blue-500 h-2.5 rounded-full" 
+                      <div
+                        className="bg-blue-500 h-2.5 rounded-full"
                         style={{ width: `${doc.similarity}%` }}
                       ></div>
                     </div>
@@ -248,7 +252,7 @@ const Dashboard = () => {
                     )}
                     {doc.status === 'rejected' && (
                       <>
-                        <button className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition flex items-center" 
+                        <button className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition flex items-center"
                           onClick={() => alert(`Rejection Reason: ${doc.rejectionReason}`)}>
                           <Eye size={16} className="mr-2" /> View Reason
                         </button>
@@ -257,7 +261,7 @@ const Dashboard = () => {
                         </button>
                       </>
                     )}
-                    <button 
+                    <button
                       className="bg-gray-500 text-white px-3 py-1 rounded hover:bg-gray-600 transition flex items-center ml-auto"
                       onClick={() => {
                         setSelectedDocument(doc);
@@ -311,7 +315,7 @@ const Dashboard = () => {
         )}
 
         {/* Floating Add Document Button */}
-        <button 
+        <button
           className="fixed bottom-8 right-8 bg-indigo-600 text-white p-4 rounded-full hover:bg-indigo-700 transition shadow-lg border-4 border-white"
           onClick={() => setIsUploadDialogOpen(true)}
         >
@@ -321,6 +325,7 @@ const Dashboard = () => {
 
       {/* Upload Dialog */}
       {isUploadDialogOpen && (
+
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
           <div className="bg-gray-800 p-6 border-8 border-white max-w-md w-full">
             <h3 className="text-2xl font-black mb-4">Upload New Document</h3>

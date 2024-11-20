@@ -562,9 +562,9 @@ function AvatarTab() {
         <div>
           <BellIcon />
         </div>
-        <div className="mb-8 text-center flex items-center ">
-          <div className="w-20 h-20 rounded-full bg-gray-700 mx-auto mb-2 flex items-center justify-center">
-            <User size={40} />
+        <div className="mb-8 gap-2 text-center flex items-center ">
+          <div className="w-15 h-15 rounded-full bg-gray-700 mx-auto mb-2 flex items-center justify-center">
+            <User size={20} />
           </div>
           {/* <p className="font-bold">{formatAddress(activeAccount)}</p> */}
           <p className="font-bold">Yandhi</p>

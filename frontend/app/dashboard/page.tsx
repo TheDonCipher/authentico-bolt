@@ -17,6 +17,7 @@ import {
   User,
   HelpCircle,
   BarChart2,
+  SearchIcon,
 } from "lucide-react";
 import {
   useActiveAccount,
@@ -557,7 +558,8 @@ function Stats({ documents }: Idocuments) {
 
 function AvatarTab() {
   return (
-    <div className="bg-[#312e81] col-start-1 col-end-5 h-14 flex justify-end">
+    <div className="bg-[#312e81] col-start-1 col-end-5 h-14 flex justify-evenly">
+      <SearchBar />
       <div>
         <div>
           <BellIcon />
@@ -571,6 +573,21 @@ function AvatarTab() {
         </div>
       </div>
     </div>
+  );
+}
+function SearchBar() {
+  return (
+    <>
+      <div className="flex w-1/2 items-center gap-2">
+        <input
+          className="flex-1 h-8 p-3  rounded-md  "
+          placeholder="Search Document"
+        />
+        <button>
+          <SearchIcon />
+        </button>
+      </div>
+    </>
   );
 }
 export default Dashboard;

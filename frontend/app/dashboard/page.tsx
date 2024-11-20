@@ -24,7 +24,7 @@ import {
   useDisconnect,
   useActiveWallet,
 } from "thirdweb/react";
-import { BellIcon } from "app/svg";
+import { BellIcon, UserIcon } from "app/svg";
 
 interface Document {
   id: number;
@@ -558,18 +558,18 @@ function Stats({ documents }: Idocuments) {
 
 function AvatarTab() {
   return (
-    <div className="bg-[#312e81] col-start-1 col-end-5 h-14 flex justify-evenly">
+    <div className="bg-[#312e81] gap-20 col-start-1 col-end-5 px-6 h-14 flex justify-between">
       <SearchBar />
-      <div>
+      <div className="flex gap-4 items-center">
         <div>
           <BellIcon />
         </div>
-        <div className="mb-8 gap-2 text-center flex items-center ">
-          <div className="w-15 h-15 rounded-full bg-gray-700 mx-auto mb-2 flex items-center justify-center">
-            <User size={20} />
+        <div className="gap-2 text-center flex items-center ">
+          <div className="w-15 h-15 rounded-full bg-gray-700 flex items-center justify-center">
+            <UserIcon />
           </div>
           {/* <p className="font-bold">{formatAddress(activeAccount)}</p> */}
-          <p className="font-bold">Yandhi</p>
+          <p className="font-bold">Jeff Austinburg</p>
         </div>
       </div>
     </div>
@@ -578,7 +578,7 @@ function AvatarTab() {
 function SearchBar() {
   return (
     <>
-      <div className="flex w-1/2 items-center gap-2">
+      <div className="flex flex-1 w-1/2 items-center gap-2">
         <input
           className="flex-1 h-8 p-3  rounded-md  "
           placeholder="Search Document"

@@ -250,8 +250,11 @@ const Dashboard = () => {
         console.error('No document selected for sharing');
       }
     }; */
-  // TODO:move the avatar to the top corner
   // TODO:write the light mode equivalent
+  // HACK: Downloading will not be implemented yet becuase it has not set to return
+  // TODO:deleting docs
+  // TODO: Icons On stats
+  // TODO:Resposive design
   return (
     <div className="min-h-screen bg-gray-900 text-white flex flex-col md:flex-row">
       {/* Sidebar */}
@@ -277,12 +280,13 @@ const Dashboard = () => {
               </button>
             </li>
             <li>
-              <button
-                onClick={() => setActiveTab("stats")}
-                className={`w-full text-left p-2 rounded-md  ${activeTab === "stats" ? "bg-indigo-700" : "transparent hover:bg-indigo-800"}`}
-              >
-                <BarChart2 className="inline-block mr-2" /> Quick Stats
-              </button>
+              {/**/}
+              {/* <button */}
+              {/*   onClick={() => setActiveTab("stats")} */}
+              {/*   className={`w-full text-left p-2 rounded-md  ${activeTab === "stats" ? "bg-indigo-700" : "transparent hover:bg-indigo-800"}`} */}
+              {/* > */}
+              {/*   <BarChart2 className="inline-block mr-2" /> Quick Stats */}
+              {/* </button> */}
             </li>
             <li>
               <button
@@ -305,7 +309,7 @@ const Dashboard = () => {
           </button>
         </div>
       </aside>
-      <div className="grid grid-cols-4 grid-rows-8 h-screen">
+      <div className="w-screen grid grid-cols-4 grid-rows-8 h-screen">
         <AvatarTab />
         {/* Main Content */}
         <main className="flex-grow p-4 col-start-1 row-start-2 col-end-5  md:p-8 relative">
@@ -324,7 +328,7 @@ const Dashboard = () => {
                   {documents.map((doc) => (
                     <div
                       key={doc.id}
-                      className="bg-gray-700 p-6 border-4 border-white flex flex-col transition-all duration-300 hover:shadow-lg hover:scale-105"
+                      className="bg-gray-700 p-6 rounded-md flex flex-col transition-all duration-300 hover:shadow-lg hover:scale-105"
                     >
                       <div className="flex justify-between items-start mb-4">
                         <span className="font-bold text-lg">{doc.name}</span>
@@ -425,13 +429,13 @@ const Dashboard = () => {
           )}
 
           {activeTab === "activity" && (
-            <div className="bg-gray-800 p-6 border-8 border-white">
+            <div className="bg-gray-800 p-6 ">
               <h3 className="text-2xl font-black mb-4">Recent Activity</h3>
               <ul className="space-y-2">
                 {activities.map((activity, index) => (
                   <li
                     key={index}
-                    className="bg-gray-700 p-4 border-4 border-white flex items-center"
+                    className="bg-gray-700 rounded-md p-4 flex items-center"
                   >
                     <span className="mr-4">
                       {activity.icon as React.ReactNode}

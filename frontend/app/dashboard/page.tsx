@@ -24,7 +24,13 @@ import {
   useDisconnect,
   useActiveWallet,
 } from "thirdweb/react";
-import { BellIcon, UserIcon } from "app/svg";
+import {
+  BellIcon,
+  DocumentIcon,
+  PendingDocumentsIcon,
+  UserIcon,
+  VerifiedDocsIcon,
+} from "app/svg";
 
 interface Document {
   id: number;
@@ -112,6 +118,10 @@ const Dashboard = () => {
   const [selectedDocument, setSelectedDocument] = useState<Document | null>(
     null,
   );
+
+  function gotoActivityPane() {
+    setActiveTab("activity");
+  }
   const [documents, setDocuments] = useState<Document[]>([
     new Document(
       1,
@@ -253,7 +263,6 @@ const Dashboard = () => {
   // TODO:write the light mode equivalent
   // HACK: Downloading will not be implemented yet becuase it has not set to return
   // TODO:deleting docs
-  // TODO: Icons On stats
   // TODO:Resposive design
   return (
     <div className="min-h-screen bg-gray-900 text-white flex flex-col md:flex-row">
@@ -310,9 +319,9 @@ const Dashboard = () => {
         </div>
       </aside>
       <div className="w-screen grid grid-cols-4 grid-rows-8 h-screen">
-        <AvatarTab />
+        <AvatarTab activities={activities} openActivity={gotoActivityPane} />
         {/* Main Content */}
-        <main className="flex-grow p-4 col-start-1 row-start-2 col-end-5  md:p-8 relative">
+        <main className="flex-grow overflow-y-auto -row-end-1 p-4 col-start-1 row-start-2 col-end-5  md:p-8 relative">
           {/* <h2 className="text-3xl md:text-4xl font-black mb-6 md:mb-8 bg-indigo-800 p-4 border-8 border-white inline-block transform -rotate-2"> */}
           {/*   {activeTab.toUpperCase()} */}
           {/* </h2> */}
@@ -463,8 +472,8 @@ const Dashboard = () => {
       </div>
       {/* Upload Dialog */}
       {isUploadDialogOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-          <div className="bg-gray-800 p-6 border-8 border-white max-w-md w-full">
+        <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center">
+          <div className="bg-gray-800 p-6 rounded shadow-lg shadow-black max-w-md w-full">
             <h3 className="text-2xl font-black mb-4">Upload New Document</h3>
             <form onSubmit={handleUpload}>
               <input
@@ -537,37 +546,55 @@ function Stats({ documents }: Idocuments) {
     <div>
       <h3 className="text-2xl font-black mb-4">Quick Stats</h3>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-indigo-700 p-4 rounded-md ">
-          <h4 className="font-bold mb-2">Total Documents</h4>
-          <p className="text-3xl font-black">
-            {documents.length > 0 ? documents.length + "+" : "0"}
-          </p>
+        <div className="bg-[#1f2937] p-8 rounded-md  flex justify-between gap-3 items-center">
+          <div>
+            <h4 className="font-bold mb-2">Total Documents</h4>
+            <p className="text-3xl font-black">
+              {documents.length > 0 ? documents.length + "+" : "0"}
+            </p>
+          </div>
+          <StatIcon children={<DocumentIcon />} color={"cyan"} />
         </div>
-        <div className="bg-green-700 p-4 rounded-md ">
-          <h4 className="font-bold mb-2">Verified Documents</h4>
-          <p className="text-3xl font-black">
-            {documents.filter((doc) => doc.status === "verified").length + "+"}
-          </p>
+        <div className="bg-[#1f2937] p-8 rounded-md  flex justify-between gap-3 items-center">
+          <div>
+            <h4 className="font-bold mb-2">Verified Documents</h4>
+
+            <p className="text-3xl font-black">
+              {documents.filter((doc) => doc.status === "verified").length +
+                "+"}
+            </p>
+          </div>
+          <StatIcon children={<VerifiedDocsIcon />} color={"green"} />
         </div>
-        <div className="bg-yellow-700 p-4 rounded-md ">
-          <h4 className="font-bold mb-2">Pending Documents</h4>
-          <p className="text-3xl font-black">
-            {documents.filter((doc) => doc.status === "pending").length + "+"}
-          </p>
+
+        <div className="bg-[#1f2937] p-8 rounded-md  flex justify-between gap-3 items-center">
+          <div>
+            <h4 className="font-bold mb-2">Pending Documents</h4>
+            <p className="text-3xl font-black">
+              {documents.filter((doc) => doc.status === "pending").length + "+"}
+            </p>
+          </div>
+          <StatIcon children={<PendingDocumentsIcon />} color={"orange"} />
         </div>
       </div>
     </div>
   );
 }
 
-function AvatarTab() {
+function AvatarTab(props) {
   return (
     <div className="bg-[#312e81] gap-20 col-start-1 col-end-5 px-6 h-14 flex justify-between">
       <SearchBar />
       <div className="flex gap-4 items-center">
-        <div>
-          <BellIcon />
-        </div>
+        <button onClick={props.openActivity}>
+          <div className="flex  items-center">
+            <BellIcon />
+            <sup className="bg-[#ef4444] h-0.5 w-0.5 relative -top-3 right-4 text-white rounded-full p-3 flex justify-center items-center text-sm">
+              <p>{props.activities.length}</p>
+            </sup>
+          </div>
+        </button>
+
         <div className="gap-2 text-center flex items-center ">
           <div className="w-15 h-15 rounded-full bg-gray-700 flex items-center justify-center">
             <UserIcon />
@@ -594,4 +621,22 @@ function SearchBar() {
     </>
   );
 }
+
+function StatIcon(props) {
+  let color =
+    props.color == "green"
+      ? "bg-green-300"
+      : props.color == "cyan"
+        ? "bg-cyan-300"
+        : "bg-orange-300";
+  return (
+    <div className="flex">
+      <div className="relative left-12 top-4 z-20">{props.children}</div>
+      <div
+        className={"flex opacity-50 " + color + " w-16 h-16 rounded-full p-3"}
+      ></div>
+    </div>
+  );
+}
+
 export default Dashboard;

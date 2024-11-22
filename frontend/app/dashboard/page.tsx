@@ -242,7 +242,7 @@ const Dashboard = () => {
     setDocuments([...documents, newDoc]);
     setIsUploadDialogOpen(false);
   };
-
+  //TODO: uncomment code of functionality
   /*   const handleShare = () => {
       if (selectedDocument) {
         // In a real application, you would generate a unique link here
@@ -473,7 +473,7 @@ const Dashboard = () => {
       {/* Upload Dialog */}
       {isUploadDialogOpen && (
         <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center">
-          <div className="bg-gray-800 p-6 rounded shadow-lg shadow-black max-w-md w-full">
+          <div className="bg-gray-800 p-6 border-8 border-white max-w-md w-full">
             <h3 className="text-2xl font-black mb-4">Upload New Document</h3>
             <form onSubmit={handleUpload}>
               <input

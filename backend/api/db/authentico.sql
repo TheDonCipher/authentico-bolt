@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Generation Time: Dec 04, 2024 at 03:06 PM
+-- Generation Time: Dec 06, 2024 at 05:02 AM
 -- Server version: 8.0.30
 -- PHP Version: 8.1.10
 
@@ -30,6 +30,7 @@ SET time_zone = "+00:00";
 CREATE TABLE `users` (
   `id` int NOT NULL,
   `name` varchar(255) NOT NULL,
+  `email` varchar(255) NOT NULL,
   `user_password` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
@@ -37,11 +38,15 @@ CREATE TABLE `users` (
 -- Dumping data for table `users`
 --
 
-INSERT INTO `users` (`id`, `name`, `user_password`) VALUES
-(1, 'sonia kim', 'kim9823#'),
-(2, 'travis banda', '13657#'),
-(3, 'joana phiri', 'phiri2827#'),
-(4, 'abdul karim', '103055#');
+INSERT INTO `users` (`id`, `name`, `email`, `user_password`) VALUES
+(1, 'sonia kim', 'soniakim@gmail.com', 'kim9823#'),
+(2, 'travis banda', 'travisbanda@gmail.com', '13657#'),
+(3, 'joana phiri', 'joanaphiri@gmail.com', 'phiri2827#'),
+(4, 'abdul karim', 'abdulkarim@gmail.com', '103055#'),
+(5, 'henry frank', 'frankie@gmail.com', 'frankie265#'),
+(6, 'trevor watson', 'watson67@gmail.com', 'trev7654#'),
+(7, 'lisa banda', 'bandalisa@gmail.com', 'lisa2567#'),
+(8, 'jim curry', 'curry76@gmail.com', 'jimcurry66#');
 
 --
 -- Indexes for dumped tables
@@ -61,7 +66,7 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

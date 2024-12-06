@@ -13,48 +13,49 @@ function error422($message){
     exit();
 }
 
-function storeUser($userInput){
-
+function storeUser($userInput) {
     global $conn;
 
     $name = mysqli_real_escape_string($conn, $userInput['name']);
+    $email = mysqli_real_escape_string($conn, $userInput['email']);
     $password = mysqli_real_escape_string($conn, $userInput['password']);
 
-    if(empty(trim($name))){
-
+    if (empty(trim($name))) {
         return error422('Enter your name');
-
-    }elseif(empty(trim($password))){
-
+    } elseif (empty(trim($email))) {
+        return error422('Enter your email');
+    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        return error422('Enter a valid email address');
+    } elseif (empty(trim($password))) {
         return error422('Enter your password');
+    } else {
         
-    }
-    else
-    {
+        $checkEmailQuery = "SELECT * FROM users WHERE email = '$email' LIMIT 1";
+        $checkEmailResult = mysqli_query($conn, $checkEmailQuery);
 
-        $query = "INSERT INTO users (name, user_password) VALUES ('$name', '$password')";
+        if (mysqli_num_rows($checkEmailResult) > 0) {
+            return error422('Email already exists');
+        }
+
+        $query = "INSERT INTO users (name, email, user_password) VALUES ('$name', '$email', '$password')";
         $result = mysqli_query($conn, $query);
 
-        if($result){
-
+        if ($result) {
             $data = [
-                'status' => 201, 
+                'status' => 201,
                 'message' => 'User Created Successfully',
             ];
             header("HTTP/1.0 201 Created");
             return json_encode($data);
-
-        }else{
+        } else {
             $data = [
-                'status' => 500, 
+                'status' => 500,
                 'message' => 'Internal Server Error',
             ];
             header("HTTP/1.0 500 Internal Server Error");
             return json_encode($data);
         }
     }
-
-
 }
 
 function getUserList(){
@@ -245,6 +246,49 @@ function deleteUser($userParams){
         ];
         header("HTTP/1.0 404 Not found");
         return json_encode($data);
+    }
+}
+
+function loginUser($userInput){
+    global $conn; 
+
+    
+    $name = mysqli_real_escape_string($conn, $userInput['name'] ?? '');
+    $password = mysqli_real_escape_string($conn, $userInput['user_password'] ?? '');
+
+    if (empty(trim($name))) {
+        return json_encode(['status' => 422, 'message' => 'Enter your username']);
+    } elseif (empty(trim($password))) {
+        return json_encode(['status' => 422, 'message' => 'Enter your password']);
+    }
+
+    
+    $query = "SELECT * FROM users WHERE name = '$name' LIMIT 1";
+    $result = mysqli_query($conn, $query);
+
+    if ($result) {
+        if (mysqli_num_rows($result) == 1) {
+            $user = mysqli_fetch_assoc($result);
+
+            
+            if ($password === $user['user_password']) {
+                $data = [
+                    'status' => 200,
+                    'message' => 'Login successful',
+                    'user' => [
+                        'id' => $user['id'],
+                        'name' => $user['name']
+                    ]
+                ];
+                return json_encode($data);
+            } else {
+                return json_encode(['status' => 401, 'message' => 'Invalid credentials']);
+            }
+        } else {
+            return json_encode(['status' => 404, 'message' => 'User not found']);
+        }
+    } else {
+        return json_encode(['status' => 500, 'message' => 'Internal Server Error']);
     }
 }
 

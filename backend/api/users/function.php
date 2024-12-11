@@ -41,9 +41,13 @@ function storeUser($userInput) {
         $result = mysqli_query($conn, $query);
 
         if ($result) {
+            
+            $newUserId = mysqli_insert_id($conn);
+
             $data = [
                 'status' => 201,
                 'message' => 'User Created Successfully',
+                'user_id' => $newUserId
             ];
             header("HTTP/1.0 201 Created");
             return json_encode($data);

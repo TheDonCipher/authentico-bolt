@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Generation Time: Dec 06, 2024 at 05:02 AM
+-- Generation Time: Dec 11, 2024 at 04:18 PM
 -- Server version: 8.0.30
 -- PHP Version: 8.1.10
 
@@ -46,7 +46,8 @@ INSERT INTO `users` (`id`, `name`, `email`, `user_password`) VALUES
 (5, 'henry frank', 'frankie@gmail.com', 'frankie265#'),
 (6, 'trevor watson', 'watson67@gmail.com', 'trev7654#'),
 (7, 'lisa banda', 'bandalisa@gmail.com', 'lisa2567#'),
-(8, 'jim curry', 'curry76@gmail.com', 'jimcurry66#');
+(8, 'jim curry', 'curry76@gmail.com', 'jimcurry66#'),
+(9, 'jason mzati', 'mzatij2@gmail.com', 'j2mzati32#');
 
 --
 -- Indexes for dumped tables
@@ -66,7 +67,7 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

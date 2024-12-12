@@ -275,7 +275,6 @@ const NeubrutalistLanding = () => {
     <div className="min-h-screen bg-[#F0EAD6] text-[#2C3E50] flex flex-col relative overflow-x-hidden">
       {/* Background Pattern */}
       <div
-        className="absolute inset-0 z-0 opacity-5"
         style={{
           backgroundImage: `url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%234A6741' fill-opacity='0.4' fill-rule='evenodd'%3E%3Ccircle cx='3' cy='3' r='3'/%3E%3Ccircle cx='13' cy='13' r='3'/%3E%3C/g%3E%3C/svg%3E")`,
           backgroundSize: "20px 20px",
@@ -316,16 +315,22 @@ const NeubrutalistLanding = () => {
               </p>
             </div>
 
+            {/* <button */}
+            {/*   onClick={() => alert(1)} */}
+            {/*   className="border-black w-28 border-2 p-3 font-bold hover:bg-[#79F7FF] hover:shadow-[2px_2px_0px_rgba(0,0,0,1)] active:bg-[#00E1EF] rounded-md" */}
+            {/* > */}
+            {/*   Pricing */}
+            {/* </button> */}
             <div className="flex justify-center items-center gap-4">
               <button
-                onClick={toogleShow}
                 className="border-black border-2 p-3 bg-[#fef29f] font-bold hover:bg-[#79F7FF] hover:shadow-[2px_2px_0px_rgba(0,0,0,1)] active:bg-[#00E1EF] rounded-md"
+                onClick={toogleShow}
               >
-                Get Started
+                Get Started 🚀
               </button>
-              <button className="border-black w-28 border-2 p-3 font-bold hover:bg-[#79F7FF] hover:shadow-[2px_2px_0px_rgba(0,0,0,1)] active:bg-[#00E1EF] rounded-md">
-                Pricing
-              </button>
+              {/* <button className="border-black w-28 border-2 p-3 font-bold hover:bg-[#79F7FF] hover:shadow-[2px_2px_0px_rgba(0,0,0,1)] active:bg-[#00E1EF] rounded-md"> */}
+              {/*   Pricing */}
+              {/* </button> */}
             </div>
             <div className="sm:flex hidden -my-10 w-screen justify-between">
               <Image width={323} height={323} src={reviewng} alt="users" />
@@ -519,6 +524,7 @@ const NeubrutalistLanding = () => {
                     type="submit"
                     className={`w-full bg-[#4A6741] text-white text-lg font-bold py-3 px-6 rounded-lg border-2 border-[#2C3E50] hover:bg-[#5D8C5D] transition duration-300 ${isLoading ? "opacity-50 cursor-not-allowed" : ""}`}
                     disabled={isLoading}
+                    onClick={() => router.push("/organization-dashboard")}
                   >
                     {isLoading ? "Signing Up..." : "Sign Up"}
                   </button>
@@ -836,15 +842,18 @@ const NavBar = ({ toogleShow, openForm }: INavbar) => {
         </li>
       </div>
       <div className="flex gap-4 items-center ">
-        <button className="outline-black p-3  " onClick={openForm}>
+        <button
+          className="sm:outline-black outline-2 px-2  rounded-md  outline sm:h-auto h-8  text-sm sm:p-3 bg-[#a6fafe] "
+          onClick={openForm}
+        >
           Login
         </button>
-        <button
-          onClick={toogleShow}
-          className="sm:outline-black outline-2 px-2  rounded-md  outline sm:h-auto h-8  text-sm sm:p-3 bg-[#a6fafe] "
-        >
-          Sign Up
-        </button>
+        {/* <button */}
+        {/*   onClick={toogleShow} */}
+        {/*   className="sm:outline-black outline-2 px-2  rounded-md  outline sm:h-auto h-8  text-sm sm:p-3 bg-[#a6fafe] " */}
+        {/* > */}
+        {/*   Sign Up */}
+        {/* </button> */}
         <div className="flex justify-center sm:hidden">
           <HamburgerMenu />
         </div>

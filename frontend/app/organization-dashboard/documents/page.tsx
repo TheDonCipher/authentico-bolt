@@ -122,7 +122,7 @@ const Dashboard = () => {
   function gotoActivityPane() {
     setActiveTab("activity");
   }
-  let defaulDocs = [
+  const [documents, setDocuments] = useState<Document[]>([
     new Document(
       1,
       "Omang - ID",
@@ -147,13 +147,7 @@ const Dashboard = () => {
       "Home Corp",
       "Incomplete information",
     ),
-  ];
-  const [documents, setDocuments] = useState<Document[]>(
-    JSON.parse(localStorage.getItem("documents")) === undefined
-      ? defaulDocs
-      : JSON.parse(localStorage.getItem("documents")),
-  );
-
+  ]);
   let account = localStorage.getItem("account");
   const activeAccount = useActiveAccount();
   const router = useRouter();
@@ -246,7 +240,6 @@ const Dashboard = () => {
       "fuzzy images",
     );
     setDocuments([...documents, newDoc]);
-    localStorage.setItem("documents", JSON.stringify([...documents, newDoc]));
     setIsUploadDialogOpen(false);
   };
   //TODO: uncomment code of functionality
@@ -267,81 +260,25 @@ const Dashboard = () => {
         console.error('No document selected for sharing');
       }
     }; */
-  // TODO:write the light mode equivalent
-  // HACK: Downloading will not be implemented yet becuase it has not set to return
-  // TODO:deleting docs
-  // TODO:Resposive design
+  // TODO:sent-by
   return (
     <div className="min-h-screen bg-gray-900 text-white flex flex-col md:flex-row">
-      {/* Sidebar */}
-      <aside className="w-full md:w-80 bg-indigo-900 p-6  md:border-b-0  flex flex-col h-screen">
-        <h1 className="text-2xl font-black mb-8">AUTHENTICO</h1>
-        {/* User Profile Section */}
-        {/* <div className="mb-8 text-center flex items-center "> */}
-        {/*   <div className="w-20 h-20 rounded-full bg-gray-700 mx-auto mb-2 flex items-center justify-center"> */}
-        {/*     <User size={40} /> */}
-        {/*   </div> */}
-        {/*   <p className="font-bold">{formatAddress(activeAccount)}</p> */}
-        {/* </div> */}
-
-        {/* Navigation */}
-        <nav className="mb-8">
-          <ul className="space-y-2">
-            <li>
-              <button
-                onClick={() => setActiveTab("documents")}
-                className={`w-full text-left p-2 rounded-md ${activeTab === "documents" ? "bg-indigo-700" : "tranparent hover:bg-indigo-800"}`}
-              >
-                <FileText className="inline-block mr-2" /> Documents
-              </button>
-            </li>
-            <li>
-              {/**/}
-              {/* <button */}
-              {/*   onClick={() => setActiveTab("stats")} */}
-              {/*   className={`w-full text-left p-2 rounded-md  ${activeTab === "stats" ? "bg-indigo-700" : "transparent hover:bg-indigo-800"}`} */}
-              {/* > */}
-              {/*   <BarChart2 className="inline-block mr-2" /> Quick Stats */}
-              {/* </button> */}
-            </li>
-            <li>
-              <button
-                onClick={() => setActiveTab("activity")}
-                className={`w-full text-left p-2 rounded-md  ${activeTab === "activity" ? "bg-indigo-700 " : "tranparent hover:bg-indigo-800"}`}
-              >
-                <List className="inline-block mr-2" /> Activity
-              </button>
-            </li>
-          </ul>
-        </nav>
-
-        {/* Sign Out Button */}
-        <div className="mt-auto">
-          <button
-            onClick={handleSignOut}
-            className="block w-full bg-gray-800 text-white p-2 font-black hover:bg-gray-700 transition duration-300 border-4 border-white text-center"
-          >
-            <LogOut className="inline-block mr-2" /> Sign Out
-          </button>
-        </div>
-      </aside>
       <div className="w-screen grid grid-cols-4 grid-rows-8 h-screen">
-        <AvatarTab activities={activities} openActivity={gotoActivityPane} />
-        {/* Main Content */}
-        <main className="flex-grow overflow-y-auto -row-end-1 p-4 col-start-1 row-start-2 col-end-5  md:p-8 relative">
-          {/* <h2 className="text-3xl md:text-4xl font-black mb-6 md:mb-8 bg-indigo-800 p-4 border-8 border-white inline-block transform -rotate-2"> */}
-          {/*   {activeTab.toUpperCase()} */}
-          {/* </h2> */}
-
+        <main className="flex-grow overflow-y-auto -row-end-1 p-4 col-start-1 row-start-1 col-end-5  md:p-8 relative">
           {activeTab === "documents" && (
             <div className="p-4 md:p-6  flex flex-col gap-8">
-              <Stats documents={documents} />
               <div>
-                <h3 className="text-xl md:text-2xl font-black mb-4">
-                  Your Documents
+                <h3 className="text-xl md:text-2xl font-black mb-4 flex justify-between">
+                  <p>All Documents</p>
+                  <button
+                    onClick={() => router.back()}
+                    className="bg-blue-500 text-md text-white px-3 py-1 rounded hover:bg-blue-600 transition flex items-center"
+                  >
+                    <p>Back</p>
+                  </button>
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-                  {documents.map((doc) => (
+                <div className="flex flex-col gap-2 ">
+                  {JSON.parse(localStorage.getItem("documents")).map((doc) => (
                     <div
                       key={doc.id}
                       className="bg-gray-700 p-6 rounded-md flex flex-col transition-all duration-300 hover:shadow-lg hover:scale-105"
@@ -355,7 +292,7 @@ const Dashboard = () => {
                         />
                       </div>
                       <p className="text-sm text-gray-300 mb-2">
-                        {/* Verifying Org: {doc.verifyingOrg} */}
+                        sent by: {localStorage.getItem("name")}
                       </p>
                       <div className="mb-4">
                         <p className="text-sm mb-1">
@@ -395,20 +332,8 @@ const Dashboard = () => {
                             >
                               <Eye size={16} className="mr-2" /> View Reason
                             </button>
-                            <button className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition flex items-center">
-                              <RefreshCw size={16} className="mr-2" /> Re-upload
-                            </button>
                           </>
                         )}
-                        <button
-                          className="bg-gray-500 text-white px-3 py-1 rounded hover:bg-gray-600 transition flex items-center ml-auto"
-                          onClick={() => {
-                            setSelectedDocument(doc);
-                            setIsShareDialogOpen(true);
-                          }}
-                        >
-                          <Share2 size={16} className="mr-2" /> Share
-                        </button>
                       </div>
                     </div>
                   ))}
@@ -469,12 +394,6 @@ const Dashboard = () => {
           )}
 
           {/* Floating Add Document Button */}
-          <button
-            className="fixed bottom-8 right-8 bg-indigo-600 text-white p-4 rounded-full hover:bg-indigo-700 transition shadow-lg border-4 border-white"
-            onClick={() => setIsUploadDialogOpen(true)}
-          >
-            <Plus size={24} />
-          </button>
         </main>
       </div>
       {/* Upload Dialog */}
@@ -526,7 +445,7 @@ const Dashboard = () => {
       )}
 
       {/* Share Dialog */}
-      {isShareDialogOpen && (
+      {false && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
           <div className="bg-gray-800 p-6 border-8 border-white max-w-md w-full">
             <h3 className="text-2xl font-black mb-4">Share Document</h3>

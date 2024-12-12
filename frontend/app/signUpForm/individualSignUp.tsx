@@ -23,11 +23,12 @@ export function PersonalSignUp({
       .then((res) => {
         router.push("/dashboard");
         localStorage.setItem("account", "true");
+        localStorage.setItem("name", formData.get("name").toString());
         console.log(res.json());
-        return res.json();
+        // return res.json();
       })
       .then((json) => {
-        console.log(json);
+        // console.log(json);
       });
   }
 

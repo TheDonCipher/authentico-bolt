@@ -148,17 +148,17 @@ const Dashboard = () => {
       "Incomplete information",
     ),
   ]);
-
+  let account = localStorage.getItem("account");
   const activeAccount = useActiveAccount();
   const router = useRouter();
   const { disconnect } = useDisconnect();
   const wallet = useActiveWallet();
 
   useEffect(() => {
-    if (!activeAccount) {
-      // router.push('/');
+    if (!(account == "true")) {
+      router.push("/");
     }
-  }, [activeAccount, router]);
+  }, []);
 
   useEffect(() => {
     // Generate activities based on documents

@@ -261,7 +261,7 @@ const Dashboard = () => {
       Math.floor(Math.random() * 20) + 80,
       (event.target as any).verifyingOrg.value,
       "fuzzy images",
-      localStorage.getItem("name"),
+      "John Doe",
     );
     setDocuments([...documents, newDoc]);
     setIsUploadDialogOpen(false);

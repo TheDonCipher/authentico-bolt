@@ -10,6 +10,9 @@ COPY package*.json ./
 # Install dependencies
 RUN npm install
 
+# Set Node.js memory limit
+ENV NODE_OPTIONS="--max-old-space-size=4096"
+
 # Copy the rest of the application code
 COPY . .
 

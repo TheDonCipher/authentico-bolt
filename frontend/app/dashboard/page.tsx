@@ -148,17 +148,19 @@ const Dashboard = () => {
       "Incomplete information",
     ),
   ];
-  const [documents, setDocuments] = useState<Document[]>([]);
+  const [documents, setDocuments] = useState<Document[]>(defaulDocs);
+  // const [account, setAccount] = useState<string | null>(null);
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const storedDocuments = localStorage.getItem("documents");
-      if (storedDocuments) {
-        setDocuments(JSON.parse(storedDocuments));
-      } else {
-        setDocuments(defaulDocs);
-      }
-    }
+    // Remove localStorage retrieval logic
+    // if (typeof window !== "undefined") {
+    //   const storedDocuments = localStorage.getItem("documents");
+    //   if (storedDocuments) {
+    //     setDocuments(JSON.parse(storedDocuments));
+    //   } else {
+    //     setDocuments(defaulDocs);
+    //   }
+    // }
   }, []);
 
   let account = localStorage.getItem("account");
@@ -168,13 +170,14 @@ const Dashboard = () => {
   const wallet = useActiveWallet();
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const account = localStorage.getItem("account");
-      // Comment out the redirection to allow access without signing in, for demo purposes
-      // if (!(account == "true")) {
-      //   router.push("/");
-      // }
-    }
+    // Remove localStorage retrieval logic
+    // if (typeof window !== "undefined") {
+    //   const account = localStorage.getItem("account");
+    //   // Comment out the redirection to allow access without signing in, for demo purposes
+    //   // if (!(account == "true")) {
+    //   //   router.push("/");
+    //   // }
+    // }
   }, []);
 
   useEffect(() => {
@@ -257,9 +260,6 @@ const Dashboard = () => {
       "fuzzy images",
     );
     setDocuments([...documents, newDoc]);
-    if (typeof window !== "undefined") {
-      localStorage.setItem("documents", JSON.stringify([...documents, newDoc]));
-    }
     setIsUploadDialogOpen(false);
   };
   //TODO: uncomment code of functionality

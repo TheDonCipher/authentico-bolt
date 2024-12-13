@@ -151,11 +151,13 @@ const Dashboard = () => {
   const [documents, setDocuments] = useState<Document[]>([]);
 
   useEffect(() => {
-    const storedDocuments = localStorage.getItem("documents");
-    if (storedDocuments) {
-      setDocuments(JSON.parse(storedDocuments));
-    } else {
-      setDocuments(defaulDocs);
+    if (typeof window !== "undefined") {
+      const storedDocuments = localStorage.getItem("documents");
+      if (storedDocuments) {
+        setDocuments(JSON.parse(storedDocuments));
+      } else {
+        setDocuments(defaulDocs);
+      }
     }
   }, []);
 
@@ -166,11 +168,13 @@ const Dashboard = () => {
   const wallet = useActiveWallet();
 
   useEffect(() => {
-    const account = localStorage.getItem("account");
-    // Comment out the redirection to allow access without signing in, for demo purposes
-    // if (!(account == "true")) {
-    //   router.push("/");
-    // }
+    if (typeof window !== "undefined") {
+      const account = localStorage.getItem("account");
+      // Comment out the redirection to allow access without signing in, for demo purposes
+      // if (!(account == "true")) {
+      //   router.push("/");
+      // }
+    }
   }, []);
 
   useEffect(() => {
@@ -253,7 +257,9 @@ const Dashboard = () => {
       "fuzzy images",
     );
     setDocuments([...documents, newDoc]);
-    localStorage.setItem("documents", JSON.stringify([...documents, newDoc]));
+    if (typeof window !== "undefined") {
+      localStorage.setItem("documents", JSON.stringify([...documents, newDoc]));
+    }
     setIsUploadDialogOpen(false);
   };
   //TODO: uncomment code of functionality

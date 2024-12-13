@@ -7,12 +7,24 @@ export function Login({ openLogin, closeLogin }: IloginIn) {
   async function submitDetails(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     // Read the form data
-    const form = e.target;
-    const formData: FormData = new FormData(form as HTMLFormElement);
-    const response = fetch().then(() => {
-      router.push("/dashboard");
-      localStorage.setItem("account", "true");
-    });
+    const form = e.target as HTMLFormElement;
+    const formData: FormData = new FormData(form);
+
+    try {
+      const response = await fetch('/api/login', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (response.ok) {
+        router.push("/dashboard");
+        localStorage.setItem("account", "true");
+      } else {
+        console.error('Login failed');
+      }
+    } catch (error) {
+      console.error('Error during login:', error);
+    }
   }
 
   return (

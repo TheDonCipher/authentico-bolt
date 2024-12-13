@@ -163,21 +163,23 @@ const Dashboard = () => {
     // }
   }, []);
 
-  let account = localStorage.getItem("account");
   const activeAccount = useActiveAccount();
   const router = useRouter();
   const { disconnect } = useDisconnect();
   const wallet = useActiveWallet();
 
   useEffect(() => {
-    // Remove localStorage retrieval logic
-    // if (typeof window !== "undefined") {
-    //   const account = localStorage.getItem("account");
-    //   // Comment out the redirection to allow access without signing in, for demo purposes
-    //   // if (!(account == "true")) {
-    //   //   router.push("/");
-    //   // }
-    // }
+    if (typeof window !== "undefined") {
+      let account = localStorage.getItem("account");
+      // Remove localStorage retrieval logic
+      // if (typeof window !== "undefined") {
+      //   const account = localStorage.getItem("account");
+      //   // Comment out the redirection to allow access without signing in, for demo purposes
+      //   // if (!(account == "true")) {
+      //   //   router.push("/");
+      //   // }
+      // }
+    }
   }, []);
 
   useEffect(() => {
@@ -233,7 +235,7 @@ const Dashboard = () => {
   }
   // Function to display account status
   const formatAddress = (activeAccount: any) => {
-    if (activeAccount) {
+    if (typeof window !== "undefined" && activeAccount) {
       return "Connected";
     }
     return "Not connected";
@@ -625,7 +627,9 @@ function AvatarTab(props) {
             <UserIcon />
           </div>
           {/* <p className="font-bold">{formatAddress(activeAccount)}</p> */}
-          <p className="font-bold">{localStorage.getItem("name")}</p>
+          <p className="font-bold">
+            {typeof window !== "undefined" ? localStorage.getItem("name") : ""}
+          </p>
         </div>
       </div>
     </div>

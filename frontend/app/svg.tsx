@@ -1,5 +1,22 @@
 import React from "react";
 
+export function Menu() {
+  return (
+    <svg
+      className="h-8 w-8 text-neutral-500"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+    >
+      <path
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="2"
+        d="M4 6h16M4 12h8m-8 6h16"
+      />
+    </svg>
+  );
+}
 export function BellIcon() {
   return (
     <>

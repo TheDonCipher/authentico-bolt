@@ -1,10 +1,7 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
-export async function GET(
-  request: Request,
-  { params }: { params: { walletAddress: string } }
-) {
-  const walletAddress = params.walletAddress;
+export async function GET(req: NextRequest, { params }: { params: { walletAddress: string } }) {
+  const { walletAddress } = params;
   
   try {
     const response = await fetch(`http://user-service:3003/user/${walletAddress}`);

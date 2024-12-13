@@ -148,11 +148,16 @@ const Dashboard = () => {
       "Incomplete information",
     ),
   ];
-  const [documents, setDocuments] = useState<Document[]>(
-    JSON.parse(localStorage.getItem("documents")) === undefined
-      ? defaulDocs
-      : JSON.parse(localStorage.getItem("documents")),
-  );
+  const [documents, setDocuments] = useState<Document[]>([]);
+
+  useEffect(() => {
+    const storedDocuments = localStorage.getItem("documents");
+    if (storedDocuments) {
+      setDocuments(JSON.parse(storedDocuments));
+    } else {
+      setDocuments(defaulDocs);
+    }
+  }, []);
 
   let account = localStorage.getItem("account");
   const activeAccount = useActiveAccount();
@@ -161,9 +166,11 @@ const Dashboard = () => {
   const wallet = useActiveWallet();
 
   useEffect(() => {
-    if (!(account == "true")) {
-      router.push("/");
-    }
+    const account = localStorage.getItem("account");
+    // Comment out the redirection to allow access without signing in, for demo purposes
+    // if (!(account == "true")) {
+    //   router.push("/");
+    // }
   }, []);
 
   useEffect(() => {
@@ -341,7 +348,7 @@ const Dashboard = () => {
                   Your Documents
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-                  {documents.map((doc) => (
+                  {documents && documents.map((doc) => (
                     <div
                       key={doc.id}
                       className="bg-gray-700 p-6 rounded-md flex flex-col transition-all duration-300 hover:shadow-lg hover:scale-105"
@@ -428,16 +435,13 @@ const Dashboard = () => {
                 <div className="bg-green-700 p-4 border-4 border-white">
                   <h4 className="font-bold mb-2">Verified Documents</h4>
                   <p className="text-3xl font-black">
-                    {
-                      documents.filter((doc) => doc.status === "verified")
-                        .length
-                    }
+                    {documents && documents.filter((doc) => doc.status === "verified").length}
                   </p>
                 </div>
                 <div className="bg-yellow-700 p-4 border-4 border-white">
                   <h4 className="font-bold mb-2">Pending Documents</h4>
                   <p className="text-3xl font-black">
-                    {documents.filter((doc) => doc.status === "pending").length}
+                    {documents && documents.filter((doc) => doc.status === "pending").length}
                   </p>
                 </div>
               </div>
@@ -575,7 +579,7 @@ function Stats({ documents }: Idocuments) {
             <h4 className="font-bold mb-2">Verified Documents</h4>
 
             <p className="text-3xl font-black">
-              {documents.filter((doc) => doc.status === "verified").length +
+              {documents && documents.filter((doc) => doc.status === "verified").length +
                 "+"}
             </p>
           </div>
@@ -586,7 +590,7 @@ function Stats({ documents }: Idocuments) {
           <div>
             <h4 className="font-bold mb-2">Pending Documents</h4>
             <p className="text-3xl font-black">
-              {documents.filter((doc) => doc.status === "pending").length + "+"}
+              {documents && documents.filter((doc) => doc.status === "pending").length + "+"}
             </p>
           </div>
           <StatIcon children={<PendingDocumentsIcon />} color={"orange"} />

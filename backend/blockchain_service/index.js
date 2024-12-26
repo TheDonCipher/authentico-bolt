@@ -105,16 +105,24 @@ app.get("/api/document/:tokenId", async (req, res) => {
 });
 
 // 6. Change Document Status
+// 0- Unverified, 1- Verified, 2- Revoked
 app.post("/api/status", async (req, res) => {
   try {
+    // tokenId, status
     const { tokenId, status } = req.body;
+    // Call changeStatus function
     const tx = await contract.changeStatus(tokenId, status);
+
+    // Wait for the transaction to be mined
     await tx.wait();
+
+    // Send response
     res.json({
       message: "Document status updated successfully",
       txHash: tx.hash,
     });
   } catch (error) {
+    // Send error response
     res.status(500).json({ error: error.message });
   }
 });
@@ -123,6 +131,7 @@ app.post("/api/status", async (req, res) => {
 contract.on(
   "DocumentVerified",
   (tokenId, owner, urlPicture, holderName, status) => {
+    // Log event details
     console.log(
       `Event: DocumentVerified | TokenId: ${tokenId} | Owner: ${owner} | URL: ${urlPicture} | Holder: ${holderName} | Status: ${status}`
     );

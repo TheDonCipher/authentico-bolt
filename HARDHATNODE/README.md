@@ -15,5 +15,6 @@ npx hardhat node
 then
 npx hardhat ignition deploy ./ignition/modules/documentNFT.js --network localhost
 
-then python index.py
+then node index.js
+init web socket on port 667
 ```

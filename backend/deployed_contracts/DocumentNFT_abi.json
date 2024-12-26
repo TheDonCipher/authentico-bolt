@@ -59,6 +59,43 @@
     "inputs": [
       {
         "indexed": true,
+        "internalType": "uint256",
+        "name": "tokenId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "owner",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "urlPicture",
+        "type": "string"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "holderName",
+        "type": "string"
+      },
+      {
+        "indexed": true,
+        "internalType": "enum DocumentNFT.VerificationStatus",
+        "name": "status",
+        "type": "uint8"
+      }
+    ],
+    "name": "DocumentVerified",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
         "internalType": "address",
         "name": "previousOwner",
         "type": "address"
@@ -71,67 +108,6 @@
       }
     ],
     "name": "OwnershipTransferred",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "uint256",
-        "name": "titleDeedNumber",
-        "type": "uint256"
-      },
-      {
-        "indexed": true,
-        "internalType": "uint256",
-        "name": "userId",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "string",
-        "name": "transactionHash",
-        "type": "string"
-      },
-      {
-        "indexed": false,
-        "internalType": "string",
-        "name": "titleDeedName",
-        "type": "string"
-      },
-      {
-        "indexed": false,
-        "internalType": "string",
-        "name": "landCode",
-        "type": "string"
-      },
-      {
-        "indexed": false,
-        "internalType": "string",
-        "name": "ownerNationId",
-        "type": "string"
-      },
-      {
-        "indexed": false,
-        "internalType": "string",
-        "name": "ownerPhoneNumber",
-        "type": "string"
-      },
-      {
-        "indexed": false,
-        "internalType": "string",
-        "name": "landType",
-        "type": "string"
-      },
-      {
-        "indexed": false,
-        "internalType": "string",
-        "name": "landLayoutUrl",
-        "type": "string"
-      }
-    ],
-    "name": "TitleDeedMinted",
     "type": "event"
   },
   {
@@ -202,6 +178,24 @@
         "internalType": "uint256",
         "name": "tokenId",
         "type": "uint256"
+      },
+      {
+        "internalType": "enum DocumentNFT.VerificationStatus",
+        "name": "status",
+        "type": "uint8"
+      }
+    ],
+    "name": "changeStatus",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "tokenId",
+        "type": "uint256"
       }
     ],
     "name": "getApproved",
@@ -219,195 +213,43 @@
     "inputs": [
       {
         "internalType": "uint256",
-        "name": "deedId",
+        "name": "tokenId",
         "type": "uint256"
       }
     ],
-    "name": "getTitleDeedById",
+    "name": "getDocumentDetails",
     "outputs": [
       {
         "components": [
           {
-            "internalType": "uint256",
-            "name": "titleDeedNumber",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "userId",
-            "type": "uint256"
-          },
-          {
             "internalType": "string",
-            "name": "transactionHash",
+            "name": "urlPicture",
             "type": "string"
           },
           {
             "internalType": "string",
-            "name": "titleDeedName",
+            "name": "holderName",
             "type": "string"
           },
           {
             "internalType": "string",
-            "name": "landCode",
+            "name": "nationalID",
             "type": "string"
           },
           {
             "internalType": "string",
-            "name": "ownerNationId",
+            "name": "metadataHash",
             "type": "string"
           },
           {
-            "internalType": "string",
-            "name": "ownerPhoneNumber",
-            "type": "string"
-          },
-          {
-            "internalType": "string",
-            "name": "landType",
-            "type": "string"
-          },
-          {
-            "internalType": "string",
-            "name": "landLayoutUrl",
-            "type": "string"
+            "internalType": "enum DocumentNFT.VerificationStatus",
+            "name": "status",
+            "type": "uint8"
           }
         ],
-        "internalType": "struct LandTitleDeed.TitleDeed",
+        "internalType": "struct DocumentNFT.Document",
         "name": "",
         "type": "tuple"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "string",
-        "name": "landCode",
-        "type": "string"
-      }
-    ],
-    "name": "getTitleDeedByLandCode",
-    "outputs": [
-      {
-        "components": [
-          {
-            "internalType": "uint256",
-            "name": "titleDeedNumber",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "userId",
-            "type": "uint256"
-          },
-          {
-            "internalType": "string",
-            "name": "transactionHash",
-            "type": "string"
-          },
-          {
-            "internalType": "string",
-            "name": "titleDeedName",
-            "type": "string"
-          },
-          {
-            "internalType": "string",
-            "name": "landCode",
-            "type": "string"
-          },
-          {
-            "internalType": "string",
-            "name": "ownerNationId",
-            "type": "string"
-          },
-          {
-            "internalType": "string",
-            "name": "ownerPhoneNumber",
-            "type": "string"
-          },
-          {
-            "internalType": "string",
-            "name": "landType",
-            "type": "string"
-          },
-          {
-            "internalType": "string",
-            "name": "landLayoutUrl",
-            "type": "string"
-          }
-        ],
-        "internalType": "struct LandTitleDeed.TitleDeed",
-        "name": "",
-        "type": "tuple"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "userId",
-        "type": "uint256"
-      }
-    ],
-    "name": "getTitleDeedsByUser",
-    "outputs": [
-      {
-        "components": [
-          {
-            "internalType": "uint256",
-            "name": "titleDeedNumber",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "userId",
-            "type": "uint256"
-          },
-          {
-            "internalType": "string",
-            "name": "transactionHash",
-            "type": "string"
-          },
-          {
-            "internalType": "string",
-            "name": "titleDeedName",
-            "type": "string"
-          },
-          {
-            "internalType": "string",
-            "name": "landCode",
-            "type": "string"
-          },
-          {
-            "internalType": "string",
-            "name": "ownerNationId",
-            "type": "string"
-          },
-          {
-            "internalType": "string",
-            "name": "ownerPhoneNumber",
-            "type": "string"
-          },
-          {
-            "internalType": "string",
-            "name": "landType",
-            "type": "string"
-          },
-          {
-            "internalType": "string",
-            "name": "landLayoutUrl",
-            "type": "string"
-          }
-        ],
-        "internalType": "struct LandTitleDeed.TitleDeed[]",
-        "name": "",
-        "type": "tuple[]"
       }
     ],
     "stateMutability": "view",
@@ -440,47 +282,32 @@
   {
     "inputs": [
       {
-        "internalType": "uint256",
-        "name": "userId",
-        "type": "uint256"
+        "internalType": "address",
+        "name": "to",
+        "type": "address"
       },
       {
         "internalType": "string",
-        "name": "transactionHash",
+        "name": "_documentUrl",
         "type": "string"
       },
       {
         "internalType": "string",
-        "name": "titleDeedName",
+        "name": "_holderName",
         "type": "string"
       },
       {
         "internalType": "string",
-        "name": "landCode",
+        "name": "_nationalID",
         "type": "string"
       },
       {
         "internalType": "string",
-        "name": "ownerNationId",
-        "type": "string"
-      },
-      {
-        "internalType": "string",
-        "name": "ownerPhoneNumber",
-        "type": "string"
-      },
-      {
-        "internalType": "string",
-        "name": "landType",
-        "type": "string"
-      },
-      {
-        "internalType": "string",
-        "name": "landLayoutUrl",
+        "name": "_metadataHash",
         "type": "string"
       }
     ],
-    "name": "mintTitleDeed",
+    "name": "mintDocumentNFT",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -609,6 +436,19 @@
   {
     "inputs": [
       {
+        "internalType": "address",
+        "name": "_newVerifier",
+        "type": "address"
+      }
+    ],
+    "name": "setVerifier",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "bytes4",
         "name": "interfaceId",
         "type": "bytes4"
@@ -689,6 +529,32 @@
       }
     ],
     "name": "transferOwnership",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "verifier",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "tokenId",
+        "type": "uint256"
+      }
+    ],
+    "name": "verifyDocument",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"

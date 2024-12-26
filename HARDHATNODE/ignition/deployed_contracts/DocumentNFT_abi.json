@@ -1,12 +1,6 @@
 [
   {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "_verifier",
-        "type": "address"
-      }
-    ],
+    "inputs": [],
     "stateMutability": "nonpayable",
     "type": "constructor"
   },
@@ -64,10 +58,34 @@
     "anonymous": false,
     "inputs": [
       {
-        "indexed": false,
+        "indexed": true,
         "internalType": "uint256",
         "name": "tokenId",
         "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "owner",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "urlPicture",
+        "type": "string"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "holderName",
+        "type": "string"
+      },
+      {
+        "indexed": true,
+        "internalType": "enum DocumentNFT.VerificationStatus",
+        "name": "status",
+        "type": "uint8"
       }
     ],
     "name": "DocumentVerified",
@@ -160,6 +178,24 @@
         "internalType": "uint256",
         "name": "tokenId",
         "type": "uint256"
+      },
+      {
+        "internalType": "enum DocumentNFT.VerificationStatus",
+        "name": "status",
+        "type": "uint8"
+      }
+    ],
+    "name": "changeStatus",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "tokenId",
+        "type": "uint256"
       }
     ],
     "name": "getApproved",
@@ -187,7 +223,17 @@
         "components": [
           {
             "internalType": "string",
-            "name": "url",
+            "name": "urlPicture",
+            "type": "string"
+          },
+          {
+            "internalType": "string",
+            "name": "holderName",
+            "type": "string"
+          },
+          {
+            "internalType": "string",
+            "name": "nationalID",
             "type": "string"
           },
           {
@@ -196,13 +242,13 @@
             "type": "string"
           },
           {
-            "internalType": "bool",
-            "name": "isVerified",
-            "type": "bool"
+            "internalType": "enum DocumentNFT.VerificationStatus",
+            "name": "status",
+            "type": "uint8"
           }
         ],
         "internalType": "struct DocumentNFT.Document",
-        "name": "document",
+        "name": "",
         "type": "tuple"
       }
     ],
@@ -242,23 +288,27 @@
       },
       {
         "internalType": "string",
-        "name": "documentUrl",
+        "name": "_documentUrl",
         "type": "string"
       },
       {
         "internalType": "string",
-        "name": "metadataHash",
+        "name": "_holderName",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "_nationalID",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "_metadataHash",
         "type": "string"
       }
     ],
     "name": "mintDocumentNFT",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
+    "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   },
@@ -387,7 +437,7 @@
     "inputs": [
       {
         "internalType": "address",
-        "name": "newVerifier",
+        "name": "_newVerifier",
         "type": "address"
       }
     ],
@@ -507,35 +557,6 @@
     "name": "verifyDocument",
     "outputs": [],
     "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "tokenId",
-        "type": "uint256"
-      }
-    ],
-    "name": "viewDocument",
-    "outputs": [
-      {
-        "internalType": "string",
-        "name": "documentUrl",
-        "type": "string"
-      },
-      {
-        "internalType": "string",
-        "name": "metadataHash",
-        "type": "string"
-      },
-      {
-        "internalType": "bool",
-        "name": "isVerified",
-        "type": "bool"
-      }
-    ],
-    "stateMutability": "view",
     "type": "function"
   }
 ]

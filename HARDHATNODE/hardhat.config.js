@@ -1,7 +1,5 @@
 require("@nomicfoundation/hardhat-toolbox");
-
-/** @type import('hardhat/config').HardhatUserConfig */
-require("@nomicfoundation/hardhat-toolbox");
+require("dotenv").config();
 
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
@@ -17,24 +15,43 @@ module.exports = {
         },
       },
       {
-        version: "0.8.24", // Example of another version
+        version: "0.8.24",
         settings: {
-          // Additional settings for 0.7.6
+          optimizer: {
+            enabled: true,
+            runs: 200,
+          },
         },
       },
       {
-        version: "0.6.12", // Example of another version
+        version: "0.6.12",
         settings: {
-          // Additional settings for 0.7.6
+          optimizer: {
+            enabled: true,
+            runs: 200,
+          },
         },
       },
       {
-        version: "0.8.20", // Example of another version
+        version: "0.8.20",
         settings: {
-          // Additional settings for 0.7.6
+          optimizer: {
+            enabled: true,
+            runs: 200,
+          },
         },
       },
-      // Add more versions as needed
     ],
+  },
+  networks: {
+    localhost: {
+      url: "http://127.0.0.1:8545",
+    },
+    sepolia: {
+      url: "wss://sepolia.infura.io/ws/v3/15383749f6b44f8288da149b3df726f8",
+      accounts: [
+        `0x2698e2b8fd205ff4fbbdd5e7271a3bdf087440a4d62fd73aa7cc22449b75bb3c`,
+      ],
+    },
   },
 };

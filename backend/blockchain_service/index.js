@@ -36,7 +36,7 @@ const contract = new ethers.Contract(contractAddress, contractAbi, wallet);
 
 // Express App Setup
 const app = express();
-const PORT = 3000;
+const PORT = 666;
 app.use(express.json());
 
 // API Endpoints

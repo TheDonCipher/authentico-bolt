@@ -1,5 +1,5 @@
 {
-  "name": "deployed_contracts",
+  "name": "blockchain_service",
   "version": "1.0.0",
   "description": "authentico create, authenticate read authenticated data",
   "main": "index.js",

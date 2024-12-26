@@ -24,7 +24,7 @@ async function main() {
   // Step 1: Define output directory and file paths for address and ABI
   const outputDir = path.resolve(
     __dirname,
-    "../../../backend/deployed_contracts"
+    "../../../backend/blockchain_service"
   );
   console.log(chalk.blue("Output directory defined:"), chalk.cyan(outputDir));
   const addressFile = path.join(outputDir, "DocumentNFT_address.json");

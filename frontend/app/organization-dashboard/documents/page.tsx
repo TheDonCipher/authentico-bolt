@@ -38,6 +38,7 @@ interface Document {
   status: string;
   similarity: number;
   verifyingOrg: string;
+  sender: string;
   rejectionReason?: string;
 }
 
@@ -95,12 +96,14 @@ class Document {
   status: string;
   similarity: number;
   Verifyingorg: string;
+  sender: string;
   constructor(
     id: number,
     name: string,
     status: string,
     similarity: number,
     Verifyingorg: string,
+    sender: string,
     rejectionReason: string,
   ) {
     this.id = id;
@@ -108,6 +111,7 @@ class Document {
     this.status = status;
     this.similarity = similarity;
     this.Verifyingorg = Verifyingorg;
+    this.sender = sender;
   }
 }
 
@@ -125,30 +129,38 @@ const Dashboard = () => {
   const [documents, setDocuments] = useState<Document[]>([
     new Document(
       1,
-      "Omang - ID",
-      "verified",
-      85,
-      "Ministry of Nationality, Immigration and Gender Affairs",
-      "Incomplete information",
+      "Bank Statement",
+      "pending",
+      88,
+      "Bank of America",
+      "John Doe",
+      "N/A",
     ),
     new Document(
       2,
-      "Driving License",
-      "pending",
-      92,
-      "Ministry of Transport and Public Works",
-      "Fuzzy image",
+      "Utility Bill",
+      "rejected",
+      70,
+      "City of New York",
+      "Jane Smith",
+      "Unreadable document",
     ),
     new Document(
       3,
-      "Laptop Receipt",
-      "rejected",
-      78,
-      "Home Corp",
-      "Incomplete information",
+      "Passport",
+      "pending",
+      95,
+      "Department of Home Affairs",
+      "Alice Johnson",
+      "N/A",
     ),
   ]);
-  let account = localStorage.getItem("account");
+  const [account, setAccount] = useState<string | null>(null);
+
+  useEffect(() => {
+    const storedAccount = localStorage.getItem("account");
+    setAccount(storedAccount);
+  }, []);
   const activeAccount = useActiveAccount();
   const router = useRouter();
   const { disconnect } = useDisconnect();
@@ -156,9 +168,10 @@ const Dashboard = () => {
 
   useEffect(() => {
     if (!(account == "true")) {
-      router.push("/");
+      // Comment out the redirection to allow access without signing in
+      // router.push("/");
     }
-  }, []);
+  }, [account]);
 
   useEffect(() => {
     // Generate activities based on documents
@@ -208,6 +221,16 @@ const Dashboard = () => {
     setActivities(sortedActivities);
   }, [documents]);
 
+  useEffect(() => {
+    // Remove localStorage retrieval logic
+    // const storedDocuments = localStorage.getItem("documents");
+    // if (storedDocuments) {
+    //   setDocuments(JSON.parse(storedDocuments));
+    // } else {
+    //   localStorage.setItem("documents", JSON.stringify(documents));
+    // }
+  }, []);
+
   if (!activeAccount) {
     // return null;
   }
@@ -238,6 +261,7 @@ const Dashboard = () => {
       Math.floor(Math.random() * 20) + 80,
       (event.target as any).verifyingOrg.value,
       "fuzzy images",
+      "John Doe",
     );
     setDocuments([...documents, newDoc]);
     setIsUploadDialogOpen(false);
@@ -261,6 +285,23 @@ const Dashboard = () => {
       }
     }; */
   // TODO:sent-by
+
+  const handleVerify = (id: number) => {
+    setDocuments((prevDocuments) =>
+      prevDocuments.map((doc) =>
+        doc.id === id ? { ...doc, status: "verified" } : doc
+      )
+    );
+  };
+
+  const handleReject = (id: number, reason: string) => {
+    setDocuments((prevDocuments) =>
+      prevDocuments.map((doc) =>
+        doc.id === id ? { ...doc, status: "rejected", rejectionReason: reason } : doc
+      )
+    );
+  };
+
   return (
     <div className="min-h-screen bg-gray-900 text-white flex flex-col md:flex-row">
       <div className="w-screen grid grid-cols-4 grid-rows-8 h-screen">
@@ -278,7 +319,7 @@ const Dashboard = () => {
                   </button>
                 </h3>
                 <div className="flex flex-col gap-2 ">
-                  {JSON.parse(localStorage.getItem("documents")).map((doc) => (
+                  {documents.map((doc) => (
                     <div
                       key={doc.id}
                       className="bg-gray-700 p-6 rounded-md flex flex-col transition-all duration-300 hover:shadow-lg hover:scale-105"
@@ -292,7 +333,7 @@ const Dashboard = () => {
                         />
                       </div>
                       <p className="text-sm text-gray-300 mb-2">
-                        sent by: {localStorage.getItem("name")}
+                        sent by: {doc.sender}
                       </p>
                       <div className="mb-4">
                         <p className="text-sm mb-1">
@@ -310,10 +351,20 @@ const Dashboard = () => {
                       </div>
                       <div className="flex flex-wrap gap-2 mt-auto">
                         {doc.status === "pending" && (
-                          <button className="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600 transition flex items-center">
-                            <RefreshCw size={16} className="mr-2" /> Check
-                            Status
-                          </button>
+                          <>
+                            <button
+                              className="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600 transition flex items-center"
+                              onClick={() => handleVerify(doc.id)}
+                            >
+                              <Check size={16} className="mr-2" /> Verify
+                            </button>
+                            <button
+                              className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition flex items-center"
+                              onClick={() => handleReject(doc.id, "Reason for rejection")}
+                            >
+                              <X size={16} className="mr-2" /> Reject
+                            </button>
+                          </>
                         )}
                         {doc.status === "verified" && (
                           <button className="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600 transition flex items-center">
@@ -321,18 +372,14 @@ const Dashboard = () => {
                           </button>
                         )}
                         {doc.status === "rejected" && (
-                          <>
-                            <button
-                              className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition flex items-center"
-                              onClick={() =>
-                                alert(
-                                  `Rejection Reason: ${doc.rejectionReason}`,
-                                )
-                              }
-                            >
-                              <Eye size={16} className="mr-2" /> View Reason
-                            </button>
-                          </>
+                          <button
+                            className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition flex items-center"
+                            onClick={() =>
+                              alert(`Rejection Reason: ${doc.rejectionReason}`)
+                            }
+                          >
+                            <Eye size={16} className="mr-2" /> View Reason
+                          </button>
                         )}
                       </div>
                     </div>

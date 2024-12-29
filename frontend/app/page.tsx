@@ -328,9 +328,16 @@ const NeubrutalistLanding = () => {
               >
                 Get Started 🚀
               </button>
-              {/* <button className="border-black w-28 border-2 p-3 font-bold hover:bg-[#79F7FF] hover:shadow-[2px_2px_0px_rgba(0,0,0,1)] active:bg-[#00E1EF] rounded-md"> */}
-              {/*   Pricing */}
-              {/* </button> */}
+              <Link href="/dashboard">
+                <button className="border-black border-2 p-3 font-bold hover:bg-[#79F7FF] hover:shadow-[2px_2px_0px_rgba(0,0,0,1)] active:bg-[#00E1EF] rounded-md">
+                  Individual Dashboard
+                </button>
+              </Link>
+              <Link href="/organization-dashboard">
+                <button className="border-black border-2 p-3 font-bold hover:bg-[#79F7FF] hover:shadow-[2px_2px_0px_rgba(0,0,0,1)] active:bg-[#00E1EF] rounded-md">
+                  Organization Dashboard
+                </button>
+              </Link>
             </div>
             <div className="sm:flex hidden -my-10 w-screen justify-between">
               <Image width={323} height={323} src={reviewng} alt="users" />

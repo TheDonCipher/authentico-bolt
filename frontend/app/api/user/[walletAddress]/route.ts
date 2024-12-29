@@ -1,11 +1,13 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
-export async function GET(
-  request: Request,
-  { params }: { params: { walletAddress: string } }
-) {
-  const walletAddress = params.walletAddress;
-  
+export async function GET(req: NextRequest) {
+  const { searchParams } = new URL(req.url);
+  const walletAddress = searchParams.get('walletAddress');
+
+  if (!walletAddress) {
+    return NextResponse.json({ error: 'walletAddress is required' }, { status: 400 });
+  }
+
   try {
     const response = await fetch(`http://user-service:3003/user/${walletAddress}`);
     

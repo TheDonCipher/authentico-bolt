@@ -1,0 +1,7 @@
+hello here is sample authentico sample document foruploading to ipfs through pinata . to pin the document for future access
+
+you should acces pinata and replace  the required in the .env file 
+  
+  then run again it will upload
+
+  Born To Code Foundation

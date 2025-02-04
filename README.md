@@ -1,6 +1,6 @@
 # Authentico
 
-Authentico is a blockchain-based document verification platform built as a monorepo using Lerna, Next.js, NestJS, and Foundry for smart contract development.
+Authentico is a blockchain-based document verification platform built as a monorepo using Lerna, Next.js, NestJS, and Hardhat for smart contract development.
 
 ## Table of Contents
 

@@ -28,7 +28,7 @@ npm hardhat node
 
 ### Step 3: Compile Solidity code
 
-To compile the smart contract, run:
+To compile the smart contract, run on another terminal:
 
 ```sh
 npx hardhat compile

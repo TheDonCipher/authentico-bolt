@@ -17,6 +17,8 @@ import {
   Search,
   Users,
   Wallet,
+  Share,
+  Share2,
 } from "lucide-react";
 import { ConnectButton, darkTheme, useActiveAccount } from "thirdweb/react";
 import { createWallet, inAppWallet } from "thirdweb/wallets";
@@ -27,6 +29,7 @@ import Image from "next/image";
 import { PersonalSignUp } from "./signUpForm/individualSignUp";
 import { Menu } from "./svg";
 import { Login } from "./login/login";
+import { LayoutDashboard } from "lucide-react";
 
 const wallets = [
   createWallet("io.metamask"),
@@ -68,6 +71,13 @@ const NeubrutalistLanding = () => {
   const [isSigningIn, setIsSigningIn] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [showWalletMessage, setShowWalletMessage] = useState(false);
+
+  const clientId = process.env.NEXT_PUBLIC_THIRDWEB_CLIENT_ID;
+
+  if (!clientId) {
+    console.error("No client ID provided");
+    return <div>Error: No client ID provided</div>;
+  }
 
   function OpenLogin() {
     dispatch({ type: "openLogin" });
@@ -284,69 +294,46 @@ const NeubrutalistLanding = () => {
       <div className="sticky top-0">
         <NavBar toogleShow={toogleShow} openForm={OpenLogin} />
       </div>
-      <main className="w-screen flex flex-col flex-1 ">
+      <main className="w-screen flex flex-col flex-1 pt-16">
         {/* Improved Title Section */}
 
         <div
           id="home"
-          className="bg-[#F0F4F8] p-8 justify-center items-center flex flex-1 flex-col rounded-lg shadow-lg  w-full"
+          className="bg-[#F0F4F8] p-8 flex flex-col items-center justify-center rounded-lg shadow-lg w-full"
         >
-          <div className="flex flex-col gap-2">
-            <div className="flex justify-center flex-col">
-              <h1 className="font-bold text-4xl sm:text-6xl text-center">
-                Transform your document security
+          <div className="flex flex-col gap-6 items-center">
+            <div className="text-center">
+              <h1 className="font-bold text-4xl sm:text-6xl mb-4">
+          Official Document Management 
               </h1>
-              <h1 className="font-bold text-4xl sm:text-6xl text-center">
-                with Authentico
+              <h1 className="font-bold text-4xl sm:text-6xl">
+          with Authentico
               </h1>
             </div>
-            <div className=" justify-center flex items-center ">
-              <p className="text-center sm:flex justify-center hidden  w-1/2">
-                Enhance your security and efficiency with our AI-powered
-                document authentication solution. Our innovative technology
-                leverages machine learning to verify the authenticity of
-                documents in real-time, reducing the risk of fraud and ensuring
-                compliance.
-              </p>
-
-              <p className="text-center sm:hidden md:hidden flex ">
-                Enhance your security and efficiency with our AI-powered
-                document authentication solution.
-              </p>
-            </div>
-
-            {/* <button */}
-            {/*   onClick={() => alert(1)} */}
-            {/*   className="border-black w-28 border-2 p-3 font-bold hover:bg-[#79F7FF] hover:shadow-[2px_2px_0px_rgba(0,0,0,1)] active:bg-[#00E1EF] rounded-md" */}
-            {/* > */}
-            {/*   Pricing */}
-            {/* </button> */}
-            <div className="flex justify-center items-center gap-4">
+            <p className="text-center sm:w-3/4 lg:w-1/2 text-lg sm:text-xl">
+              Welcome to Authentico, your trusted partner in storing and sharing your official documentation. Our cutting-edge AI and blockchain technology offers the highest level of accuracy and efficiency in verifying the authenticity of your documents. Experience peace of mind with our real-time fraud detection and compliance assurance.
+            </p>
+            <div className="flex flex-wrap justify-center gap-4 mt-6">
               <button
-                className="border-black border-2 p-3 bg-[#fef29f] font-bold hover:bg-[#79F7FF] hover:shadow-[2px_2px_0px_rgba(0,0,0,1)] active:bg-[#00E1EF] rounded-md"
-                onClick={toogleShow}
+          className="border-black border-2 p-3 bg-[#fef29f] font-bold hover:bg-[#79F7FF] hover:shadow-[2px_2px_0px_rgba(0,0,0,1)] active:bg-[#00E1EF] rounded-md"
+          onClick={toogleShow}
               >
-                Get Started 🚀
+          Get Started 🚀
               </button>
               <Link href="/dashboard">
-                <button className="border-black border-2 p-3 font-bold hover:bg-[#79F7FF] hover:shadow-[2px_2px_0px_rgba(0,0,0,1)] active:bg-[#00E1EF] rounded-md">
-                  Individual Dashboard
+                <button className="border-black border-2 p-3 font-bold hover:bg-[#79F7FF] hover:shadow-[2px_2px_0px_rgba(0,0,0,1)] active:bg-[#00E1EF] rounded-md bg-yellow-200">
+                  Individual Dashboard (Demo)
                 </button>
               </Link>
               <Link href="/organization-dashboard">
-                <button className="border-black border-2 p-3 font-bold hover:bg-[#79F7FF] hover:shadow-[2px_2px_0px_rgba(0,0,0,1)] active:bg-[#00E1EF] rounded-md">
-                  Organization Dashboard
+                <button className="border-black border-2 p-3 font-bold hover:bg-[#79F7FF] hover:shadow-[2px_2px_0px_rgba(0,0,0,1)] active:bg-[#00E1EF] rounded-md bg-yellow-200">
+                  Organization Dashboard (Demo)
                 </button>
               </Link>
             </div>
-            <div className="sm:flex hidden -my-10 w-screen justify-between">
+            <div className="flex justify-between w-full mt-10 hidden sm:flex">
               <Image width={323} height={323} src={reviewng} alt="users" />
-              <Image
-                width={323}
-                height={323}
-                src={sittingreading}
-                alt="users"
-              />
+              <Image width={323} height={323} src={sittingreading} alt="users" />
             </div>
           </div>
         </div>
@@ -563,17 +550,17 @@ const NeubrutalistLanding = () => {
             <ProcessStep
               number={1}
               title="Upload"
-              description="Securely upload your documents to our platform."
+              description="Upload any official documents to our platform"
             />
             <ProcessStep
               number={2}
               title="Verify"
-              description="We verify the authenticity of your documents using blockchain technology."
+              description="Document Issuers verify the authenticity of your documents"
             />
             <ProcessStep
               number={3}
               title="Access"
-              description="Access your verified documents anytime, anywhere."
+              description="Access and Share your verified documents anytime, anywhere and with anyone."
             />
           </div>
         </section>
@@ -581,26 +568,26 @@ const NeubrutalistLanding = () => {
         {/* Features section */}
         <section id="features" className="mb-20 p-8">
           <h3 className="text-3xl font-black mb-8 text-center">Features</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <FeatureCard
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <FeatureCard
               icon={<Upload size={48} />}
               title="Secure Upload and Verify"
-              description="Upload and verify your documents with confidence using our blockchain-powered system."
+              description="Secure uploads with AI screening and blockchain verification"
               color="bg-[#4A6741]"
-            />
-            <FeatureCard
-              icon={<Database size={48} />}
+              />
+              <FeatureCard
+              icon={<LayoutDashboard size={48} />}
               title="Intuitive Dashboard"
               description="Manage all your documents effortlessly with our user-friendly dashboard."
               color="bg-[#5D8C5D]"
-            />
-            <FeatureCard
-              icon={<Search size={48} />}
-              title="Advanced Document Lookup"
-              description="Find and access your verified documents quickly with our powerful search functionality."
-              color="bg-[#4A6741]"
-            />
-          </div>
+              />
+              <FeatureCard
+              icon={<Share2 size={48} />}
+              title="Document Sharing"
+              description="Easily share your verified documents with others securely."
+              color="bg-[#5D8C5D]"
+              />
+            </div>
         </section>
 
         {/* For Who section */}
@@ -686,7 +673,7 @@ const NeubrutalistLanding = () => {
             </div>
           </div>
           <div className="mt-8 text-center">
-            <p>&copy; 2023 Authentico. All rights reserved.</p>
+            <p>&copy; 2025 Authentico. All rights reserved.</p>
           </div>
         </div>
       </footer>
@@ -818,15 +805,14 @@ interface INavbar {
   openForm: any;
 }
 const NavBar = ({ toogleShow, openForm }: INavbar) => {
-  //FIX: make the tab sticky
   return (
-    <nav className="flex justify-evenly sticky top-0 z-40 bg-[#ede8d3] p-4 rounded gap-2 list-none  border-4 border-b-black">
+    <nav className="flex justify-evenly fixed top-0 z-60 bg-[#ede8d3] p-4 rounded gap-2 list-none border-4 border-b-black w-full">
       <div className="flex justify-center items-center">
         <li className="flex justify-center items-center">
           <button className="font-bold text-2xl">Authentico</button>
         </li>
       </div>
-      <div className="hidden md:flex gap-7 w-1/2 items-center font-bold  list-none justify-evenly">
+      <div className="hidden md:flex gap-7 w-1/2 items-center font-bold list-none justify-evenly">
         <li>
           <a href="#home">
             <button>Home</button>
@@ -848,19 +834,13 @@ const NavBar = ({ toogleShow, openForm }: INavbar) => {
           </a>
         </li>
       </div>
-      <div className="flex gap-4 items-center ">
+      <div className="flex gap-4 items-center">
         <button
-          className="sm:outline-black outline-2 px-2  rounded-md  outline sm:h-auto h-8  text-sm sm:p-3 bg-[#a6fafe] "
+          className="sm:outline-black outline-2 px-10 py-2 rounded-md outline sm:h-auto h-8 text-sm sm:p-3 bg-[#4A6741] text-white font-bold hover:bg-[#5D8C5D] transition duration-300"
           onClick={openForm}
         >
           Login
         </button>
-        {/* <button */}
-        {/*   onClick={toogleShow} */}
-        {/*   className="sm:outline-black outline-2 px-2  rounded-md  outline sm:h-auto h-8  text-sm sm:p-3 bg-[#a6fafe] " */}
-        {/* > */}
-        {/*   Sign Up */}
-        {/* </button> */}
         <div className="flex justify-center sm:hidden">
           <HamburgerMenu />
         </div>

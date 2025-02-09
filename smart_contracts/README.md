@@ -24,6 +24,10 @@ To start the hardhat local node with two accounts, run:
 
 ```sh
 npm hardhat node
+
+
+![hardhat node running](./assets/screenshots/node.png)
+
 ```
 
 ### Step 3: Compile Solidity code
@@ -40,6 +44,9 @@ To deploy the smart contract into the local blockchain node, run:
 
 ```sh
 npx hardhat ignition deploy ./ignition/modules/DocumentNFT.ts --network localhost
+
+
+![compile and local deploying](./assets/screenshots/deploy.png)
 ```
 
 Find deployments:

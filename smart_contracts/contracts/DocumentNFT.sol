@@ -11,7 +11,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 /**
- * @title DocumentNFT
+ * @title Authentico NFT contract
  * @dev A contract for minting and verifying document NFTs.
  */
 contract DocumentNFT is ERC721, Ownable, ReentrancyGuard {
@@ -27,8 +27,7 @@ contract DocumentNFT is ERC721, Ownable, ReentrancyGuard {
 
     struct Document {
         string urlPicture;
-        string holderName;
-        string nationalID;
+        address publicAddress;
         string metadataHash;
         VerificationStatus status;
     }
@@ -40,11 +39,11 @@ contract DocumentNFT is ERC721, Ownable, ReentrancyGuard {
         uint256 indexed tokenId,
         address indexed owner,
         string urlPicture,
-        string holderName,
+        address publicAddress,
         VerificationStatus indexed status
     );
 
-    constructor() ERC721("DocumentNFT", "DOCNFT") Ownable(msg.sender) {
+    constructor() ERC721("AuthenticalNFT", "AUT") Ownable(msg.sender) {
         verifier = msg.sender;
     }
 
@@ -60,8 +59,7 @@ contract DocumentNFT is ERC721, Ownable, ReentrancyGuard {
     function mintDocumentNFT(
         address to,
         string memory _documentUrl,
-        string memory _holderName,
-        string memory _nationalID,
+        address _publicAddress,
         string memory _metadataHash
     ) external onlyOwner nonReentrant {
         uint256 tokenId = _tokenIds++;
@@ -69,8 +67,7 @@ contract DocumentNFT is ERC721, Ownable, ReentrancyGuard {
 
         documents[tokenId] = Document({
             urlPicture: _documentUrl,
-            holderName: _holderName,
-            nationalID: _nationalID,
+            publicAddress: _publicAddress,
             metadataHash: _metadataHash,
             status: VerificationStatus.New
         });
@@ -79,7 +76,7 @@ contract DocumentNFT is ERC721, Ownable, ReentrancyGuard {
             tokenId,
             to,
             _documentUrl,
-            _holderName,
+            _publicAddress,
             VerificationStatus.New
         );
     }
@@ -106,7 +103,7 @@ contract DocumentNFT is ERC721, Ownable, ReentrancyGuard {
             tokenId,
             ownerOf(tokenId),
             documents[tokenId].urlPicture,
-            documents[tokenId].holderName,
+            documents[tokenId].publicAddress,
             VerificationStatus.Verified
         );
     }
@@ -137,8 +134,9 @@ contract DocumentNFT is ERC721, Ownable, ReentrancyGuard {
             tokenId,
             ownerOf(tokenId),
             documents[tokenId].urlPicture,
-            documents[tokenId].holderName,
+            documents[tokenId].publicAddress,
             status
         );
     }
+    // end of contract
 }

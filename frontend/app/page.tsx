@@ -292,49 +292,41 @@ const NeubrutalistLanding = () => {
 
         <div
           id="home"
-          className="bg-[#F0F4F8] p-8 justify-center items-center flex flex-1 flex-col rounded-lg shadow-lg  w-full"
+          className="bg-[#F0F4F8] p-8 flex flex-col items-center justify-center rounded-lg shadow-lg w-full"
         >
-          <div className="flex flex-col gap-2">
-            <div className="flex justify-center flex-col">
-              <h1 className="font-bold text-4xl sm:text-6xl text-center">
-                Transform your official document security
+          <div className="flex flex-col gap-6 items-center">
+            <div className="text-center">
+              <h1 className="font-bold text-4xl sm:text-6xl mb-4">
+          Official Document Management 
               </h1>
-              <h1 className="font-bold text-4xl sm:text-6xl text-center">
-                with Authentico
+              <h1 className="font-bold text-4xl sm:text-6xl">
+          with Authentico
               </h1>
             </div>
-            <div className=" justify-center flex items-center ">
-                <p className="text-center sm:flex justify-center hidden w-1/2">
-                Welcome to Authentico, your trusted partner in document security and authentication. Our cutting-edge AI technology ensures the highest level of accuracy and efficiency in verifying the authenticity of your documents. Experience peace of mind with our real-time fraud detection and compliance assurance.
-                </p>
-            </div>
-
-            <div className="flex justify-center items-center gap-4">
+            <p className="text-center sm:w-3/4 lg:w-1/2 text-lg sm:text-xl">
+              Welcome to Authentico, your trusted partner in storing and sharing your official documentation. Our cutting-edge AI and blockchain technology offers the highest level of accuracy and efficiency in verifying the authenticity of your documents. Experience peace of mind with our real-time fraud detection and compliance assurance.
+            </p>
+            <div className="flex flex-wrap justify-center gap-4 mt-6">
               <button
-                className="border-black border-2 p-3 bg-[#fef29f] font-bold hover:bg-[#79F7FF] hover:shadow-[2px_2px_0px_rgba(0,0,0,1)] active:bg-[#00E1EF] rounded-md"
-                onClick={toogleShow}
+          className="border-black border-2 p-3 bg-[#fef29f] font-bold hover:bg-[#79F7FF] hover:shadow-[2px_2px_0px_rgba(0,0,0,1)] active:bg-[#00E1EF] rounded-md"
+          onClick={toogleShow}
               >
-                Get Started 🚀
+          Get Started 🚀
               </button>
               <Link href="/dashboard">
-                <button className="border-black border-2 p-3 font-bold hover:bg-[#79F7FF] hover:shadow-[2px_2px_0px_rgba(0,0,0,1)] active:bg-[#00E1EF] rounded-md">
-                  Individual Dashboard
+                <button className="border-black border-2 p-3 font-bold hover:bg-[#79F7FF] hover:shadow-[2px_2px_0px_rgba(0,0,0,1)] active:bg-[#00E1EF] rounded-md bg-yellow-200">
+                  Individual Dashboard (Demo)
                 </button>
               </Link>
               <Link href="/organization-dashboard">
-                <button className="border-black border-2 p-3 font-bold hover:bg-[#79F7FF] hover:shadow-[2px_2px_0px_rgba(0,0,0,1)] active:bg-[#00E1EF] rounded-md">
-                  Organization Dashboard
+                <button className="border-black border-2 p-3 font-bold hover:bg-[#79F7FF] hover:shadow-[2px_2px_0px_rgba(0,0,0,1)] active:bg-[#00E1EF] rounded-md bg-yellow-200">
+                  Organization Dashboard (Demo)
                 </button>
               </Link>
             </div>
-            <div className="sm:flex hidden -my-10 w-screen justify-between">
+            <div className="flex justify-between w-full mt-10 hidden sm:flex">
               <Image width={323} height={323} src={reviewng} alt="users" />
-              <Image
-                width={323}
-                height={323}
-                src={sittingreading}
-                alt="users"
-              />
+              <Image width={323} height={323} src={sittingreading} alt="users" />
             </div>
           </div>
         </div>
@@ -837,7 +829,7 @@ const NavBar = ({ toogleShow, openForm }: INavbar) => {
       </div>
       <div className="flex gap-4 items-center">
         <button
-          className="sm:outline-black outline-2 px-4 py-2 rounded-md outline sm:h-auto h-8 text-sm sm:p-3 bg-[#4A6741] text-white font-bold hover:bg-[#5D8C5D] transition duration-300"
+          className="sm:outline-black outline-2 px-10 py-2 rounded-md outline sm:h-auto h-8 text-sm sm:p-3 bg-[#4A6741] text-white font-bold hover:bg-[#5D8C5D] transition duration-300"
           onClick={openForm}
         >
           Login

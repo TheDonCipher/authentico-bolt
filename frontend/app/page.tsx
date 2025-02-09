@@ -284,7 +284,7 @@ const NeubrutalistLanding = () => {
       <div className="sticky top-0">
         <NavBar toogleShow={toogleShow} openForm={OpenLogin} />
       </div>
-      <main className="w-screen flex flex-col flex-1 ">
+      <main className="w-screen flex flex-col flex-1 pt-16">
         {/* Improved Title Section */}
 
         <div
@@ -686,7 +686,7 @@ const NeubrutalistLanding = () => {
             </div>
           </div>
           <div className="mt-8 text-center">
-            <p>&copy; 2023 Authentico. All rights reserved.</p>
+            <p>&copy; 2025 Authentico. All rights reserved.</p>
           </div>
         </div>
       </footer>
@@ -818,15 +818,14 @@ interface INavbar {
   openForm: any;
 }
 const NavBar = ({ toogleShow, openForm }: INavbar) => {
-  //FIX: make the tab sticky
   return (
-    <nav className="flex justify-evenly sticky top-0 z-40 bg-[#ede8d3] p-4 rounded gap-2 list-none  border-4 border-b-black">
+    <nav className="flex justify-evenly fixed top-0 z-50 bg-[#ede8d3] p-4 rounded gap-2 list-none border-4 border-b-black w-full">
       <div className="flex justify-center items-center">
         <li className="flex justify-center items-center">
           <button className="font-bold text-2xl">Authentico</button>
         </li>
       </div>
-      <div className="hidden md:flex gap-7 w-1/2 items-center font-bold  list-none justify-evenly">
+      <div className="hidden md:flex gap-7 w-1/2 items-center font-bold list-none justify-evenly">
         <li>
           <a href="#home">
             <button>Home</button>
@@ -848,19 +847,13 @@ const NavBar = ({ toogleShow, openForm }: INavbar) => {
           </a>
         </li>
       </div>
-      <div className="flex gap-4 items-center ">
+      <div className="flex gap-4 items-center">
         <button
-          className="sm:outline-black outline-2 px-2  rounded-md  outline sm:h-auto h-8  text-sm sm:p-3 bg-[#a6fafe] "
+          className="sm:outline-black outline-2 px-2 rounded-md outline sm:h-auto h-8 text-sm sm:p-3 bg-[#a6fafe]"
           onClick={openForm}
         >
           Login
         </button>
-        {/* <button */}
-        {/*   onClick={toogleShow} */}
-        {/*   className="sm:outline-black outline-2 px-2  rounded-md  outline sm:h-auto h-8  text-sm sm:p-3 bg-[#a6fafe] " */}
-        {/* > */}
-        {/*   Sign Up */}
-        {/* </button> */}
         <div className="flex justify-center sm:hidden">
           <HamburgerMenu />
         </div>

@@ -72,6 +72,13 @@ const NeubrutalistLanding = () => {
   const [authError, setAuthError] = useState<string | null>(null);
   const [showWalletMessage, setShowWalletMessage] = useState(false);
 
+  const clientId = process.env.NEXT_PUBLIC_THIRDWEB_CLIENT_ID;
+
+  if (!clientId) {
+    console.error("No client ID provided");
+    return <div>Error: No client ID provided</div>;
+  }
+
   function OpenLogin() {
     dispatch({ type: "openLogin" });
   }

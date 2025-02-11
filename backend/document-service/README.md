@@ -28,11 +28,17 @@ This is a Node.js-based document management system that allows users to upload f
 Create a .env file in the root directory and configure your Pinata API credentials:
 
 PINATA_API_KEY=your_api_key
+
 PINATA_SECRET_API_KEY=your_secret_key
+
 PORT=3000
+
 DB_HOST=localhost
+
 DB_USER=root
+
 DB_PASSWORD=
+
 DB_NAME=document_service
 
 ## Database Setup

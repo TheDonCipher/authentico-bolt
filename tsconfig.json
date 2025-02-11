@@ -9,5 +9,5 @@
     "resolveJsonModule": true
   },
   "exclude": ["node_modules"],
-  "include": ["frontend/**/*", "backend/**/*"]
+  "include": ["frontend/**/*", "backend/**/*", "smart_contracts/index.js"]
 }

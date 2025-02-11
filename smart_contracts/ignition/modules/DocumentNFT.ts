@@ -6,7 +6,7 @@ import * as fs from "fs";
 import * as path from "path";
 import { ethers } from "hardhat";
 
-const isLocalDev = false; // Set to true for local deployment
+const isLocalDev = true; // Set to true for local deployment
 
 const LOCAL_RPC_URL = process.env.LOCAL_RPC_URL;
 const SEPOLIA_RPC_URL = process.env.SEPOLIA_RPC_URL;

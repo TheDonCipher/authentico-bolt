@@ -2,12 +2,13 @@
   "name": "hardhat-project",
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^5.0.0",
-    "hardhat": "^2.22.17"
+    "hardhat": "2.22.17"
   },
   "dependencies": {
     "@openzeppelin/contracts": "^5.1.0",
-    "dotenv": "^16.4.7",
-    "express": "^4.21.2",
-    "fs": "^0.0.1-security"
+    "dotenv": "16.4.7",
+    "express": "4.21.2",
+    "fs": "0.0.1-security",
+    "nodemon": "^3.1.9"
   }
 }

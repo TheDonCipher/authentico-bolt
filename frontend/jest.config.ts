@@ -24,7 +24,7 @@ const config: Config = {
   transformIgnorePatterns: [
     '/node_modules/(?!@passwordless-id/webauthn|thirdweb)',
   ],
-  testPathIgnorePatterns: ['<rootDir>/.next/', '<rootDir>/node_modules/'],
+  testPathIgnorePatterns: ['<rootDir>/.next/', '<rootDir>/node_modules/', '<rootDir>/cypress/'],
   extensionsToTreatAsEsm: ['.ts', '.tsx'],
 };
 

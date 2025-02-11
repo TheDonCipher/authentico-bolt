@@ -1,120 +1,73 @@
-/* eslint-disable */
 'use client';
-
 import React from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
-import { FileText, Users, Settings, LogOut } from 'lucide-react';
-import { useActiveAccount, useDisconnect, useActiveWallet } from "thirdweb/react";
+import SidebarNavigation from './components/SidebarNavigation';
+import DocumentTable from './components/DocumentTable';
 
 const OrganizationDashboard = () => {
-  const router = useRouter();
-  const activeAccount = useActiveAccount();
-  const { disconnect } = useDisconnect();
-  const wallet = useActiveWallet();
-
-  const handleSignOut = async () => {
-    if (wallet) {
-      await disconnect(wallet);
-      router.push('/');
-    }
+  const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    console.log('Search input value:', event.target.value);
   };
 
+  // Sample documents; integrate real data as needed
+  const documents = [
+    {
+      id: 1,
+      name: 'Passport',
+      status: 'verified',
+      createdAt: '3/14/22, 10:00 AM',
+      updatedAt: '3/14/22, 10:15 AM',
+    },
+    {
+      id: 2,
+      name: "Driver's License",
+      status: 'pending',
+      createdAt: '3/14/22, 10:00 AM',
+      updatedAt: '3/14/22, 10:15 AM',
+    },
+  ];
+
   return (
-    <div className="min-h-screen bg-[#F0EAD6] text-[#2C3E50] flex flex-col relative">
-      {/* Background Pattern */}
-      <div className="absolute inset-0 z-0 opacity-5" style={{
-        backgroundImage: `url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%234A6741' fill-opacity='0.4' fill-rule='evenodd'%3E%3Ccircle cx='3' cy='3' r='3'/%3E%3Ccircle cx='13' cy='13' r='3'/%3E%3C/g%3E%3C/svg%3E")`,
-        backgroundSize: '20px 20px'
-      }}></div>
+    <div className="relative flex min-h-screen bg-[#F5F7F2]">
+      <SidebarNavigation />
+      <main className="flex-1 p-8">
+        <div className="max-w-7xl mx-auto">
+          <h1 className="text-5xl font-black mb-8 border-b-4 border-[#556B2F] pb-4 text-[#2F4F4F]">
+            Organization Dashboard
+          </h1>
 
-      {/* Content */}
-      <div className="relative z-10">
-        {/* Header */}
-        <motion.header 
-          initial={{ y: -100 }}
-          animate={{ y: 0 }}
-          transition={{ type: "spring", stiffness: 73 }}
-          className="bg-[#5784c2] p-4 sticky top-0 z-20 border-b-8 border-[#2C3E50]"
-        >
-          <div className="container mx-auto flex justify-between items-center">
-            <h1 className="text-3xl font-black text-white">Organization Dashboard</h1>
-            <nav>
-              <ul className="flex space-x-4 items-center">
-                <li>
-                  <Link href="/" className="hover:bg-[#5D8C5D] transition duration-300 p-2 border-4 border-white text-white font-bold">
-                    Home
-                  </Link>
-                </li>
-                <li>
-                  <button 
-                    onClick={handleSignOut}
-                    className="bg-red-600 text-white font-bold py-2 px-4 border-4 border-white hover:bg-red-700 transition duration-300"
-                  >
-                    <LogOut className="inline-block mr-2" /> Sign Out
-                  </button>
-                </li>
-              </ul>
-            </nav>
-          </div>
-        </motion.header>
+          <section className="mb-12">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="bg-[#E8EDE1] p-6 border-4 border-[#556B2F] shadow-brutal">
+                <h3 className="font-bold text-xl mb-2 text-[#2F4F4F]">
+                  Total Documents
+                </h3>
+                <p className="text-4xl font-black text-[#556B2F]">24</p>
+              </div>
+              <div className="bg-[#E8EDE1] p-6 border-4 border-[#556B2F] shadow-brutal">
+                <h3 className="font-bold text-xl mb-2 text-[#2F4F4F]">
+                  Verified
+                </h3>
+                <p className="text-4xl font-black text-[#698B69]">18</p>
+              </div>
+              <div className="bg-[#E8EDE1] p-6 border-4 border-[#556B2F] shadow-brutal">
+                <h3 className="font-bold text-xl mb-2 text-[#2F4F4F]">
+                  Pending
+                </h3>
+                <p className="text-4xl font-black text-[#8B7355]">6</p>
+              </div>
+            </div>
+          </section>
 
-        {/* Main Content */}
-        <main className="flex-grow container mx-auto px-4 py-12">
-          <h2 className="text-4xl font-black mb-8">Welcome to the Organization Dashboard</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <DashboardCard 
-              icon={<FileText size={48} />}
-              title="Documents"
-              description="Manage and verify documents"
-              link="/organization-dashboard/documents"
-            />
-            <DashboardCard 
-              icon={<Users size={48} />}
-              title="Users"
-              description="Manage organization users"
-              link="/organization-dashboard/users"
-            />
-            <DashboardCard 
-              icon={<Settings size={48} />}
-              title="Settings"
-              description="Organization settings"
-              link="/organization-dashboard/settings"
-            />
-          </div>
-        </main>
-
-        {/* Footer */}
-        <footer className="bg-[#4A6741] text-white p-8 border-t-8 border-[#2C3E50]">
-          <div className="container mx-auto text-center">
-            <p>&copy; 2024 Authentico. All rights reserved.</p>
-          </div>
-        </footer>
-      </div>
+          <section className="bg-[#E8EDE1] border-4 border-[#556B2F] p-6 shadow-brutal">
+            <h2 className="text-3xl font-black mb-6 text-[#2F4F4F]">
+              Recent Documents
+            </h2>
+            <DocumentTable documents={documents} />
+          </section>
+        </div>
+      </main>
     </div>
   );
 };
-
-interface DashboardCardProps {
-  icon: React.ReactNode;
-  title: string;
-  description: string;
-  link: string;
-}
-
-const DashboardCard: React.FC<DashboardCardProps> = ({ icon, title, description, link }) => (
-  <motion.div 
-    className="bg-[#E5DCC3] p-6 border-8 border-[#2C3E50] flex flex-col items-center text-center"
-    whileHover={{ scale: 1.05 }}
-  >
-    <div className="text-[#4A6741] mb-4">{icon}</div>
-    <h3 className="text-xl font-black mb-2">{title}</h3>
-    <p className="font-bold mb-4">{description}</p>
-    <Link href={link} className="bg-[#4A6741] text-white text-xl font-bold py-2 px-4 border-4 border-[#2C3E50] hover:bg-[#5D8C5D] transition duration-300">
-      Go to {title}
-    </Link>
-  </motion.div>
-);
 
 export default OrganizationDashboard;

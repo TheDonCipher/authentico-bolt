@@ -6,8 +6,21 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "moduleResolution": "node",
+    "allowJs": true,
+    "jsx": "preserve",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["frontend/*"]
+    }
   },
   "exclude": ["node_modules"],
-  "include": ["frontend/**/*", "backend/**/*", "smart_contracts/index.js"]
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    "frontend/**/*",
+    "backend/**/*",
+    "smart_contracts/index.js"
+  ]
 }

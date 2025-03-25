@@ -15,13 +15,12 @@ export const DocumentCard = ({ doc, onShare, onAction }: DocumentCardProps) => (
     </div>
 
     <div className="mb-4">
-      <div className="w-full bg-gray-200 h-3 border-2 border-black">
-        <div
-          className="bg-[#D2E3C2] h-full border-r-2 border-black"
-          style={{ width: `${doc.similarity}%` }}
-        />
+
+      <div className="flex items-center gap-1">
+
+        <p>{doc.verifyingOrg.slice(0, 5)}... {doc.verifyingOrg.slice(-3)}</p>
       </div>
-      <p className="text-right mt-1 font-bold">{doc.similarity}% Match</p>
+
     </div>
 
     <div className="flex flex-wrap gap-2 mt-4">

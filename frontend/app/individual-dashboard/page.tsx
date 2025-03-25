@@ -1,5 +1,11 @@
 'use client';
 
+declare global {
+  interface Window {
+    ethereum: any;
+  }
+}
+
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
@@ -15,6 +21,11 @@ import {
   useDisconnect,
   useActiveWallet,
 } from 'thirdweb/react';
+
+import { useSendTransaction } from 'thirdweb/react';
+import { getContract, prepareContractCall } from 'thirdweb';
+import { sepolia, localhost } from 'thirdweb/chains';
+
 import { Document } from '../models/Document';
 import type { Activity } from '../types/dashboard';
 import { DocumentCard } from '../components/dashboard/DocumentCard';
@@ -23,50 +34,200 @@ import { SearchBar } from '../components/dashboard/SearchBar';
 import { NotificationBell } from '../components/dashboard/NotificationBell';
 import { ProfileCard } from '../components/dashboard/ProfileCard';
 import { Stats } from '../components/dashboard/Stats';
+import axios from 'axios';
+import { client } from '../client';
+import AuthenticoContractAbi from 'public/contractsData/AuthenticoContract.json';
+import AuthenticoContractAddress from 'public/contractsData/AuthenticoContract-address.json';
+
+import { ethers } from 'ethers';
 
 const IndividualDashboard = () => {
   const [activeTab, setActiveTab] = useState('documents');
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
-  const [selectedDocument, setSelectedDocument] = useState<Document | null>(
-    null
-  );
-
+  const [uploadingStatus, setUploadingStatus] = useState('Upload');
+  const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
+  const [documents, setDocuments] = useState<Document[]>([]);
+  const [docName, setDocName] = useState('');
+  const [documentType, setDocumentType] = useState('');
+  const [account, setAccount] = useState(null);
+  const [provider, setProvider] = useState(null);
+  const [signer, setSigner] = useState(null);
+  const [file, setFile] = useState(null);
+  const [verifyingOrg, setVerifyingOrg] = useState('');
+  const [applying, setApplying] = useState(false);
+  const [error, setError] = useState(null);
+  const baseUrl = 'http://localhost:666';
+  const [IPFSHash, setIPFSHash] = useState('');
+  const [authentcoContract, setAuthentcoContract] = useState(null);
   function gotoActivityPane() {
     setActiveTab('activity');
   }
-  let defaulDocs = [
-    new Document(
-      1,
-      'Omang - ID',
-      'verified',
-      85,
-      'Ministry of Nationality, Immigration and Gender Affairs',
-      'Incomplete information'
-    ),
-    new Document(
-      2,
-      'Driving License',
-      'pending',
-      92,
-      'Ministry of Transport and Public Works',
-      'Fuzzy image'
-    ),
-    new Document(
-      3,
-      'Laptop Receipt',
-      'rejected',
-      78,
-      'Home Corp',
-      'Incomplete information'
-    ),
-  ];
-  const [documents, setDocuments] = useState<Document[]>(defaulDocs);
+  const wallet = useActiveWallet();
 
-  const activeAccount = useActiveAccount();
   const router = useRouter();
   const { disconnect } = useDisconnect();
-  const wallet = useActiveWallet();
+
+  useEffect(() => {
+    const connectWallet = async () => {
+      if (window.ethereum) {
+        try {
+          console.log('------window.ethereum-----', window.ethereum);
+          await window.ethereum.enable();
+
+          const provider = new ethers.providers.Web3Provider(window.ethereum);
+          console.log('------provider-----', provider);
+          await provider.send('eth_requestAccounts', []);
+          const signer = provider.getSigner();
+          console.log('------signer-----', signer);
+          const account = await signer.getAddress();
+          console.log('------account-----', account);
+
+          setProvider(provider);
+          setSigner(signer);
+          setAccount(account);
+
+          const AuthenticoContract = new ethers.Contract(
+            AuthenticoContractAddress.address,
+            AuthenticoContractAbi.abi,
+            signer
+          );
+          setAuthentcoContract(AuthenticoContract);
+
+          const name = await AuthenticoContract.name();
+          console.log('name', name);
+          const symbol = await AuthenticoContract.symbol();
+          console.log('symbol', symbol);
+
+          console.log('---fetching network details----');
+          const network = await provider.getNetwork();
+          if (!network.ensAddress) {
+            console.warn('Network does not support ENS');
+          }
+
+          console.log('=-----start fetching documents=-----');
+          const fetchedDocs = [];
+          for (let i = 0; i < 2; i++) {
+            const documentID = await AuthenticoContract.getDocumentDetails(i);
+            console.log('document number   ', i);
+            console.log('documentID document url', documentID.documentType);
+            console.log('documentID document metadataHash', documentID.metadataHash);
+            console.log('documentID document  publicAddress', documentID.publicAddress);
+            console.log('documentID document status', documentID.status);
+            console.log('documentID document    urlPicture', documentID.urlPicture);
+            console.log('documentID document    urlPicture', documentID.verifier);
+
+            fetchedDocs.push(
+              new Document(
+                i + 1,
+                documentID.documentType,
+                documentID.status,
+                85,
+                documentID.verifier,
+                'Incomplete information'
+              )
+            );
+          }
+          setDocuments(fetchedDocs);
+          console.log('=-----stop fetching documents=-----');
+        } catch (error) {
+          console.error(error);
+        }
+      } else {
+        alert('MetaMask is not installed. Please install it to use this feature.');
+      }
+    };
+
+    if (!signer) {
+      connectWallet();
+    } else {
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const signer = provider.getSigner();
+      setProvider(provider);
+      setSigner(signer);
+    }
+  }, [provider]);
+
+  const handleFileChange = (e) => {
+    setUploadingStatus('Uploading File ...');
+    const selectedFile = e.target.files[0];
+    setFile(selectedFile);
+    setUploadingStatus('Upload');
+  };
+
+  const handleDocNameChange = (e) => {
+    setUploadingStatus('Updating...');
+    setDocName(e.target.value.toString());
+    setUploadingStatus('Upload');
+  };
+
+  const handleVerOrgChange = (e) => {
+    setUploadingStatus('Updating...');
+    setVerifyingOrg(e.target.value);
+    setUploadingStatus('Upload');
+  };
+
+  const handleUpload = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setUploadingStatus('Uploading ...');
+
+    const formData = new FormData();
+    formData.append('userWalletAddress', account);
+    formData.append('documentHolderName', docName);
+    formData.append('document_type', verifyingOrg);
+    formData.append('document_file', file);
+
+    try {
+      const response = await axios.post(`${baseUrl}/upload/`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      const ipfsHash = response.data.IpfsHash;
+      setIPFSHash(ipfsHash);
+      setUploadingStatus('Minting...');
+      const contract = new ethers.Contract(
+        AuthenticoContractAddress.address,
+        AuthenticoContractAbi.abi,
+        signer
+      );
+
+      const tx = await contract.mintDocumentNFT(
+        ipfsHash,
+        verifyingOrg,
+        docName,
+        docName
+      );
+
+      await tx.wait();
+
+      const newDoc = new Document(
+        documents.length + 1,
+        docName,
+        'pending',
+        Math.floor(Math.random() * 20) + 80,
+        verifyingOrg,
+        ipfsHash,
+        IPFSHash
+      );
+
+      setDocuments([...documents, newDoc]);
+      setIsUploadDialogOpen(false);
+      setUploadingStatus('Upload');
+    } catch (e) {
+      console.log(e);
+      setError(e);
+      setUploadingStatus('Upload');
+    }
+  };
+
+  const handleSignOut = async () => {
+    if (signer) {
+      await disconnect(signer);
+      router.push('/');
+    }
+  };
 
   useEffect(() => {
     // Generate activities based on documents
@@ -116,51 +277,6 @@ const IndividualDashboard = () => {
     setActivities(sortedActivities);
   }, [documents]);
 
-  const handleSignOut = async () => {
-    if (wallet) {
-      await disconnect(wallet);
-      router.push('/');
-    }
-  };
-
-  const handleUpload = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const target = event.target as typeof event.target & {
-      docName: { value: string };
-    };
-    const newDoc = new Document(
-      documents.length + 1,
-      target.docName.value,
-      'pending',
-      Math.floor(Math.random() * 20) + 80,
-      (event.target as any).verifyingOrg.value,
-      'fuzzy images'
-    );
-    setDocuments([...documents, newDoc]);
-    setIsUploadDialogOpen(false);
-  };
-  //TODO: uncomment code of functionality
-  /*   const handleShare = () => {
-      if (selectedDocument) {
-        // In a real application, you would generate a unique link here
-        const shareLink = `https://authentico.com/share/${selectedDocument?.id}`;
-        navigator.clipboard.writeText(shareLink)
-          .then(() => {
-            alert('Share link copied to clipboard!');
-            setIsShareDialogOpen(false);
-          })
-          .catch((err) => {
-            console.error('Failed to copy to clipboard:', err);
-            alert('Failed to copy share link. Please try again.');
-          });
-      } else {
-        console.error('No document selected for sharing');
-      }
-    }; */
-  // TODO:write the light mode equivalent
-  // HACK: Downloading will not be implemented yet becuase it has not set to return
-  // TODO:deleting docs
-  // TODO:Responsive design
   return (
     <div className="min-h-screen bg-[#F5F7F2] text-[#2F4F4F] flex flex-col md:flex-row font-archivo">
       {/* Sidebar - now becomes a bottom nav on mobile */}
@@ -175,13 +291,11 @@ const IndividualDashboard = () => {
             <li className="w-full">
               <button
                 onClick={() => setActiveTab('documents')}
-                className={`w-full text-center md:text-left p-2 md:p-3 border-2 md:border-4 border-[#556B2F] font-bold text-sm md:text-base ${
-                  activeTab === 'documents'
-                    ? 'bg-[#D2E3C8] shadow-[2px_2px_0px_0px_rgba(85,107,47,1)] md:shadow-[4px_4px_0px_0px_rgba(85,107,47,1)]'
-                    : 'bg-white hover:bg-[#D2E3C8] hover:shadow-[2px_2px_0px_0px_rgba(85,107,47,1)] md:hover:shadow-[4px_4px_0px_0px_rgba(85,107,47,1)]'
-                }`}
+                className={`w-full text-center md:text-left p-2 md:p-3 border-2 md:border-4 border-[#556B2F] font-bold text-sm md:text-base ${activeTab === 'documents'
+                  ? 'bg-[#D2E3C8] shadow-[2px_2px_0px_0px_rgba(85,107,47,1)] md:shadow-[4px_4px_0px_0px_rgba(85,107,47,1)]'
+                  : 'bg-white hover:bg-[#D2E3C8] hover:shadow-[2px_2px_0px_0px_rgba(85,107,47,1)] md:hover:shadow-[4px_4px_0px_0px_rgba(85,107,47,1)]'
+                  }`}
               >
-
                 <span className="hidden md:inline">Documents</span>
               </button>
             </li>
@@ -207,10 +321,7 @@ const IndividualDashboard = () => {
           <div className="max-w-7xl mx-auto px-4 md:px-8 py-4 md:h-20 flex flex-col md:flex-row gap-4 md:gap-0 md:items-center justify-between">
             <SearchBar />
             <div className="flex items-center gap-4 md:gap-6">
-              <NotificationBell
-                count={activities.length}
-                onClick={gotoActivityPane}
-              />
+              <NotificationBell count={activities.length} onClick={gotoActivityPane} />
               <ProfileCard />
             </div>
           </div>
@@ -222,9 +333,7 @@ const IndividualDashboard = () => {
             <div className="max-w-7xl mx-auto space-y-6 md:space-y-8">
               <Stats documents={documents} />
               <div>
-                <h3 className="text-lg md:text-2xl font-archivo font-bold mb-4">
-                  Your Documents
-                </h3>
+                <h3 className="text-lg md:text-2xl font-archivo font-bold mb-4">Your Documents</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                   {documents &&
                     documents.map((doc) => (
@@ -271,6 +380,7 @@ const IndividualDashboard = () => {
               <input
                 type="text"
                 name="docName"
+                onChange={handleDocNameChange}
                 placeholder="Document Name"
                 className="w-full p-2 mb-4 bg-stone-100 border border-stone-300 text-stone-800 rounded-md"
                 required
@@ -280,12 +390,14 @@ const IndividualDashboard = () => {
                 type="file"
                 name="Document"
                 placeholder="Document"
+                onChange={handleFileChange}
                 className="w-full p-2 mb-4 bg-gray-700 border-4 border-white text-white"
                 required
               />
               <input
                 type="text"
                 name="verifyingOrg"
+                onChange={handleVerOrgChange}
                 placeholder="Verifying Organization"
                 className="w-full p-2 mb-4 bg-gray-700 border-4 border-white text-white"
                 required
@@ -302,7 +414,7 @@ const IndividualDashboard = () => {
                   type="submit"
                   className="bg-[#698B69] text-white px-4 py-2 rounded hover:bg-[#8B7355] transition"
                 >
-                  Upload
+                  {uploadingStatus}
                 </button>
               </div>
             </form>
@@ -314,12 +426,8 @@ const IndividualDashboard = () => {
       {isShareDialogOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
           <div className="bg-[#F0EAD6] p-6 rounded-lg shadow-xl max-w-md w-full border-2 border-[#2C3E50]">
-            <h3 className="text-2xl font-bold mb-4 text-[#2C3E50]">
-              Share Document
-            </h3>
-            <p className="mb-4">
-              Are you sure you want to share this document?
-            </p>
+            <h3 className="text-2xl font-bold mb-4 text-[#2C3E50]">Share Document</h3>
+            <p className="mb-4">Are you sure you want to share this document?</p>
             <div className="flex justify-end">
               <button
                 onClick={() => setIsShareDialogOpen(false)}

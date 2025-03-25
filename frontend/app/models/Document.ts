@@ -5,6 +5,8 @@ export class Document {
     public status: string,
     public similarity: number,
     public verifyingOrg: string,
-    public rejectionReason: string
-  ) {}
+    public rejectionReason: string,
+    public ipfsHash: string,
+
+  ) { }
 }

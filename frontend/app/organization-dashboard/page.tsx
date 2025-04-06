@@ -142,19 +142,19 @@ const OrganizationDashboard = () => {
                 <h3 className="font-bold text-xl mb-2 text-[#2F4F4F]">
                   Total Documents
                 </h3>
-                <p className="text-4xl font-black text-[#556B2F]">24</p>
+                <p className="text-4xl font-black text-[#556B2F]">2</p>
               </div>
               <div className="bg-[#E8EDE1] p-6 border-4 border-[#556B2F] shadow-brutal">
                 <h3 className="font-bold text-xl mb-2 text-[#2F4F4F]">
                   Verified
                 </h3>
-                <p className="text-4xl font-black text-[#698B69]">18</p>
+                <p className="text-4xl font-black text-[#698B69]">1</p>
               </div>
               <div className="bg-[#E8EDE1] p-6 border-4 border-[#556B2F] shadow-brutal">
                 <h3 className="font-bold text-xl mb-2 text-[#2F4F4F]">
                   Pending
                 </h3>
-                <p className="text-4xl font-black text-[#8B7355]">6</p>
+                <p className="text-4xl font-black text-[#8B7355]">1</p>
               </div>
             </div>
           </section>

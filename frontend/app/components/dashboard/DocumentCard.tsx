@@ -18,24 +18,34 @@ export const DocumentCard = ({ doc, onShare, onAction }: DocumentCardProps) => (
 
       <div className="flex items-center gap-1">
 
-        <p>{doc.verifier.slice(0, 5)}... {doc.verifier.slice(-3)}</p>
+        <p> {doc.verifier.slice(0, 5)}... {doc.verifier.slice(-3)}</p>
+
       </div>
 
     </div>
 
     <div className="flex flex-wrap gap-2 mt-4">
       <button
+        type='button'
         className="bg-[#D2E3C8] px-4 py-2 border-2 border-black hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all font-bold"
         onClick={() => onAction(doc)}
       >
         {doc.status === 'pending' && 'Check Status'}
         {doc.status === 'verified' && 'Download'}
         {doc.status === 'rejected' && 'View Reason'}
+        {doc.status == '0' ? "Pending" : "Verified"}
       </button>
 
       <button
+        type='button'
         className="bg-white px-4 py-2 border-2 border-black hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all font-bold ml-auto"
-        onClick={() => onShare(doc)}
+        onClick={() => {
+          const gatewayUrl = `https://pink-capitalist-rook-863.mypinata.cloud/ipfs/${doc.urlPicture}`;
+          const fallbackUrl = `https://ipfs.io/ipfs/${doc.urlPicture}`;
+          window.open(fallbackUrl, '_blank').onerror = () => {
+            window.open(fallbackUrl, '_blank');
+          };
+        }}
       >
         Share
       </button>

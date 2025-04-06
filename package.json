@@ -38,10 +38,12 @@
     "@next/font": "^14.2.15",
     "axios": "^1.8.3",
     "babel-jest": "^29.7.0",
+    "client-only": "^0.0.1",
     "ethers": "5.7.2",
     "pinata": "^2.2.0",
     "react-cookie": "^8.0.1",
     "react-cookies": "^0.1.1",
+    "server-only": "^0.0.1",
     "util": "^0.12.5"
   }
 }

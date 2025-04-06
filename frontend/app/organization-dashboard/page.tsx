@@ -20,13 +20,12 @@ const OrganizationDashboard = () => {
     console.log('Search input value:', event.target.value);
   };
   const [documents, setDocuments] = useState([]);
-  const [docName, setDocName] = useState('');
-  const [documentType, setDocumentType] = useState('');
+
   const [account, setAccount] = useState(null);
   const [provider, setProvider] = useState(null);
   const [signer, setSigner] = useState(null);
-  const [file, setFile] = useState(null);
-  const [verifyingOrg, setVerifyingOrg] = useState('');
+
+
 
 
   useEffect(() => {
@@ -109,23 +108,7 @@ const OrganizationDashboard = () => {
     }
   }, [provider]);
 
-  // // Sample documents; integrate real data as needed
-  // const documents = [
-  //   {
-  //     id: 1,
-  //     name: 'Passport',
-  //     status: 'verified',
-  //     createdAt: '3/14/22, 10:00 AM',
-  //     updatedAt: '3/14/22, 10:15 AM',
-  //   },
-  //   {
-  //     id: 2,
-  //     name: "Driver's License",
-  //     status: 'pending',
-  //     createdAt: '3/14/22, 10:00 AM',
-  //     updatedAt: '3/14/22, 10:15 AM',
-  //   },
-  // ];
+
 
   return (
     <div className="relative flex min-h-screen bg-[#F5F7F2]">

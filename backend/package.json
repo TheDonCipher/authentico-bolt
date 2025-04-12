@@ -6,6 +6,7 @@
     "express-fileupload": "^1.5.1",
     "multer": "^1.4.5-lts.1",
     "nodemon": "^3.1.9",
-    "pinata-web3": "^0.5.4"
+    "pinata-web3": "^0.5.4",
+    "firebase": "8.10.0"
   }
 }

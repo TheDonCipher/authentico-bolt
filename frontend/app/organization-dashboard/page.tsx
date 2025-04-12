@@ -82,7 +82,13 @@ const OrganizationDashboard = () => {
               console.log('documentID document status', documentID.status);
               console.log('documentID document    urlPicture', documentID.urlPicture);
               console.log('documentID document    urlPicture', documentID.verifier);
-              fetchedDocs.push(documentID);
+              console.log('regulator accpunt ', account);
+
+              if (documentID.verifier == account) {
+                console.log('documentID document    urlPicture', documentID.verifier);
+                fetchedDocs.push(documentID);
+
+              }
             }
             setDocuments([...documents, ...fetchedDocs]);
 

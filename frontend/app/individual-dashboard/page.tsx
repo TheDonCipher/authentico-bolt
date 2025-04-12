@@ -123,8 +123,13 @@ const IndividualDashboard = () => {
                 documentID.documentType || 'Unknown', // Provide default if missing
                 documentID.verifier
               );
+              if (documentID.verifier == account) {
+                console.log('documentID document    urlPicture', documentID.verifier);
+                fetchedDocs.push(mappedDoc);
 
-              fetchedDocs.push(mappedDoc);
+              }
+
+
 
             }
             setDocuments(fetchedDocs);

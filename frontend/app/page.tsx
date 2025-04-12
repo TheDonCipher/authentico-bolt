@@ -99,11 +99,14 @@ const NeubrutalistLanding = () => {
       if (account) {
         try {
           const response = await handleWalletAuth(account, router);
+          console.log('====Auth response:', response);
+          console.log(response.user);
+
           if (response.error) {
             showToast('error', response.error);
           } else if (response.user) {
             router.push(
-              response.user.userType === 'organization'
+              response.user.role === '0'
                 ? '/organization-dashboard'
                 : '/individual-dashboard' // Updated path
             );

@@ -4,9 +4,14 @@
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "express-fileupload": "^1.5.1",
+    "firebase": "^8.10.0",
+    "firebase-admin": "^13.2.0",
     "multer": "^1.4.5-lts.1",
     "nodemon": "^3.1.9",
-    "pinata-web3": "^0.5.4",
-    "firebase": "8.10.0"
+    "pinata-web3": "^0.5.4"
+  },
+  "scripts": {
+    "start:dev": "nodemon index.js",
+    "start": "node index.js"
   }
 }

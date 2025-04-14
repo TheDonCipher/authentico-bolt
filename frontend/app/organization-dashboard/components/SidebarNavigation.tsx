@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Icons } from '../../components/Icons';
+import { SignOutButton } from '../../components/auth/SignOutButton';
 
 export default function SidebarNavigation() {
   const pathname = usePathname();
@@ -67,12 +68,7 @@ export default function SidebarNavigation() {
       </nav>
 
       <div className="pt-6 pb-4">
-        <Link href="/signout">
-          <div className="flex items-center gap-3 px-4 py-3 bg-[#2A2A2A] text-white border-2 border-black shadow-brutal hover:-translate-y-0.5 transition-all">
-            <Icons.SignOut />
-            <p className="font-bold text-base tracking-tight">Sign Out</p>
-          </div>
-        </Link>
+        <SignOutButton className="flex items-center gap-3 px-4 py-3 bg-[#2A2A2A] text-white border-2 border-black shadow-brutal hover:-translate-y-0.5 transition-all w-full" />
       </div>
     </div>
   );

@@ -1,84 +1,81 @@
 const { PinataSDK } = require("pinata-web3");
-const fs = require("fs");
 const express = require("express");
 const fileUpload = require("express-fileupload");
 const cors = require("cors");
 require("dotenv").config();
 
-const User = require("./config");
+const { User } = require("./config");
+const authRoutes = require("./authRoutes");
+const { verifyToken } = require("./authMiddleware");
 const app = express();
+
+// Middleware
 app.use(express.json());
 app.use(cors());
+app.use(fileUpload());
 
+// Pinata setup
 const pinata = new PinataSDK({
   pinataJwt: process.env.PINATA_JWT,
   pinataGateway: process.env.GATEWAY_URL,
 });
 
-const port = process.env.PORT || 666;
+// Routes
+app.use("/api/auth", authRoutes);
 
-app.use(fileUpload());
+// Public routes
 app.get("/", async (req, res) => {
   const snapshot = await User.get();
   const list = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
   res.send(list);
 });
 
-app.post("/upload", async (req, res) => {
+// Protected routes
+app.post("/upload", verifyToken, async (req, res) => {
   try {
-    if (!req.files || Object.keys(req.files).length === 0) {
+    if (!req.files?.document_file) {
       return res.status(400).send("No files were uploaded.");
     }
-    console.log("========---- start debuing ----  req.files :", req.files);
-    console.log("env files are --:", process.env.PINATA_JWT);
-    console.log("env file for gateway url  key --:", process.env.GATEWAY_URL);
 
-    const uploadedFile = req.files.document_file; // Match the file input name from the frontend
+    const uploadedFile = req.files.document_file;
     const blob = new Blob([uploadedFile.data]);
     const file = new File([blob], uploadedFile.name, {
       type: uploadedFile.mimetype,
     });
-    console.log("pinata tokens :", pinata);
-    console.log("uploaded file :", uploadedFile);
-    console.log("blob :", blob);
 
     const upload = await pinata.upload.file(file);
     res.json({ IpfsHash: upload.IpfsHash });
-    console.log("File uploaded successfully", upload.IpfsHash);
-    console.log("File uploaded successfully", upload.PinSize);
-    console.log("File uploaded successfully", upload.Timestamp);
-    console.log("File uploaded successfully", upload.PinStatus);
-    console.log("File uploaded successfully", upload.PinataMetadata);
   } catch (error) {
-    console.log(error);
-    res.status(500).send("An error occurred while uploading the file.");
+    console.error(error);
+    res.status(500).send("Upload failed");
   }
 });
 
-app.post("/create", async (req, res) => {
+app.post("/create", verifyToken, async (req, res) => {
   const data = req.body;
-  console.log("data from frontend :", data);
   await User.add({ data });
-  console.log("data added to firebase :", data);
-  console.log("data added to firebase :", User);
-  console.log("data added to firebase :", User.doc(data.id));
   res.send({ msg: "User Added" });
 });
 
-app.post("/update", async (req, res) => {
+app.post("/update", verifyToken, async (req, res) => {
   const id = req.body.id;
   delete req.body.id;
-  const data = req.body;
-  await User.doc(id).update(data);
+  await User.doc(id).update(req.body);
   res.send({ msg: "Updated" });
 });
 
-app.post("/delete", async (req, res) => {
-  const id = req.body.id;
-  await User.doc(id).delete();
+app.post("/delete", verifyToken, async (req, res) => {
+  await User.doc(req.body.id).delete();
   res.send({ msg: "Deleted" });
 });
 
+// Error handling
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).send('Something broke!');
+});
+
+const port = process.env.PORT || 666;
 app.listen(port, () => {
   console.log(`Server is listening on port ${port}`);
 });

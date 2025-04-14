@@ -28,7 +28,7 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# local env files
+#local env files
 .env*.local
 .env
 
@@ -39,5 +39,5 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-
-/backend/blockchain_service
+#firebase
+firebase-service-account.json

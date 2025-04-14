@@ -33,16 +33,6 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ toogleShow }) => (
         >
           Get Started 🚀
         </button>
-        <Link href="/individual-dashboard">
-          <button className="border-black border-2 p-3 font-bold hover:bg-[#79F7FF] hover:shadow-[2px_2px_0px_rgba(0,0,0,1)] active:bg-[#00E1EF] rounded-md bg-yellow-200">
-            Individual Dashboard (Demo)
-          </button>
-        </Link>
-        <Link href="/organization-dashboard">
-          <button className="border-black border-2 p-3 font-bold hover:bg-[#79F7FF] hover:shadow-[2px_2px_0px_rgba(0,0,0,1)] active:bg-[#00E1EF] rounded-md bg-yellow-200">
-            Organization Dashboard (Demo)
-          </button>
-        </Link>
       </div>
       <div className="flex justify-between w-full mt-10 hidden sm:flex">
         <Image width={323} height={323} src={reviewng} alt="users" />

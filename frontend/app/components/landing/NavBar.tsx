@@ -8,7 +8,7 @@ interface INavbar {
 
 export const NavBar = ({ toogleShow, openForm }: INavbar) => {
   return (
-    <nav className="flex justify-evenly fixed top-0 z-60 bg-[#F5F0E6] p-4 rounded gap-2 list-none border-4 border-b-black w-full">
+    <nav className="flex justify-evenly fixed top-0 z-50 bg-[#F5F0E6] p-4 rounded gap-2 list-none border-4 border-b-black w-full shadow-md">
       <div className="flex justify-center items-center">
         <li className="flex justify-center items-center">
           <button className="font-bold text-2xl bg-[#E6D5AC] px-4 py-2 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[3px] hover:translate-y-[3px] hover:shadow-none transition-all">

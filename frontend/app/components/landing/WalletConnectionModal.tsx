@@ -1,34 +1,32 @@
-import React, { useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { ConnectButton, darkTheme } from 'thirdweb/react';
+import { ConnectButton, darkTheme, useActiveAccount } from 'thirdweb/react';
 import { Wallet, X } from 'lucide-react';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '../../contexts/AuthContext';
+import { Toast } from '../ui/Toast';
+import { AnimatePresence } from 'framer-motion';
 
 interface WalletConnectionModalProps {
   client: any;
   wallets: any[];
-  account: any;
-  isSigningIn: boolean;
-  handleSignIn: () => void;
-  showIndSignUp: boolean;
-  showOrgSignUp: boolean;
-  setShowIndSignUp: (show: boolean) => void;
-  setShowOrgSignUp: (show: boolean) => void;
   toogleShow: () => void;
 }
 
 export const WalletConnectionModal: React.FC<WalletConnectionModalProps> = ({
   client,
   wallets,
-  account,
-  isSigningIn,
-  handleSignIn,
-  showIndSignUp,
-  showOrgSignUp,
-  setShowIndSignUp,
-  setShowOrgSignUp,
   toogleShow,
 }) => {
+  const [isLoading, setIsLoading] = useState(false);
+  const [toastMessage, setToastMessage] = useState<{
+    type: 'success' | 'error';
+    message: string;
+  } | null>(null);
+  const account = useActiveAccount();
+  const { login } = useAuth();
+  const router = useRouter();
   const handleClose = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -41,20 +39,59 @@ export const WalletConnectionModal: React.FC<WalletConnectionModalProps> = ({
     }
   };
 
-  const handleIndividualSignUp = () => {
-    toogleShow(); // First close modal
-    setTimeout(() => {
-      setShowIndSignUp(true); // Then show form after modal animation
-      setShowOrgSignUp(false);
-    }, 300);
+  const handleSignIn = async () => {
+    if (!account) {
+      setToastMessage({
+        type: 'error',
+        message: 'Please connect your wallet first',
+      });
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      const result = await login(account.address);
+
+      if (result.success) {
+        setToastMessage({
+          type: 'success',
+          message:
+            result.message || 'Sign in successful! Redirecting to dashboard...',
+        });
+        // Redirect will happen automatically via AuthContext
+        setTimeout(() => toogleShow(), 1500); // Close modal after successful login
+      } else if (result.newUser) {
+        // New user needs to register
+        setToastMessage({
+          type: 'error',
+          message: 'This wallet is not registered yet. Please register first.',
+        });
+        setTimeout(() => {
+          router.push('/register');
+          toogleShow(); // Close modal before redirecting
+        }, 2000);
+      }
+    } catch (err: any) {
+      console.error('Login error:', err);
+      setToastMessage({
+        type: 'error',
+        message: err.message || 'Failed to sign in. Please try again.',
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleOrganizationSignUp = () => {
-    toogleShow(); // First close modal
-    setTimeout(() => {
-      setShowOrgSignUp(true); // Then show form after modal animation
-      setShowIndSignUp(false);
-    }, 300);
+  const handleRegister = () => {
+    if (!account) {
+      setToastMessage({
+        type: 'error',
+        message: 'Please connect your wallet first',
+      });
+      return;
+    }
+    toogleShow();
+    router.push('/register');
   };
 
   return (
@@ -69,9 +106,19 @@ export const WalletConnectionModal: React.FC<WalletConnectionModalProps> = ({
         initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.95, opacity: 0 }}
-        className="bg-white p-8 rounded-lg shadow-xl w-full max-w-md m-4 cursor-default"
+        className="bg-white p-8 border-4 border-[#556B2F] shadow-[8px_8px_0px_0px_rgba(85,107,47,1)] w-full max-w-md m-4 cursor-default transform rotate-1"
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Toast Notifications */}
+        <AnimatePresence>
+          {toastMessage && (
+            <Toast
+              type={toastMessage.type}
+              message={toastMessage.message}
+              onClose={() => setToastMessage(null)}
+            />
+          )}
+        </AnimatePresence>
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-2xl font-bold text-[#2C3E50]">
             Get Started with Authentico
@@ -122,52 +169,57 @@ export const WalletConnectionModal: React.FC<WalletConnectionModalProps> = ({
         </div>
 
         {account && (
-          <div className="mb-6 text-center">
-            <p className="text-green-600 font-bold">
+          <div className="mb-6 p-3 bg-[#E8EDE1] border-2 border-[#556B2F] rounded">
+            <p className="text-sm font-medium text-[#2F4F4F]">
+              Connected Wallet:
+            </p>
+            <p className="font-mono text-sm truncate">{account.address}</p>
+            <p className="text-green-600 font-bold mt-2">
               Wallet connected successfully!
             </p>
           </div>
         )}
 
         <div className="space-y-4">
-          {!account ? (
-            <motion.button
-              onClick={handleSignIn}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              disabled={isSigningIn || !account}
-              className="w-full bg-[#4A6741] text-white text-lg font-bold py-3 px-6 rounded-lg border-2 border-[#2C3E50] hover:bg-[#5D8C5D] transition duration-300 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isSigningIn ? (
-                <>
-                  <LoadingSpinner />
-                  <span>Signing In...</span>
-                </>
-              ) : (
-                <>
-                  <Wallet className="inline-block mr-2" />
-                  <span>Sign In</span>
-                </>
-              )}
-            </motion.button>
-          ) : (
+          {account ? (
             <div className="flex flex-col gap-2">
               <motion.button
-                onClick={handleIndividualSignUp}
+                onClick={handleSignIn}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                className="w-full bg-[#5D8C5D] text-white text-lg font-bold py-3 px-6 rounded-lg border-2 border-[#2C3E50] hover:bg-[#4A6741] transition duration-300"
+                disabled={isLoading}
+                className="w-full bg-[#4A6741] text-white text-lg font-bold py-3 px-6 rounded-lg border-2 border-[#2C3E50] hover:bg-[#5D8C5D] transition duration-300 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Sign Up as Individual
+                {isLoading ? (
+                  <>
+                    <LoadingSpinner />
+                    <span>Signing In...</span>
+                  </>
+                ) : (
+                  <>
+                    <Wallet className="inline-block mr-2" />
+                    <span>Sign In</span>
+                  </>
+                )}
               </motion.button>
               <motion.button
-                onClick={handleOrganizationSignUp}
+                onClick={handleRegister}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
+                disabled={isLoading}
                 className="w-full bg-[#5D8C5D] text-white text-lg font-bold py-3 px-6 rounded-lg border-2 border-[#2C3E50] hover:bg-[#4A6741] transition duration-300"
               >
-                Sign Up as Organization
+                Register New Account
               </motion.button>
+            </div>
+          ) : (
+            <div className="p-4 bg-[#F8F0E3] border-2 border-[#E6B8AF] rounded text-center">
+              <p className="text-[#2F4F4F] font-medium">
+                Please connect your wallet first
+              </p>
+              <p className="text-xs text-gray-600 mt-2">
+                You need to connect your wallet to sign in or register
+              </p>
             </div>
           )}
         </div>

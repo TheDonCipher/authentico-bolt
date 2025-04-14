@@ -13,14 +13,19 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["frontend/*"]
-    }
+    },
+    "outDir": "dist",
+    "noEmit": true
   },
-  "exclude": ["node_modules"],
-  "include": [
-    "**/*.ts",
-    "**/*.tsx",
-    "frontend/**/*",
-    "backend/**/*",
-    "smart_contracts/index.js"
-  ]
+  "exclude": [
+    "node_modules",
+    "**/*.js",
+    "**/*.mjs",
+    "frontend/lib/*.js",
+    "backend/lib/*.js",
+    "frontend/cypress/**/*.js",
+    "frontend/next.config.mjs",
+    "frontend/postcss.config.js"
+  ],
+  "include": ["**/*.ts", "**/*.tsx"]
 }

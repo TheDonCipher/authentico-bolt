@@ -13,6 +13,7 @@
     "cypress:run": "cypress run"
   },
   "dependencies": {
+    "@radix-ui/react-tabs": "^1.1.4",
     "axios": "^1.7.7",
     "ethers": "5.7.2",
     "framer-motion": "^11.11.8",
@@ -20,6 +21,7 @@
     "lucide-react": "^0.428.0",
     "next": "^15.1.0",
     "nookies": "^2.5.2",
+    "qrcode.react": "^4.2.0",
     "react": "^18.3",
     "react-dom": "^18.3",
     "thirdweb": "^5"

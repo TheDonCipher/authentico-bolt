@@ -7,8 +7,24 @@
   --font-playfair: 'Playfair Display', serif;
   --font-archivo: 'Archivo', system-ui, -apple-system, sans-serif;
   --foreground-rgb: 0, 0, 0;
-  --background-start-rgb: 214, 219, 220;
-  --background-end-rgb: 255, 255, 255;
+  --background-start-rgb: 250, 249, 246; /* Ivory */
+  --background-end-rgb: 250, 249, 246; /* Ivory */
+
+  /* Primary Colors (Earth & Trust) */
+  --forest-green: #2e7d32;
+  --deep-moss: #1b4332;
+  --soft-sage: #dde5d5;
+
+  /* Secondary & Background Colors (Natural Neutrals) */
+  --ivory: #faf9f6;
+  --stone-gray: #ced4da;
+  --clay-brown: #8d6e63;
+
+  /* Accent Colors (Signals & Feedback) */
+  --sunflower: #fbc02d;
+  --sap-green: #66bb6a;
+  --burnt-sienna: #d84315;
+  --sky-blue: #81d4fa;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -57,61 +73,61 @@ body {
     width: 100%;
     padding: 0.75rem;
     border-width: 4px;
-    border-color: black;
-    background-color: white;
+    border-color: var(--deep-moss);
+    background-color: var(--ivory);
     outline: none;
-    box-shadow: 0 0 0 4px rgba(250, 204, 21, 0.45);
-    box-shadow: 0 0 0 4px rgba(250, 204, 21, 0.45);
+    box-shadow: 0 0 0 4px rgba(46, 125, 50, 0.45);
   }
 
   .neubrutalist-button {
-        background-color: #fef29f;
-        color: black;
-        font-weight: bold;
-        padding-left: 1rem;
-        padding-right: 1rem;
-        padding-top: 0.5rem;
-        padding-bottom: 0.5rem;
-        border-width: 4px;
-        border-color: black;
-        transition: all 0.2s;
-    }
-    .neubrutalist-button:hover {
-        box-shadow: 4px 4px 0 0 rgba(0, 0, 0, 1);
+    background-color: var(--forest-green);
+    color: var(--ivory);
+    font-weight: bold;
+    padding-left: 1rem;
+    padding-right: 1rem;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+    border-width: 4px;
+    border-color: var(--deep-moss);
+    transition: all 0.2s;
+  }
+  .neubrutalist-button:hover {
+    background-color: var(--deep-moss);
+    box-shadow: 4px 4px 0 0 rgba(27, 67, 50, 0.8);
   }
 
   .neubrutalist-card {
-        background-color: white;
-        border-width: 4px;
-        border-color: black;
-        transition: all 0.2s;
-    }
-    .neubrutalist-card:hover {
-        box-shadow: 8px 8px 0 0 rgba(0, 0, 0, 1);
-        transition: all 0.2s;
+    background-color: var(--ivory);
+    border-width: 4px;
+    border-color: var(--deep-moss);
+    transition: all 0.2s;
+  }
+  .neubrutalist-card:hover {
+    box-shadow: 8px 8px 0 0 rgba(27, 67, 50, 0.8);
+    transition: all 0.2s;
   }
 
   .dashboard-pattern {
-    background-image: radial-gradient(#000 1px, transparent 1px);
+    background-image: radial-gradient(var(--deep-moss) 1px, transparent 1px);
     background-size: 24px 24px;
   }
 
   .brutal-hover {
-        transition: all 0.2s;
-        box-shadow: 4px 4px 0 0 rgba(0, 0, 0, 1);
-    }
-    .brutal-hover:hover {
-        transform: translate(-2px, -2px);
-        box-shadow: 4px 4px 0 0 rgba(0, 0, 0, 1);
+    transition: all 0.2s;
+    box-shadow: 4px 4px 0 0 rgba(27, 67, 50, 0.8);
+  }
+  .brutal-hover:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 4px 4px 0 0 rgba(27, 67, 50, 1);
   }
 
   .brutal-border {
     border-width: 4px;
-    border-color: black;
+    border-color: var(--deep-moss);
   }
 
   .brutal-bg {
-    background-color: #fef29f;
+    background-color: var(--soft-sage);
   }
 }
 
@@ -121,16 +137,16 @@ body {
   }
 
   .shadow-brutal {
-    box-shadow: 4px 4px 0 0 #000000;
+    box-shadow: 4px 4px 0 0 var(--deep-moss);
   }
 
   .hover-brutal:hover {
     transform: translate(-2px, -2px);
-    box-shadow: 6px 6px 0 0 #000000;
+    box-shadow: 6px 6px 0 0 var(--deep-moss);
     transition: all 0.1s ease;
   }
 
   .hover\:shadow-brutal:hover {
-    box-shadow: 4px 4px 0 0 #000000;
+    box-shadow: 4px 4px 0 0 var(--deep-moss);
   }
 }

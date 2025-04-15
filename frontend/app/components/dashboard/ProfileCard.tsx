@@ -77,10 +77,10 @@ export const ProfileCard = () => {
   return (
     <div className="flex items-center">
       {/* Combined Profile Card and Connect Button */}
-      <div className="bg-[#F0EAD6] border-4 border-[#556B2F] shadow-[4px_4px_0px_0px_rgba(85,107,47,1)] overflow-hidden flex items-center transition-all hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(85,107,47,1)]">
+      <div className="bg-ivory border-4 border-deep-moss shadow-[4px_4px_0px_0px_rgba(27,67,50,0.8)] overflow-hidden flex items-center transition-all hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(27,67,50,1)]">
         {/* User Profile */}
-        <div className="flex items-center p-3 border-r-4 border-[#556B2F]">
-          <div className="w-12 h-12 bg-[#D2E3C8] border-4 border-[#556B2F] rounded-full flex items-center justify-center mr-3 shadow-[2px_2px_0px_0px_rgba(85,107,47,0.7)]">
+        <div className="flex items-center p-3 border-r-4 border-deep-moss">
+          <div className="w-12 h-12 bg-soft-sage border-4 border-deep-moss rounded-full flex items-center justify-center mr-3 shadow-[2px_2px_0px_0px_rgba(27,67,50,0.7)]">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="18"
@@ -91,17 +91,17 @@ export const ProfileCard = () => {
               strokeWidth="3"
               strokeLinecap="round"
               strokeLinejoin="round"
-              className="text-[#2F4F4F]"
+              className="text-deep-moss"
             >
               <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
               <circle cx="12" cy="7" r="4" />
             </svg>
           </div>
           <div className="flex flex-col">
-            <span className="font-bold text-[#2F4F4F] text-base tracking-tight">
+            <span className="font-bold text-deep-moss text-base tracking-tight">
               {user?.name || 'User'}
             </span>
-            <span className="text-xs font-medium text-[#556B2F]">
+            <span className="text-xs font-medium text-forest-green">
               {user?.userType === 'individual'
                 ? 'Individual Account'
                 : 'Organization Account'}
@@ -110,19 +110,19 @@ export const ProfileCard = () => {
         </div>
 
         {/* Connect Button */}
-        <div className="bg-[#4A6741] h-full flex items-center px-1">
+        <div className="bg-forest-green h-full flex items-center px-1">
           <ConnectButton
             client={client}
             wallets={wallets}
             theme={darkTheme({
               colors: {
                 accentText: '#ffffff',
-                accentButtonBg: '#4A6741',
-                primaryButtonBg: '#4A6741',
-                modalOverlayBg: 'rgba(240, 234, 214, 0.8)',
+                accentButtonBg: '#2E7D32', // Forest Green
+                primaryButtonBg: '#2E7D32', // Forest Green
+                modalOverlayBg: 'rgba(250, 249, 246, 0.8)', // Ivory
                 primaryText: '#FFFFFF',
-                secondaryText: '#F0EAD6',
-                connectedButtonBg: '#4A6741',
+                secondaryText: '#FAF9F6', // Ivory
+                connectedButtonBg: '#2E7D32', // Forest Green
               },
             })}
             connectButton={{

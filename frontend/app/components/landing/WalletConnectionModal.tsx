@@ -59,7 +59,7 @@ export const WalletConnectionModal: React.FC<WalletConnectionModalProps> = ({
             result.message || 'Sign in successful! Redirecting to dashboard...',
         });
         // Redirect will happen automatically via AuthContext
-        setTimeout(() => toogleShow(), 1500); // Close modal after successful login
+        // Do NOT close the modal - let the redirect happen naturally
       } else if (result.newUser) {
         // New user needs to register
         setToastMessage({
@@ -68,7 +68,7 @@ export const WalletConnectionModal: React.FC<WalletConnectionModalProps> = ({
         });
         setTimeout(() => {
           router.push('/register');
-          toogleShow(); // Close modal before redirecting
+          // Do NOT close the modal before redirecting
         }, 2000);
       }
     } catch (err: any) {
@@ -106,7 +106,7 @@ export const WalletConnectionModal: React.FC<WalletConnectionModalProps> = ({
         initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.95, opacity: 0 }}
-        className="bg-white p-8 border-4 border-[#556B2F] shadow-[8px_8px_0px_0px_rgba(85,107,47,1)] w-full max-w-md m-4 cursor-default transform rotate-1"
+        className="bg-ivory p-8 border-4 border-deep-moss shadow-[8px_8px_0px_0px_rgba(27,67,50,0.8)] w-full max-w-md m-4 cursor-default"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Toast Notifications */}
@@ -152,8 +152,8 @@ export const WalletConnectionModal: React.FC<WalletConnectionModalProps> = ({
             theme={darkTheme({
               colors: {
                 accentText: '#ffffff',
-                accentButtonBg: '#4A6741',
-                primaryButtonBg: '#5D8C5D',
+                accentButtonBg: '#2E7D32', // Forest Green
+                primaryButtonBg: '#1B4332', // Deep Moss
               },
               fontFamily: 'Archivo',
             })}
@@ -169,12 +169,12 @@ export const WalletConnectionModal: React.FC<WalletConnectionModalProps> = ({
         </div>
 
         {account && (
-          <div className="mb-6 p-3 bg-[#E8EDE1] border-2 border-[#556B2F] rounded">
-            <p className="text-sm font-medium text-[#2F4F4F]">
+          <div className="mb-6 p-3 bg-soft-sage border-2 border-deep-moss rounded">
+            <p className="text-sm font-medium text-deep-moss">
               Connected Wallet:
             </p>
             <p className="font-mono text-sm truncate">{account.address}</p>
-            <p className="text-green-600 font-bold mt-2">
+            <p className="text-sap-green font-bold mt-2">
               Wallet connected successfully!
             </p>
           </div>
@@ -188,7 +188,7 @@ export const WalletConnectionModal: React.FC<WalletConnectionModalProps> = ({
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 disabled={isLoading}
-                className="w-full bg-[#4A6741] text-white text-lg font-bold py-3 px-6 rounded-lg border-2 border-[#2C3E50] hover:bg-[#5D8C5D] transition duration-300 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full bg-forest-green text-ivory text-lg font-bold py-3 px-6 rounded-lg border-2 border-deep-moss hover:bg-deep-moss transition duration-300 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isLoading ? (
                   <>
@@ -207,14 +207,14 @@ export const WalletConnectionModal: React.FC<WalletConnectionModalProps> = ({
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 disabled={isLoading}
-                className="w-full bg-[#5D8C5D] text-white text-lg font-bold py-3 px-6 rounded-lg border-2 border-[#2C3E50] hover:bg-[#4A6741] transition duration-300"
+                className="w-full bg-soft-sage text-deep-moss text-lg font-bold py-3 px-6 rounded-lg border-2 border-deep-moss hover:bg-forest-green hover:text-ivory transition duration-300"
               >
                 Register New Account
               </motion.button>
             </div>
           ) : (
-            <div className="p-4 bg-[#F8F0E3] border-2 border-[#E6B8AF] rounded text-center">
-              <p className="text-[#2F4F4F] font-medium">
+            <div className="p-4 bg-soft-sage border-2 border-deep-moss rounded text-center">
+              <p className="text-deep-moss font-medium">
                 Please connect your wallet first
               </p>
               <p className="text-xs text-gray-600 mt-2">

@@ -36,8 +36,8 @@ export default function SidebarNavigation() {
   ];
 
   return (
-    <div className="w-64 flex-none min-h-screen flex flex-col bg-[#F5F1E8] p-4 border-r-4 border-black font-['Inter']">
-      <h1 className="inline-block font-black text-3xl mb-8 tracking-tight text-[#2A2A2A] bg-[#E8DFD8] px-4 py-2 border-2 border-black shadow-brutal hover:-translate-y-0.5 transition-transform">
+    <div className="w-64 flex-none min-h-screen flex flex-col bg-soft-sage p-4 border-r-4 border-deep-moss font-['Inter']">
+      <h1 className="inline-block font-black text-3xl mb-8 tracking-tight text-deep-moss bg-ivory px-4 py-2 border-2 border-deep-moss shadow-brutal hover:-translate-y-0.5 transition-transform">
         Authentico
       </h1>
 
@@ -48,16 +48,16 @@ export default function SidebarNavigation() {
               className={`flex items-center gap-3 px-4 py-3 border-2 transition-all
               ${
                 isActive(path)
-                  ? 'bg-[#8B786D] text-white border-black shadow-brutal'
-                  : 'border-transparent hover:bg-[#E8DFD8] hover:border-black hover:shadow-brutal hover:-translate-y-0.5'
+                  ? 'bg-forest-green text-ivory border-deep-moss shadow-brutal'
+                  : 'border-transparent hover:bg-ivory hover:border-deep-moss hover:shadow-brutal hover:-translate-y-0.5'
               }`}
             >
-              <div className={isActive(path) ? 'text-white' : 'text-[#2A2A2A]'}>
+              <div className={isActive(path) ? 'text-ivory' : 'text-deep-moss'}>
                 {icon}
               </div>
               <p
                 className={`font-bold text-base tracking-tight ${
-                  isActive(path) ? 'text-white' : 'text-[#2A2A2A]'
+                  isActive(path) ? 'text-ivory' : 'text-deep-moss'
                 }`}
               >
                 {label}
@@ -68,7 +68,7 @@ export default function SidebarNavigation() {
       </nav>
 
       <div className="pt-6 pb-4">
-        <SignOutButton className="flex items-center gap-3 px-4 py-3 bg-[#2A2A2A] text-white border-2 border-black shadow-brutal hover:-translate-y-0.5 transition-all w-full" />
+        <SignOutButton className="flex items-center gap-3 px-4 py-3 bg-deep-moss text-ivory border-2 border-deep-moss shadow-brutal hover:-translate-y-0.5 transition-all w-full" />
       </div>
     </div>
   );

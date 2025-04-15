@@ -33,9 +33,13 @@ interface AuthContextType {
   loading: boolean;
   error: string | null;
   isInitializing: boolean;
-  login: (
-    walletAddress: string
-  ) => Promise<{ success: boolean; newUser?: boolean; message?: string }>;
+  login: (walletAddress: string) => Promise<{
+    success: boolean;
+    newUser?: boolean;
+    networkError?: boolean;
+    firebaseAuthError?: boolean;
+    message?: string;
+  }>;
   register: (
     walletAddress: string,
     userType: 'individual' | 'organization',
@@ -86,7 +90,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
               prev.filter((address) => address !== walletAddress)
             );
           }
-          return { success: true, message: result.message };
+          return {
+            success: true,
+            message: result.message || 'Sign in successful!',
+          };
         } else if (result.newUser) {
           console.log('New user detected, needs registration');
           // Add to unregistered wallets to prevent auto-login attempts
@@ -97,15 +104,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
             );
             setUnregisteredWallets((prev) => [...prev, walletAddress]);
           }
-          return { success: false, newUser: true, message: result.message };
+          return {
+            success: false,
+            newUser: true,
+            message:
+              result.message ||
+              'This wallet is not registered yet. Please register first.',
+          };
+        } else if (result.networkError) {
+          console.log('Network error during login, API may be offline');
+          // Set a non-blocking error that doesn't prevent the app from working
+          setError(
+            result.message || 'Network error. API server may be offline.'
+          );
+          return {
+            success: false,
+            networkError: true,
+            message:
+              result.message || 'Network error. API server may be offline.',
+          };
         }
 
         console.log('Login failed for other reasons');
-        return { success: false };
+        setError('Authentication failed. Please try again.');
+        return {
+          success: false,
+          message: 'Authentication failed. Please try again.',
+        };
       } catch (err: any) {
         console.error('Login error:', err);
-        setError(err.message || 'Failed to login');
-        return { success: false };
+        const errorMessage =
+          err.message || 'Failed to login. Please try again.';
+        setError(errorMessage);
+        return { success: false, message: errorMessage };
       } finally {
         setLoading(false);
       }
@@ -235,8 +266,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         return;
       }
 
+      // Check if auto-login is disabled due to repeated failures
+      const autoLoginDisabled = localStorage.getItem('autoLoginDisabled');
+
+      if (autoLoginDisabled === 'true') {
+        console.log('Auto-login is disabled due to repeated failures');
+        setError(
+          'Automatic login is disabled due to repeated failures. Please login manually.'
+        );
+        return;
+      }
+
+      // Store the last auto-login attempt timestamp in session storage
+      const lastAttemptStr = sessionStorage.getItem('lastAutoLoginAttempt');
+      const lastAttempt = lastAttemptStr ? parseInt(lastAttemptStr, 10) : 0;
+      const now = Date.now();
+
+      // If we've tried recently (within the last 30 seconds), don't try again
+      // This prevents continuous retries when the API server is down
+      if (lastAttempt && now - lastAttempt < 30000) {
+        console.log('Skipping auto-login attempt - tried recently');
+        return;
+      }
+
+      // Update the timestamp before attempting login
+      sessionStorage.setItem('lastAutoLoginAttempt', now.toString());
+
       try {
         console.log('Attempting to auto-login with wallet:', account.address);
+        // Set a specific loading state for auto-login
+        setLoading(true);
+        setError('Authenticating with your wallet...');
         const result = await login(account.address);
 
         // If login failed because user doesn't exist, add to unregistered wallets
@@ -245,18 +305,85 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
             'Auto-login failed - new user, adding to unregistered list'
           );
           setError('This wallet is not registered. Please register first.');
+        } else if (result.networkError) {
+          console.log('Auto-login failed: Network error, API may be offline');
+          // Don't retry too frequently when network errors occur
+          sessionStorage.setItem(
+            'lastAutoLoginAttempt',
+            (now + 60000).toString()
+          );
+          setError(
+            result.message || 'Network error. API server may be offline.'
+          );
+        } else if ('firebaseAuthError' in result && result.firebaseAuthError) {
+          console.log('Auto-login failed: Firebase authentication error');
+          // Don't retry too frequently when Firebase auth errors occur
+          sessionStorage.setItem(
+            'lastAutoLoginAttempt',
+            (now + 30000).toString()
+          );
+          setError(
+            result.message ||
+              'Firebase authentication error. Please try again later.'
+          );
+          // Add the wallet to unregistered list temporarily to prevent immediate retries
+          if (!unregisteredWallets.includes(account.address)) {
+            setUnregisteredWallets((prev) => [...prev, account.address]);
+            // Remove it after 5 minutes to allow retry
+            setTimeout(() => {
+              setUnregisteredWallets((prev) =>
+                prev.filter((addr) => addr !== account.address)
+              );
+            }, 300000); // 5 minutes
+          }
         } else if (result.success) {
           console.log('Successfully authenticated with wallet');
           // Clear any previous errors
           clearError();
         } else {
           console.log('Auto-login failed for other reasons');
-          setError('Failed to authenticate with wallet. Please try again.');
+          setError(
+            result.message ||
+              'Failed to authenticate with wallet. Please try again.'
+          );
         }
       } catch (err: any) {
         // Handle login errors
-        setError(err.message || 'Failed to authenticate with wallet');
+        const errorMessage =
+          err.message || 'Failed to authenticate with wallet';
+        setError(errorMessage);
         console.error('Wallet auth error:', err);
+
+        // Track login failures
+        const currentFailures = parseInt(
+          localStorage.getItem('autoLoginFailureCount') || '0'
+        );
+        const newFailureCount = currentFailures + 1;
+        localStorage.setItem(
+          'autoLoginFailureCount',
+          newFailureCount.toString()
+        );
+
+        console.log(`Auto-login failure count: ${newFailureCount}`);
+
+        // Disable auto-login after 3 consecutive failures
+        if (newFailureCount >= 3) {
+          console.log('Disabling auto-login due to repeated failures');
+          localStorage.setItem('autoLoginDisabled', 'true');
+
+          // Set a timeout to re-enable auto-login after 1 hour
+          setTimeout(() => {
+            console.log('Re-enabling auto-login');
+            localStorage.removeItem('autoLoginDisabled');
+            localStorage.setItem('autoLoginFailureCount', '0');
+          }, 3600000); // 1 hour
+        }
+
+        // On error, also don't retry too frequently
+        sessionStorage.setItem(
+          'lastAutoLoginAttempt',
+          (now + 30000).toString()
+        );
       }
     };
 
@@ -278,7 +405,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         isInitializing,
       }}
     >
-      {isInitializing ? (
+      {isInitializing || loading ? (
         <div className="min-h-screen bg-[#F0EAD6]">
           <div className="flex items-center justify-center min-h-screen">
             <div className="bg-white border-4 border-[#556B2F] p-6 shadow-[8px_8px_0px_0px_rgba(85,107,47,1)] max-w-sm w-full text-center transform rotate-1">
@@ -307,7 +434,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
                 </div>
               </div>
 
-              <p className="text-[#2F4F4F] font-bold">Loading Authentico...</p>
+              <p className="text-[#2F4F4F] font-bold">
+                {isInitializing
+                  ? 'Loading Authentico...'
+                  : error && error !== 'Authenticating with your wallet...'
+                  ? error
+                  : 'Authenticating with your wallet...'}
+              </p>
+
+              {!isInitializing && (
+                <button
+                  onClick={() => {
+                    setLoading(false);
+                    clearError();
+                  }}
+                  className="mt-4 bg-[#2E7D32] text-white px-4 py-2 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
+                >
+                  Cancel
+                </button>
+              )}
             </div>
           </div>
         </div>

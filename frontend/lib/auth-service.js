@@ -19,35 +19,78 @@ const loginWithWallet = async (walletAddress) => {
       throw new Error('Invalid wallet address format');
     }
 
-    const response = await fetch('/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ walletAddress }),
-    });
+    try {
+      console.log('Attempting to login with wallet address:', walletAddress);
 
-    const data = await response.json();
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ walletAddress }),
+      });
 
-    if (response.ok) {
-      // Sign in with the custom token from Firebase
-      await signInWithCustomToken(auth, data.token);
-      return { success: true, user: data.user };
-    } else if (data.error === 'NEW_USER') {
-      return {
-        success: false,
-        newUser: true,
-        message: 'Please register to continue',
-      };
-    } else {
-      throw new Error(data.error || 'Login failed');
+      console.log('Login API response status:', response.status);
+      const data = await response.json();
+      console.log('Login API response data:', data);
+
+      if (response.ok) {
+        console.log('Login API response OK, signing in with custom token');
+        // Sign in with the custom token from Firebase
+        await signInWithCustomToken(auth, data.token);
+        console.log('Successfully signed in with custom token');
+        return {
+          success: true,
+          user: data.user,
+          message: 'Sign in successful!',
+        };
+      } else if (data.error === 'NEW_USER') {
+        console.log('Login API indicates new user');
+        return {
+          success: false,
+          newUser: true,
+          message: 'This wallet is not registered yet. Please register first.',
+        };
+      } else if (
+        data.error === 'FIREBASE_AUTH_ERROR' ||
+        data.error === 'TOKEN_CREATION_ERROR'
+      ) {
+        console.log('Firebase authentication error detected:', data.error);
+        return {
+          success: false,
+          firebaseAuthError: true,
+          message:
+            data.message ||
+            'Firebase authentication error. Please try again later.',
+        };
+      } else {
+        console.error('Login API error:', data.error, data.message);
+        throw new Error(
+          data.error || 'Authentication failed. Please try again.'
+        );
+      }
+    } catch (fetchError) {
+      // Handle network errors specifically
+      if (
+        fetchError.message === 'Failed to fetch' ||
+        fetchError.name === 'TypeError'
+      ) {
+        console.error('Network error during login:', fetchError);
+        return {
+          success: false,
+          networkError: true,
+          message:
+            'Network error. API server may be offline. Please try again later.',
+        };
+      }
+      throw fetchError; // Re-throw other errors to be handled by the outer catch
     }
   } catch (error) {
     console.error('Login error:', error);
-    if (error.message === 'Failed to fetch') {
-      throw new Error(
-        'Network error. Please check your connection and try again.'
-      );
+    // Provide more specific error messages for common errors
+    if (error.message.includes('wallet')) {
+      throw new Error(error.message); // Pass through wallet-related errors
+    } else {
+      throw new Error('Authentication failed. Please try again.');
     }
-    throw error;
   }
 };
 

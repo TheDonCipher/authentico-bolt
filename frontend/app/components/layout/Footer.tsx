@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { Github, Linkedin, Twitter } from 'lucide-react';
 
 export const Footer: React.FC = () => (
-  <footer className="bg-[#2C3E50] text-white py-8">
+  <footer className="bg-deep-moss text-ivory py-8">
     <div className="container mx-auto px-4">
       <div className="flex flex-col md:flex-row justify-between items-center">
         <div className="mb-4 md:mb-0">
@@ -13,19 +13,19 @@ export const Footer: React.FC = () => (
         <div className="flex space-x-4">
           <Link
             href="#"
-            className="hover:text-[#4A6741] transition duration-300"
+            className="hover:text-soft-sage transition duration-300"
           >
             <Github size={24} />
           </Link>
           <Link
             href="#"
-            className="hover:text-[#4A6741] transition duration-300"
+            className="hover:text-soft-sage transition duration-300"
           >
             <Linkedin size={24} />
           </Link>
           <Link
             href="#"
-            className="hover:text-[#4A6741] transition duration-300"
+            className="hover:text-soft-sage transition duration-300"
           >
             <Twitter size={24} />
           </Link>

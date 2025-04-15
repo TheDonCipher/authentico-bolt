@@ -1,12 +1,15 @@
-const { PinataSDK } = require("pinata-web3");
-const express = require("express");
-const fileUpload = require("express-fileupload");
-const cors = require("cors");
-require("dotenv").config();
+const { PinataSDK } = require('pinata-web3');
+const express = require('express');
+const fileUpload = require('express-fileupload');
+const cors = require('cors');
+const multer = require('multer');
+require('dotenv').config();
 
-const { User } = require("./config");
-const authRoutes = require("./authRoutes");
-const { verifyToken } = require("./authMiddleware");
+const { User } = require('./config');
+const authRoutes = require('./authRoutes');
+const documentRoutes = require('./routes/documentRoutes');
+const orgRoutes = require('./routes/orgRoutes');
+const { verifyToken } = require('./authMiddleware');
 const app = express();
 
 // Middleware
@@ -21,52 +24,46 @@ const pinata = new PinataSDK({
 });
 
 // Routes
-app.use("/api/auth", authRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/documents', documentRoutes);
+app.use('/api/organizations', orgRoutes);
 
 // Public routes
-app.get("/", async (req, res) => {
+app.get('/', async (req, res) => {
+  // Using the User reference from config.js which now points to the lowercase 'users' collection
   const snapshot = await User.get();
   const list = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
   res.send(list);
 });
 
-// Protected routes
-app.post("/upload", verifyToken, async (req, res) => {
+// Legacy upload route - redirects to new document upload endpoint
+app.post('/upload', verifyToken, async (req, res) => {
   try {
-    if (!req.files?.document_file) {
-      return res.status(400).send("No files were uploaded.");
-    }
-
-    const uploadedFile = req.files.document_file;
-    const blob = new Blob([uploadedFile.data]);
-    const file = new File([blob], uploadedFile.name, {
-      type: uploadedFile.mimetype,
-    });
-
-    const upload = await pinata.upload.file(file);
-    res.json({ IpfsHash: upload.IpfsHash });
+    // Redirect to the new document upload endpoint
+    res.redirect(307, '/api/documents/upload');
   } catch (error) {
     console.error(error);
-    res.status(500).send("Upload failed");
+    res.status(500).send('Upload failed');
   }
 });
 
-app.post("/create", verifyToken, async (req, res) => {
+// User management routes
+app.post('/create', verifyToken, async (req, res) => {
   const data = req.body;
   await User.add({ data });
-  res.send({ msg: "User Added" });
+  res.send({ msg: 'User Added' });
 });
 
-app.post("/update", verifyToken, async (req, res) => {
+app.post('/update', verifyToken, async (req, res) => {
   const id = req.body.id;
   delete req.body.id;
   await User.doc(id).update(req.body);
-  res.send({ msg: "Updated" });
+  res.send({ msg: 'Updated' });
 });
 
-app.post("/delete", verifyToken, async (req, res) => {
+app.post('/delete', verifyToken, async (req, res) => {
   await User.doc(req.body.id).delete();
-  res.send({ msg: "Deleted" });
+  res.send({ msg: 'Deleted' });
 });
 
 // Error handling

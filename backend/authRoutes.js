@@ -1,30 +1,34 @@
 const express = require('express');
 const router = express.Router();
-const { admin, firebase } = require('./config');
+const { admin, firebase, USER_COLLECTION } = require('./config');
 
 // User registration
 router.post('/register', async (req, res) => {
   try {
     const { email, password, displayName } = req.body;
-    
+
     // Create Firebase auth user
     const userRecord = await admin.auth().createUser({
       email,
       password,
-      displayName
+      displayName,
     });
 
     // Create user document in Firestore
-    await admin.firestore().collection('Users').doc(userRecord.uid).set({
-      email,
-      displayName,
-      createdAt: admin.firestore.FieldValue.serverTimestamp()
-    });
+    await admin
+      .firestore()
+      .collection(USER_COLLECTION)
+      .doc(userRecord.uid)
+      .set({
+        email,
+        displayName,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
 
-    res.status(201).json({ 
+    res.status(201).json({
       uid: userRecord.uid,
       email: userRecord.email,
-      displayName: userRecord.displayName
+      displayName: userRecord.displayName,
     });
   } catch (error) {
     res.status(400).json({ error: error.message });
@@ -35,9 +39,11 @@ router.post('/register', async (req, res) => {
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
-    const user = await firebase.auth().signInWithEmailAndPassword(email, password);
+    const user = await firebase
+      .auth()
+      .signInWithEmailAndPassword(email, password);
     const token = await user.user.getIdToken();
-    
+
     res.json({ token });
   } catch (error) {
     res.status(401).json({ error: error.message });
@@ -52,11 +58,11 @@ router.get('/me', async (req, res) => {
 
     const decodedToken = await admin.auth().verifyIdToken(token);
     const user = await admin.auth().getUser(decodedToken.uid);
-    
+
     res.json({
       uid: user.uid,
       email: user.email,
-      displayName: user.displayName
+      displayName: user.displayName,
     });
   } catch (error) {
     res.status(401).json({ error: error.message });
@@ -78,7 +84,7 @@ router.post('/set-role', async (req, res) => {
 
     // Set custom claim
     await admin.auth().setCustomUserClaims(uid, { [role]: true });
-    
+
     res.json({ message: `User ${uid} role set to ${role}` });
   } catch (error) {
     res.status(400).json({ error: error.message });

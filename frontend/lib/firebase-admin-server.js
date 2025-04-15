@@ -2,7 +2,7 @@
 
 import admin from 'firebase-admin';
 
-// Service account credentials with fallback values
+// Service account credentials from environment variables
 const serviceAccountKey = {
   type: process.env.FIREBASE_TYPE || 'service_account',
   project_id: process.env.FIREBASE_PROJECT_ID || 'authentico-backend',
@@ -11,7 +11,7 @@ const serviceAccountKey = {
     'f21cf9b60fa17b580d86b6cf4ba46ffc8fb6ce09',
   private_key: (
     process.env.FIREBASE_PRIVATE_KEY ||
-    '-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCxBt8kRnHWQnYE\nVZnJZVs+cKQ9JW1GL9+azzXnMoQyW1zQtJmuy8JYhMSKQzD5xY9tp3K0fTQGXUIU\nCQBWXJLGDJoHbxXFu8GZdV8MuLDuGUxYlUGCCsKGKBzrAHBJlocKRGLWvqCvEPXd\nQGg0pRnVX4QNAL4+aKY5z7bH9ExUsFvUKxBvZ4GIq5Ou5wy3XfKcpKvOmLEUYiPu\nJrYzGRUQvRVLMBKT/xOhkHYemlvXVkPJzWQYOUYGJkAjNNKjXJ3hB8wGQ3OLkJEv\nYrHKe5hQzxmA/TGQ7/EN5UkADd7uc83qIO3kLI5YUXQfy4EQgDu9NjZXlEMvfOLa\nxJwEyBQnAgMBAAECggEABEi0AJlnJYsQPIEpnLlRlNe9vJlGxmgpNFDixLXYH/vW\nJcH377ydOWiKcKxQG5q5zLQRfxQn2YiT+5w9C3c1MLyrBgXQFZwkCBwQSxdlcACl\nEJqeq5cmnvKuZF9KV0ub76NzEpYYCTb8wfbwQBWpYQBzNvYQRVFpKVn2fAUGndKg\nGnLGdnHXWZWd6jh6g+xEH5G1+C4jP7/cAQEHbq/tS+H0jrJ1MdHMP6fNUZpbPMxP\nZFXxzwDWLQVKsZWvSi7JFQQdxjGUMqHC+UMt2C9KwZOFVJQBZ9QApj6/t0GKwSqf\nBJQQIhx6Lk5v9HGlqjVCvMRUZ6UOQPpCyXm+qz/YAQKBgQDrEQ+NqTvpFHOvYfSO\nWa1wtWQGqQiXIXPZDjI2xvRvTXYPqrCxYAJBOqXx5PbKJt9V3R/AQ5GQwzqQ5l78\nkIGhGBgYCQj1TZLKLlXf5bKE5D+cYNMSA4RCZ5eqUKtVo7VBP8QR8jPyFPvQUhIv\nfn84c1aNN4CDcm1qOLm5jzYuAQKBgQDBCXMThwYaLBdZENjdF+QsqAKNgCIStY73\nZVIYA/uDxMGvVPxYZOUYcBcJvLluQJX6MYJ4Cj2HlpzKvwB0o9/YPYsI+7UBCmx6\n2+/BxM8w5Z7v8GB9Q0hKTvmk5VNXZHZyNyoZJeMOlYa3ixq5o8AJHdwQKLQJ5DrL\nLhyEvQdOBwKBgQCvx9O+Aq1JmTZYAXhAHOllWM6cEiXnhzQXWvYCtIHs6jBKS7V9\nZTxUoFYp0cYkC+qYmRnKGRGye7l2JEVFfQJEJ7++Tg8q6c7Cj7HYLAhQrUaZr9/t\nAXZyoqUFdm8YTMeIkXcXMUFDUBYFDQRWkJVIyDL9idsUFIoYG7LKAUjAAQKBgHGj\nTVTXNXKsRJHoGUfSUVK8hbUcuQzGoRYQHFRwGqwfLMDQkQbTYYtYBpGvLMgYWZl0\nA1Uf5XPx94ILQRkxWnBCv9vX6m2BIAUR4jRIwIYXCRMNMCL4Kn3QWGrORNWEGtYF\nTHxmP5jnZxU/Ujivs7+MCuEwNkO8UvZOqHDwQQMRAoGAQOgVyFZlU8T/9qkR8Ljw\nPvpXMvIcEyWdyMxvwYcEQLGF2AwzTxzIZQRXMWgwgVgK5Y+XJNPmLRuRLYe6DNdJ\nK7y8UxCK5jqiQwBhU9JHooGIERULXvXKPj7jUTL5+lCy8XRcLHbwJ3KPIXaGvyJH\nGxdmjlOlZ3HbJgMBLmOzQkA=\n-----END PRIVATE KEY-----\n'
+    '-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCjdnM5cVCmSbaQ\n5aQrbU9ohsk1L0AgZnBEwhph3hRDFuyAJWnib46mqoR/H2eaiRKsM89LcNtbUxMl\ni6l2e9xEnZcFKDR6RAD3lmWVLy6RNe6ALxxOjqJd1hILrsTHuWUCrfcaCQdn/g9n\nm1o5bJtGi9G1Q0fUy6KGP5Zme49ezjvF9CYBD/s1nmwVDReuD/vc60bop8Ev4zrt\nL36koZ5QMbUQqDinxylta8aZhYzcdvdej5f/j3mID2dhnCWykbGh2SqG30GvhSGs\nI4ttkreGtfS8GktWpWk+w6cqIrFHCEu58570E8LXhsyc4Ht4baSgbh86zX5krbCt\nFjpT38ZlAgMBAAECggEAB/ywbiDbjjiBV2ylHCsb63FUkQj1QvAGcdGjLN+HUWzk\nEvHhDduiFoIz9asw6oPime/xI9BIo5p4T8gWeG/eaCrkF3AqukOq4W4jmgnDZnyC\nYhiLM0p0ZA3i9VetjU3BggNClO7Wgg4PriIQ40frgWOxFECMmLj3gMRIIstMStdI\nVTjkm1XwIYu2XzT/HTysTJlThiktkqtIVJHbVxWSSFN+Nyd5M1zCsGuerZ1lne01\nJldDzD+yI5uiGvt8LWuPgfink8wqm/XWegIKP138Z37bgfag32hxFCIUN8E4tn0F\neVfhMJuwL/CGibLYFXMnY7xyr0hs1/krIASbg2bleQKBgQDd7OOlDCauwXqibvEX\nnI/ChC2KYFdPnKHr/Tpt82NjNpRjcT468mtBWVxmqlHoJbh8JwrKEJl0vC/1R+j5\n6Cl9w8vowCcVmWwEmyuUHLveDedaR0KH5y+b39YAG2dBVm2Yd3tK1m2Vd0zbD0fd\nH49mspQTRJs47IheNrwYhsczvQKBgQC8j5kZ82im2fXyToWAGYMjmaU+bBPyjoet\nzW01Ozuu7UN/qJerqMVeR+D/3PfyZLIft6KxO4cV8KUra7wm5tP4/Ho3aElMMZAi\niOcoTwq2GSdCwJ5ge2gXyuE7tNH755eGhZ1R5fpf2aTZpuhmXO0f0a8+P3TBJoWv\nvec12KezyQKBgFhEKd6xUIldJruISJfNi1ggXkSVQOTHNZe45g5pKXSCds5+cfPc\nC1C4jAnBYEZnClNG7AGmTIKjfqed7EnJTwdYYre2BVWP6eiDFvgX3ZjaCtRbV1ja\nWJM0mdb9Dzprd7eWfhEr6/Xwtz7BeyG1tcFw8XggZ2Rin3JpbrKKmJw5AoGARCyr\nDy3pZYIioVPwgqs2tdVkYFhVMfqEZbuDQ57B6nIQWISNKdxgV8EnQXsUDoiHul37\nrZa3NaCHJ1bRdUM52qj2SzgiYDD/Su0ynmlNlx8rCcB4wqt7rDaHDr5GuYw3RcTj\nZ2v+BU+8gZEOL4xjk4CNmrT4sqkJ5suDX/2QTLkCgYEAmdq4vz9+T78DMs8VXcAn\nR9zHVsTpgEFzlKtCc/NQnnpoLLgRwhtwTRdxmsaZ3rFLQ/zDCDspk6EBJ651/cqH\nLbViMbDfMpHB+okLDmxenB27l5FRiXziiJK+fNtPmRkcPwTNW6wvfE4yzdsmci9L\nIk6dt35UjHLGzuEidc9pRqc=\n-----END PRIVATE KEY-----\n'
   ).replace(/\\n/g, '\n'),
   client_email:
     process.env.FIREBASE_CLIENT_EMAIL ||
@@ -32,16 +32,68 @@ const serviceAccountKey = {
 };
 
 // Initialize Firebase Admin if not already initialized
+let db;
+let auth;
+
 if (!admin.apps.length) {
   try {
-    admin.initializeApp({
+    // Log the initialization attempt for debugging
+    console.log(
+      'Initializing Firebase Admin SDK with project ID:',
+      serviceAccountKey.project_id
+    );
+
+    // Ensure the private key is properly formatted
+    if (typeof serviceAccountKey.private_key === 'string') {
+      // Make sure newlines are properly handled
+      serviceAccountKey.private_key = serviceAccountKey.private_key.replace(
+        /\\n/g,
+        '\n'
+      );
+    }
+
+    // Log key details for debugging (don't log the full key in production)
+    console.log(
+      'Private key starts with:',
+      serviceAccountKey.private_key.substring(0, 20) + '...'
+    );
+    console.log('Client email:', serviceAccountKey.client_email);
+
+    const app = admin.initializeApp({
       credential: admin.credential.cert(serviceAccountKey),
     });
+
+    console.log('Firebase Admin SDK initialized successfully');
+
+    // Initialize Firestore and Auth after successful initialization
+    db = admin.firestore();
+    auth = admin.auth();
+
+    // Test the connection
+    console.log('Testing Firestore connection...');
+    db.collection('users')
+      .limit(1)
+      .get()
+      .then(() => console.log('Firestore connection successful'))
+      .catch((err) => console.error('Firestore connection test failed:', err));
   } catch (error) {
     console.error('Firebase admin initialization error:', error);
+    // Log more details about the error
+    if (error instanceof Error) {
+      console.error('Error message:', error.message);
+      console.error('Error stack:', error.stack);
+    }
+
+    // Throw the error to prevent silent failures
+    throw new Error(
+      `Firebase Admin SDK initialization failed: ${error.message}`
+    );
   }
+} else {
+  console.log('Using existing Firebase Admin SDK instance');
+  db = admin.firestore();
+  auth = admin.auth();
 }
 
 // Export the admin services
-export const db = admin.firestore();
-export const auth = admin.auth();
+export { db, auth };

@@ -13,10 +13,12 @@ interface ThemeContextProps {
 
 const ThemeContext = createContext<ThemeContextProps | undefined>(undefined);
 
-export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [primaryColor, setPrimaryColor] = useState("#4A6741");
-  const [secondaryColor, setSecondaryColor] = useState("#5D8C5D");
-  const [theme, setTheme] = useState("light");
+export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
+  const [primaryColor, setPrimaryColor] = useState('#2E7D32'); // Forest Green
+  const [secondaryColor, setSecondaryColor] = useState('#1B4332'); // Deep Moss
+  const [theme, setTheme] = useState('light');
 
   const value: ThemeContextProps = {
     primaryColor,
@@ -28,9 +30,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   return (
-    <ThemeContext.Provider value={value}>
-      {children}
-    </ThemeContext.Provider>
+    <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
   );
 };
 

@@ -10,6 +10,8 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import SidebarNavigation from './components/SidebarNavigation';
 import DocumentTable from './components/DocumentTable';
+import VerificationQueue from './components/VerificationQueue';
+import OrganizationStatus from './components/OrganizationStatus';
 import AuthenticoContractAbi from 'public/contractsData/AuthenticoContract.json';
 import AuthenticoContractAddress from 'public/contractsData/AuthenticoContract-address.json';
 import { AuthGuard } from '../components/auth/AuthGuard';
@@ -25,6 +27,7 @@ const OrganizationDashboard = () => {
   };
   const [documents, setDocuments] = useState([]);
   const [toastMessage, setToastMessage] = useState(null);
+  const [activeTab, setActiveTab] = useState('dashboard');
   const router = useRouter();
   const { user } = useAuth();
 
@@ -140,46 +143,79 @@ const OrganizationDashboard = () => {
 
   return (
     <AuthGuard allowedUserTypes={['organization']}>
-      <div className="relative flex min-h-screen bg-[#F5F7F2]">
+      <div className="relative flex min-h-screen bg-ivory">
         <SidebarNavigation />
         <main className="flex-1 p-8">
           <div className="max-w-7xl mx-auto">
-            <div className="flex justify-between items-center border-b-4 border-[#556B2F] pb-4 mb-8">
-              <h1 className="text-5xl font-black text-[#2F4F4F]">
+            <div className="flex justify-between items-center border-b-4 border-deep-moss pb-4 mb-8">
+              <h1 className="text-5xl font-black text-deep-moss">
                 Organization Dashboard
               </h1>
               <ProfileCard />
             </div>
 
+            {/* Organization Verification Status */}
+            <section className="mb-12">
+              <OrganizationStatus userId={user?.uid || ''} />
+            </section>
+
+            {/* Stats Section */}
             <section className="mb-12">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-[#E8EDE1] p-6 border-4 border-[#556B2F] shadow-brutal">
-                  <h3 className="font-bold text-xl mb-2 text-[#2F4F4F]">
+                <div className="bg-soft-sage p-6 border-4 border-deep-moss shadow-brutal">
+                  <h3 className="font-bold text-xl mb-2 text-deep-moss">
                     Total Documents
                   </h3>
-                  <p className="text-4xl font-black text-[#556B2F]">2</p>
+                  <p className="text-4xl font-black text-deep-moss">2</p>
                 </div>
-                <div className="bg-[#E8EDE1] p-6 border-4 border-[#556B2F] shadow-brutal">
-                  <h3 className="font-bold text-xl mb-2 text-[#2F4F4F]">
+                <div className="bg-soft-sage p-6 border-4 border-deep-moss shadow-brutal">
+                  <h3 className="font-bold text-xl mb-2 text-deep-moss">
                     Verified
                   </h3>
-                  <p className="text-4xl font-black text-[#698B69]">1</p>
+                  <p className="text-4xl font-black text-sap-green">1</p>
                 </div>
-                <div className="bg-[#E8EDE1] p-6 border-4 border-[#556B2F] shadow-brutal">
-                  <h3 className="font-bold text-xl mb-2 text-[#2F4F4F]">
+                <div className="bg-soft-sage p-6 border-4 border-deep-moss shadow-brutal">
+                  <h3 className="font-bold text-xl mb-2 text-deep-moss">
                     Pending
                   </h3>
-                  <p className="text-4xl font-black text-[#8B7355]">1</p>
+                  <p className="text-4xl font-black text-sunflower">1</p>
                 </div>
               </div>
             </section>
 
-            <section className="bg-[#E8EDE1] border-4 border-[#556B2F] p-6 shadow-brutal">
-              <h2 className="text-3xl font-black mb-6 text-[#2F4F4F]">
-                Recent Documents
-              </h2>
-              <DocumentTable documents={documents} />
-            </section>
+            <div className="flex mb-6 border-b-4 border-deep-moss pb-4">
+              <button
+                onClick={() => setActiveTab('dashboard')}
+                className={`mr-4 px-4 py-2 font-bold ${
+                  activeTab === 'dashboard'
+                    ? 'bg-soft-sage border-2 border-deep-moss shadow-[2px_2px_0px_0px_rgba(27,67,50,0.8)]'
+                    : 'hover:bg-soft-sage hover:border-2 hover:border-deep-moss hover:shadow-[2px_2px_0px_0px_rgba(27,67,50,0.8)]'
+                }`}
+              >
+                Dashboard
+              </button>
+              <button
+                onClick={() => setActiveTab('verification')}
+                className={`px-4 py-2 font-bold ${
+                  activeTab === 'verification'
+                    ? 'bg-soft-sage border-2 border-deep-moss shadow-[2px_2px_0px_0px_rgba(27,67,50,0.8)]'
+                    : 'hover:bg-soft-sage hover:border-2 hover:border-deep-moss hover:shadow-[2px_2px_0px_0px_rgba(27,67,50,0.8)]'
+                }`}
+              >
+                Verification Queue
+              </button>
+            </div>
+
+            {activeTab === 'dashboard' ? (
+              <section className="bg-soft-sage border-4 border-deep-moss p-6 shadow-brutal">
+                <h2 className="text-3xl font-black mb-6 text-deep-moss">
+                  Recent Documents
+                </h2>
+                <DocumentTable documents={documents} />
+              </section>
+            ) : (
+              <VerificationQueue />
+            )}
           </div>
         </main>
       </div>

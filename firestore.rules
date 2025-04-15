@@ -5,84 +5,105 @@ service cloud.firestore {
     function isAuthenticated() {
       return request.auth != null;
     }
-    
+
     function isOwner(userId) {
       return isAuthenticated() && request.auth.uid == userId;
     }
-    
+
     function hasUserRole(role) {
       return isAuthenticated() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.userType == role;
     }
-    
+
     // Users collection
     match /users/{userId} {
       // Users can read their own data
       allow read: if isOwner(userId);
-      
+
       // Only allow creation with proper validation
-      allow create: if isAuthenticated() 
+      allow create: if isAuthenticated()
                     && request.resource.data.walletAddress is string
                     && request.resource.data.userType in ['individual', 'organization']
                     && request.resource.data.name is string;
-      
+
       // Users can update their own data, but cannot change critical fields
       allow update: if isOwner(userId)
                     && request.resource.data.walletAddress == resource.data.walletAddress
                     && request.resource.data.userType == resource.data.userType;
-      
+
       // Users cannot delete their accounts directly
       allow delete: if false;
     }
-    
+
     // Documents collection
     match /documents/{documentId} {
       // Document owners can read their documents
       allow read: if isAuthenticated() && (
-                    resource.data.ownerId == request.auth.uid || 
+                    resource.data.ownerId == request.auth.uid ||
                     resource.data.verifierId == request.auth.uid
                   );
-      
+
       // Only individuals can create documents
-      allow create: if isAuthenticated() 
+      allow create: if isAuthenticated()
                     && hasUserRole('individual')
                     && request.resource.data.ownerId == request.auth.uid;
-      
+
       // Document owners can update their documents if not verified
       allow update: if isAuthenticated() && (
                     (resource.data.ownerId == request.auth.uid && resource.data.status != 'verified') ||
                     (resource.data.verifierId == request.auth.uid && hasUserRole('organization'))
                   );
-      
+
       // Only document owners can delete their unverified documents
-      allow delete: if isAuthenticated() 
+      allow delete: if isAuthenticated()
                     && resource.data.ownerId == request.auth.uid
                     && resource.data.status != 'verified';
     }
-    
+
     // Verification requests collection
     match /verificationRequests/{requestId} {
       // Document owners and verifiers can read verification requests
       allow read: if isAuthenticated() && (
-                    resource.data.requesterId == request.auth.uid || 
+                    resource.data.requesterId == request.auth.uid ||
                     resource.data.verifierId == request.auth.uid
                   );
-      
+
       // Only individuals can create verification requests
-      allow create: if isAuthenticated() 
+      allow create: if isAuthenticated()
                     && hasUserRole('individual')
                     && request.resource.data.requesterId == request.auth.uid;
-      
+
       // Only the verifier can update the verification status
-      allow update: if isAuthenticated() 
+      allow update: if isAuthenticated()
                     && resource.data.verifierId == request.auth.uid
                     && hasUserRole('organization');
-      
+
       // Only the requester can delete pending requests
-      allow delete: if isAuthenticated() 
+      allow delete: if isAuthenticated()
                     && resource.data.requesterId == request.auth.uid
                     && resource.data.status == 'pending';
     }
-    
+
+    // Organization applications collection
+    match /organizationApplications/{applicationId} {
+      // Anyone can create an application
+      allow create: if isAuthenticated();
+
+      // Only the submitter can read their own application
+      allow read: if isAuthenticated() && resource.data.submittedBy == request.auth.uid;
+
+      // Only admins can update applications
+      allow update, delete: if isAuthenticated() && hasUserRole('admin');
+    }
+
+    // Notifications collection
+    match /notifications/{notificationId} {
+      // Users can read their own notifications
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+
+      // Only the system can create/update/delete notifications
+      allow create, update, delete: if false;
+    }
+
     // Default deny
     match /{document=**} {
       allow read, write: if false;

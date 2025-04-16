@@ -3,7 +3,7 @@
  * Handles notifications for document status updates
  */
 
-const { admin, db, USER_COLLECTION } = require('../config');
+const { admin, adminDb, USER_COLLECTION } = require('../config');
 
 class NotificationService {
   /**
@@ -16,7 +16,7 @@ class NotificationService {
    */
   async sendInAppNotification(userId, title, message, data = {}) {
     try {
-      const notificationRef = db.collection('notifications').doc();
+      const notificationRef = adminDb.collection('notifications').doc();
 
       await notificationRef.set({
         userId,

@@ -1,9 +1,8 @@
 const { PinataSDK } = require('pinata-web3');
 const express = require('express');
-const fileUpload = require('express-fileupload');
 const cors = require('cors');
-const multer = require('multer');
 const path = require('path');
+const bodyParser = require('body-parser');
 
 // Load environment variables
 require('dotenv').config();
@@ -48,11 +47,13 @@ const authRoutes = require('./authRoutes');
 const documentRoutes = require('./routes/documentRoutes');
 const orgRoutes = require('./routes/orgRoutes');
 const tokenRoutes = require('./routes/tokenRoutes');
+const verificationRoutes = require('./routes/verificationRoutes');
 const { verifyToken } = require('./authMiddleware');
 const app = express();
 
 // Middleware
 app.use(express.json());
+app.use(bodyParser.urlencoded({ extended: true, limit: '10mb' }));
 app.use(
   cors({
     origin:
@@ -64,7 +65,6 @@ app.use(
     allowedHeaders: ['Content-Type', 'Authorization'],
   })
 );
-app.use(fileUpload());
 
 // Pinata setup with standardized gateway URL
 const pinata = new PinataSDK({
@@ -82,6 +82,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/documents', documentRoutes);
 app.use('/api/organizations', orgRoutes);
 app.use('/api/tokens', tokenRoutes);
+app.use('/api/verify', verificationRoutes);
 
 // Public routes
 app.get('/', async (req, res) => {

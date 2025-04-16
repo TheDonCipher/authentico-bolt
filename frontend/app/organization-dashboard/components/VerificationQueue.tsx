@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Check, X, Eye, Clock, Bell } from 'lucide-react';
-import { auth, db } from '../../../lib/firebase';
+import { db } from '../../../lib/firebase';
 import {
   collection,
   query,
@@ -13,8 +13,10 @@ import {
   Timestamp,
 } from 'firebase/firestore';
 import axios from 'axios';
+import { getAuthToken } from '../../../lib/token-util';
 import { Toast } from '../../components/ui/Toast';
 import { useAuth } from '../../contexts/AuthContext';
+import { DocumentViewer } from '../../components/document/DocumentViewer';
 
 interface Document {
   id: string;
@@ -123,7 +125,7 @@ const VerificationQueue = () => {
 
   const viewDocument = async (docId: string) => {
     try {
-      const idToken = await auth.currentUser?.getIdToken();
+      const idToken = await getAuthToken();
 
       if (!idToken) {
         throw new Error('Not authenticated');
@@ -157,7 +159,7 @@ const VerificationQueue = () => {
     status: 'Verified' | 'Rejected'
   ) => {
     try {
-      const idToken = await auth.currentUser?.getIdToken();
+      const idToken = await getAuthToken();
 
       if (!idToken) {
         throw new Error('Not authenticated');
@@ -241,26 +243,16 @@ const VerificationQueue = () => {
           </button>
         </div>
 
-        {viewingDoc.mimeType.startsWith('image/') ? (
-          <img
-            src={`data:${viewingDoc.mimeType};base64,${viewingDoc.data}`}
-            alt="Document"
-            className="max-w-full border-2 border-deep-moss mb-6"
+        <div className="mb-6">
+          <DocumentViewer
+            documentData={viewingDoc.data}
+            mimeType={viewingDoc.mimeType}
+            fileName={
+              documents.find((doc) => doc.id === viewingDoc.id)?.documentName ||
+              'document'
+            }
           />
-        ) : viewingDoc.mimeType === 'application/pdf' ? (
-          <iframe
-            src={`data:${viewingDoc.mimeType};base64,${viewingDoc.data}`}
-            className="w-full h-[600px] border-2 border-deep-moss mb-6"
-            title="PDF Document"
-          />
-        ) : (
-          <div className="bg-ivory p-4 border-2 border-deep-moss mb-6">
-            <p>
-              This document type cannot be previewed directly. Please download
-              to view.
-            </p>
-          </div>
-        )}
+        </div>
 
         <div className="flex space-x-4">
           <button

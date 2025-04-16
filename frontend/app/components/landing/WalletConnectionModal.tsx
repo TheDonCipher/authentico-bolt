@@ -116,6 +116,7 @@ export const WalletConnectionModal: React.FC<WalletConnectionModalProps> = ({
               type={toastMessage.type}
               message={toastMessage.message}
               onClose={() => setToastMessage(null)}
+              duration={5000}
             />
           )}
         </AnimatePresence>

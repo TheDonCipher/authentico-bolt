@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { Check, X, ExternalLink, Clock } from 'lucide-react';
-import { auth } from '../../../lib/firebase';
 import axios from 'axios';
+import { getAuthToken } from '../../../lib/token-util';
 import { Toast } from '../../components/ui/Toast';
 
 interface OrgApplication {
@@ -43,8 +43,8 @@ const OrganizationApplications = () => {
     try {
       setLoading(true);
 
-      // Get Firebase ID token
-      const idToken = await auth.currentUser?.getIdToken();
+      // Get Firebase ID token using the token utility
+      const idToken = await getAuthToken();
       if (!idToken) {
         throw new Error('Not authenticated');
       }
@@ -79,8 +79,8 @@ const OrganizationApplications = () => {
     status: 'approved' | 'rejected'
   ) => {
     try {
-      // Get Firebase ID token
-      const idToken = await auth.currentUser?.getIdToken();
+      // Get Firebase ID token using the token utility
+      const idToken = await getAuthToken();
       if (!idToken) {
         throw new Error('Not authenticated');
       }

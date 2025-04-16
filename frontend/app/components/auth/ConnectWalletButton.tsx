@@ -108,6 +108,7 @@ export const ConnectWalletButton: React.FC<ConnectWalletButtonProps> = ({
             type={toastMessage.type}
             message={toastMessage.message}
             onClose={() => setToastMessage(null)}
+            duration={5000}
           />
         )}
       </AnimatePresence>

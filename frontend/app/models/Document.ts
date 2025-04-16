@@ -6,6 +6,7 @@ export class Document {
     public metadataHash: string,
     public status: string,
     public documentType: string,
-    public verifier: string
+    public verifier: string,
+    public documentName: string = ''
   ) {}
 }

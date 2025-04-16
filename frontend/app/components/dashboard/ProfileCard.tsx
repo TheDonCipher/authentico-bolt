@@ -39,17 +39,11 @@ export const ProfileCard = () => {
     const syncWalletState = async () => {
       // If user is logged in, make sure wallet state is correct
       if (user) {
-        console.log('User is logged in, checking wallet state:', {
-          userWallet: user.walletAddress,
-          connectedWallet: account?.address || 'not connected',
-        });
-
         // If we have a connected wallet but it doesn't match the user's wallet
         if (
           account &&
           user.walletAddress?.toLowerCase() !== account.address.toLowerCase()
         ) {
-          console.log("Wallet addresses don't match, attempting to sync");
           try {
             await login(account.address);
           } catch (err) {
@@ -65,13 +59,8 @@ export const ProfileCard = () => {
 
   // Force wallet connection if we have a user but no connected wallet
   useEffect(() => {
-    if (user && !account) {
-      console.log(
-        'User is logged in but wallet is not connected, attempting to reconnect'
-      );
-      // This will trigger the wallet connection modal if needed
-      // We can't directly connect the wallet programmatically due to security restrictions
-    }
+    // This will trigger the wallet connection modal if needed
+    // We can't directly connect the wallet programmatically due to security restrictions
   }, [user, account]);
 
   return (
@@ -130,16 +119,10 @@ export const ProfileCard = () => {
             }}
             onConnect={async () => {
               // When wallet is connected, we need to check if the account is updated
-              console.log('Wallet connected event triggered');
               // Wait a moment for the account to be updated
               setTimeout(async () => {
                 if (account) {
-                  console.log(
-                    'Account available after connection:',
-                    account.address
-                  );
                   if (!user || user.walletAddress !== account.address) {
-                    console.log('Syncing user with newly connected wallet');
                     await login(account.address);
                   }
                 }

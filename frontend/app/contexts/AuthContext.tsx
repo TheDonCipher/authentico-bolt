@@ -243,153 +243,151 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     return () => unsubscribe();
   }, []);
 
+  // Track wallet connection and disconnection
+  const [previousWalletAddress, setPreviousWalletAddress] = useState<
+    string | null
+  >(null);
+
   // Check if wallet is connected but user is not authenticated
   useEffect(() => {
-    // Skip the effect if no account, already logged in, loading, or initializing
-    if (!account || user || loading || isInitializing) {
+    // If we're initializing, don't do anything yet
+    if (isInitializing) {
       return;
     }
 
-    console.log(
-      'Wallet connected but no user authenticated. Checking wallet:',
-      account.address
-    );
-    console.log('Unregistered wallets:', unregisteredWallets);
+    // Track wallet connection/disconnection
+    if (account) {
+      console.log('Wallet connected:', account.address);
 
-    // Create a memoized function to avoid dependency issues
-    const checkWalletAuth = async () => {
-      // Skip if this wallet is known to be unregistered
-      if (unregisteredWallets.includes(account.address)) {
-        console.log('Wallet is in unregistered list, skipping auto-login');
-        // Just show the error message but don't try to login again
-        setError('This wallet is not registered. Please register first.');
-        return;
+      // If the wallet address changed, clear any previous errors
+      if (previousWalletAddress !== account.address) {
+        clearError();
+        setPreviousWalletAddress(account.address);
       }
 
-      // Check if auto-login is disabled due to repeated failures
-      const autoLoginDisabled = localStorage.getItem('autoLoginDisabled');
-
-      if (autoLoginDisabled === 'true') {
-        console.log('Auto-login is disabled due to repeated failures');
-        setError(
-          'Automatic login is disabled due to repeated failures. Please login manually.'
+      // If we have a wallet but no user, try to authenticate
+      if (!user && !loading) {
+        console.log(
+          'Wallet connected but no user authenticated. Checking wallet:',
+          account.address
         );
-        return;
-      }
+        console.log('Unregistered wallets:', unregisteredWallets);
 
-      // Store the last auto-login attempt timestamp in session storage
-      const lastAttemptStr = sessionStorage.getItem('lastAutoLoginAttempt');
-      const lastAttempt = lastAttemptStr ? parseInt(lastAttemptStr, 10) : 0;
-      const now = Date.now();
-
-      // If we've tried recently (within the last 30 seconds), don't try again
-      // This prevents continuous retries when the API server is down
-      if (lastAttempt && now - lastAttempt < 30000) {
-        console.log('Skipping auto-login attempt - tried recently');
-        return;
-      }
-
-      // Update the timestamp before attempting login
-      sessionStorage.setItem('lastAutoLoginAttempt', now.toString());
-
-      try {
-        console.log('Attempting to auto-login with wallet:', account.address);
-        // Set a specific loading state for auto-login
-        setLoading(true);
-        setError('Authenticating with your wallet...');
-        const result = await login(account.address);
-
-        // If login failed because user doesn't exist, add to unregistered wallets
-        if (!result.success && result.newUser) {
-          console.log(
-            'Auto-login failed - new user, adding to unregistered list'
-          );
+        // Skip if this wallet is known to be unregistered
+        if (unregisteredWallets.includes(account.address)) {
+          console.log('Wallet is in unregistered list, skipping auto-login');
           setError('This wallet is not registered. Please register first.');
-        } else if (result.networkError) {
-          console.log('Auto-login failed: Network error, API may be offline');
-          // Don't retry too frequently when network errors occur
-          sessionStorage.setItem(
-            'lastAutoLoginAttempt',
-            (now + 60000).toString()
-          );
+          return;
+        }
+
+        // Check if auto-login is disabled due to repeated failures
+        const autoLoginDisabled = localStorage.getItem('autoLoginDisabled');
+        if (autoLoginDisabled === 'true') {
+          console.log('Auto-login is disabled due to repeated failures');
           setError(
-            result.message || 'Network error. API server may be offline.'
+            'Automatic login is disabled due to repeated failures. Please login manually.'
           );
-        } else if ('firebaseAuthError' in result && result.firebaseAuthError) {
-          console.log('Auto-login failed: Firebase authentication error');
-          // Don't retry too frequently when Firebase auth errors occur
-          sessionStorage.setItem(
-            'lastAutoLoginAttempt',
-            (now + 30000).toString()
-          );
-          setError(
-            result.message ||
-              'Firebase authentication error. Please try again later.'
-          );
-          // Add the wallet to unregistered list temporarily to prevent immediate retries
-          if (!unregisteredWallets.includes(account.address)) {
-            setUnregisteredWallets((prev) => [...prev, account.address]);
-            // Remove it after 5 minutes to allow retry
-            setTimeout(() => {
-              setUnregisteredWallets((prev) =>
-                prev.filter((addr) => addr !== account.address)
+          return;
+        }
+
+        // Store the last auto-login attempt timestamp in session storage
+        const lastAttemptStr = sessionStorage.getItem('lastAutoLoginAttempt');
+        const lastAttempt = lastAttemptStr ? parseInt(lastAttemptStr, 10) : 0;
+        const now = Date.now();
+
+        // If we've tried recently (within the last 10 seconds), don't try again
+        if (lastAttempt && now - lastAttempt < 10000) {
+          console.log('Skipping auto-login attempt - tried recently');
+          return;
+        }
+
+        // Update the timestamp before attempting login
+        sessionStorage.setItem('lastAutoLoginAttempt', now.toString());
+
+        // Attempt to login with the connected wallet
+        (async () => {
+          try {
+            console.log(
+              'Attempting to auto-login with wallet:',
+              account.address
+            );
+            setLoading(true);
+            setError('Authenticating with your wallet...');
+
+            const result = await login(account.address);
+
+            if (result.success) {
+              console.log('Successfully authenticated with wallet');
+              clearError();
+              // Reset failure count on success
+              localStorage.setItem('autoLoginFailureCount', '0');
+            } else if (result.newUser) {
+              console.log(
+                'Auto-login failed - new user, adding to unregistered list'
               );
-            }, 300000); // 5 minutes
+              setError('This wallet is not registered. Please register first.');
+            } else {
+              console.log('Auto-login failed:', result.message);
+              setError(
+                result.message ||
+                  'Failed to authenticate with wallet. Please try again.'
+              );
+
+              // Track login failures
+              const currentFailures = parseInt(
+                localStorage.getItem('autoLoginFailureCount') || '0'
+              );
+              const newFailureCount = currentFailures + 1;
+              localStorage.setItem(
+                'autoLoginFailureCount',
+                newFailureCount.toString()
+              );
+
+              // Disable auto-login after 3 consecutive failures
+              if (newFailureCount >= 3) {
+                console.log('Disabling auto-login due to repeated failures');
+                localStorage.setItem('autoLoginDisabled', 'true');
+
+                // Re-enable after 30 minutes
+                setTimeout(() => {
+                  console.log('Re-enabling auto-login');
+                  localStorage.removeItem('autoLoginDisabled');
+                  localStorage.setItem('autoLoginFailureCount', '0');
+                }, 1800000); // 30 minutes
+              }
+            }
+          } catch (err: any) {
+            console.error('Wallet auth error:', err);
+            setError(err.message || 'Failed to authenticate with wallet');
+          } finally {
+            setLoading(false);
           }
-        } else if (result.success) {
-          console.log('Successfully authenticated with wallet');
-          // Clear any previous errors
-          clearError();
-        } else {
-          console.log('Auto-login failed for other reasons');
-          setError(
-            result.message ||
-              'Failed to authenticate with wallet. Please try again.'
-          );
-        }
-      } catch (err: any) {
-        // Handle login errors
-        const errorMessage =
-          err.message || 'Failed to authenticate with wallet';
-        setError(errorMessage);
-        console.error('Wallet auth error:', err);
-
-        // Track login failures
-        const currentFailures = parseInt(
-          localStorage.getItem('autoLoginFailureCount') || '0'
-        );
-        const newFailureCount = currentFailures + 1;
-        localStorage.setItem(
-          'autoLoginFailureCount',
-          newFailureCount.toString()
-        );
-
-        console.log(`Auto-login failure count: ${newFailureCount}`);
-
-        // Disable auto-login after 3 consecutive failures
-        if (newFailureCount >= 3) {
-          console.log('Disabling auto-login due to repeated failures');
-          localStorage.setItem('autoLoginDisabled', 'true');
-
-          // Set a timeout to re-enable auto-login after 1 hour
-          setTimeout(() => {
-            console.log('Re-enabling auto-login');
-            localStorage.removeItem('autoLoginDisabled');
-            localStorage.setItem('autoLoginFailureCount', '0');
-          }, 3600000); // 1 hour
-        }
-
-        // On error, also don't retry too frequently
-        sessionStorage.setItem(
-          'lastAutoLoginAttempt',
-          (now + 30000).toString()
-        );
+        })();
       }
-    };
+    } else {
+      // Wallet disconnected
+      if (previousWalletAddress) {
+        console.log('Wallet disconnected');
+        setPreviousWalletAddress(null);
 
-    // Execute the check
-    checkWalletAuth();
-  }, [account, user, loading, isInitializing, login, unregisteredWallets]);
+        // If we had a user but wallet disconnected, log them out
+        if (user) {
+          console.log('Logging out due to wallet disconnection');
+          logout();
+        }
+      }
+    }
+  }, [
+    account,
+    user,
+    loading,
+    isInitializing,
+    unregisteredWallets,
+    login,
+    logout,
+    previousWalletAddress,
+    clearError,
+  ]);
 
   // Provide the auth context
   return (

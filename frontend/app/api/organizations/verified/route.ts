@@ -7,12 +7,9 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
 
 export async function GET(request: NextRequest) {
   try {
-    console.log('Get verified organizations API route called');
-
     // Get the authorization header
     const authHeader = request.headers.get('authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      console.error('Missing or invalid authorization header');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -24,17 +21,12 @@ export async function GET(request: NextRequest) {
       const decodedToken = await auth.verifyIdToken(token);
       const uid = decodedToken.uid;
 
-      console.log(`Getting verified organizations for user ${uid}`);
-
       // Get organizations directly from Firestore
-      console.log('Fetching verified organizations from Firestore');
       const usersRef = db.collection('users');
       const snapshot = await usersRef
         .where('userType', '==', 'organization')
         .where('isVerified', '==', true)
         .get();
-
-      console.log(`Found ${snapshot.size} verified organizations in Firestore`);
 
       // Format results
       const organizations = snapshot.docs.map((doc) => {
@@ -42,10 +34,8 @@ export async function GET(request: NextRequest) {
         // Check if organization details are in the orgDetails field
         const orgDetails = data.orgDetails || {};
 
-        // Ensure name is present
-        if (!data.name && !orgDetails.name) {
-          console.warn(`Organization ${doc.id} has no name property`);
-        }
+        // Ensure name is present with a default if missing
+        const hasName = data.name || orgDetails.name;
 
         return {
           id: doc.id,
@@ -60,14 +50,11 @@ export async function GET(request: NextRequest) {
         };
       });
 
-      console.log('Formatted organizations from Firestore:', organizations);
-
       // If no organizations found, use fallback data in development
       if (
         organizations.length === 0 &&
         process.env.NODE_ENV === 'development'
       ) {
-        console.log('No organizations found, using fallback data');
         const fallbackOrgs = [
           {
             id: 'org1',
@@ -95,18 +82,14 @@ export async function GET(request: NextRequest) {
 
       return NextResponse.json(organizations);
     } catch (tokenError: any) {
-      console.error('Token verification error:', tokenError);
       return NextResponse.json(
         { error: 'Invalid token', details: tokenError.message },
         { status: 401 }
       );
     }
   } catch (error: any) {
-    console.error('Error in get verified organizations API route:', error);
-
     // In development, return fallback data
     if (process.env.NODE_ENV === 'development') {
-      console.log('Using fallback organization data in development');
       const fallbackOrgs = [
         {
           id: 'org1',

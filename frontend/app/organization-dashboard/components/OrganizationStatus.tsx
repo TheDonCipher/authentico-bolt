@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { Check, X, Clock, AlertTriangle, ExternalLink } from 'lucide-react';
-import { auth } from '../../../lib/firebase';
 import axios from 'axios';
+import { getAuthToken } from '../../../lib/token-util';
 import { Toast } from '../../components/ui/Toast';
 import Link from 'next/link';
 
@@ -61,8 +61,8 @@ const OrganizationStatus: React.FC<OrganizationStatusProps> = ({ userId }) => {
     try {
       setLoading(true);
 
-      // Get Firebase ID token
-      const idToken = await auth.currentUser?.getIdToken();
+      // Get Firebase ID token using the token utility
+      const idToken = await getAuthToken();
       if (!idToken) {
         throw new Error('Not authenticated');
       }
@@ -143,8 +143,8 @@ const OrganizationStatus: React.FC<OrganizationStatusProps> = ({ userId }) => {
     setIsSubmitting(true);
 
     try {
-      // Get Firebase ID token
-      const idToken = await auth.currentUser?.getIdToken();
+      // Get Firebase ID token using the token utility
+      const idToken = await getAuthToken();
       if (!idToken) {
         throw new Error('Not authenticated');
       }

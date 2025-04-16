@@ -3,7 +3,6 @@
  */
 import axios from 'axios';
 import { getAuthToken } from './token-util';
-import { auth } from './firebase';
 
 // Create a custom axios instance
 const apiClient = axios.create({
@@ -71,14 +70,53 @@ apiClient.interceptors.response.use(
  */
 export const uploadDocument = async (formData, onProgress) => {
   try {
-    // Get the auth token directly - ensure we have a fresh ID token
-    const currentUser = auth.currentUser;
-    if (!currentUser) {
+    // Only log in development environment
+    if (process.env.NODE_ENV === 'development') {
+      console.log('FormData entries:');
+      for (const pair of formData.entries()) {
+        console.log(
+          `- ${pair[0]}: ${
+            pair[1] instanceof File
+              ? `File: ${pair[1].name} (${pair[1].size} bytes)`
+              : pair[1]
+          }`
+        );
+      }
+    }
+
+    // Validate form data
+    if (!formData.has('document_file')) {
+      throw new Error('Missing document file in form data');
+    }
+
+    // Use the getAuthToken function which handles token retrieval
+    const token = await getAuthToken();
+    if (!token) {
       throw new Error('User not authenticated');
     }
 
-    // Force refresh to get a fresh ID token
-    const token = await currentUser.getIdToken(true);
+    // Create a new FormData object to ensure proper formatting
+    const cleanFormData = new FormData();
+
+    // Copy all entries from the original formData to the new one
+    for (const [key, value] of formData.entries()) {
+      // Make sure we're using the exact field name expected by the backend
+      if (key === 'document_file' && value instanceof File) {
+        // Ensure the file has a name and type
+        // Create a new File object with proper name and type to ensure consistency
+        const fileType = value.type || 'application/octet-stream';
+        const fileName = value.name || 'document.pdf';
+
+        // Log file details for debugging
+        console.log(
+          `Processing file: ${fileName} (${value.size} bytes, ${fileType})`
+        );
+
+        cleanFormData.append('document_file', value, fileName);
+      } else {
+        cleanFormData.append(key, value);
+      }
+    }
 
     // Create headers with only the Authorization header
     // Let Axios automatically set the Content-Type for FormData
@@ -88,30 +126,41 @@ export const uploadDocument = async (formData, onProgress) => {
 
     // Upload the document
     // Use axios directly instead of apiClient to avoid any middleware interference
-    const response = await axios.post(
-      `${process.env.NEXT_PUBLIC_API_URL || '/api'}/documents/upload`,
-      formData,
-      {
-        headers,
-        // Important: These settings help with large file uploads
-        maxContentLength: Infinity,
-        maxBodyLength: Infinity,
-        // Don't transform the request data
-        transformRequest: [(data) => data],
-        onUploadProgress: (progressEvent) => {
-          if (onProgress) {
-            const percentCompleted = Math.round(
-              (progressEvent.loaded * 100) / (progressEvent.total || 100)
-            );
-            onProgress(percentCompleted);
+    const response = await axios.post('/api/documents/upload', cleanFormData, {
+      headers,
+      // Important: These settings help with large file uploads
+      maxContentLength: Infinity,
+      maxBodyLength: Infinity,
+      // Don't set transformRequest - let axios handle FormData properly
+      onUploadProgress: (progressEvent) => {
+        if (onProgress) {
+          const percentCompleted = Math.round(
+            (progressEvent.loaded * 100) / (progressEvent.total || 100)
+          );
+          if (process.env.NODE_ENV === 'development') {
+            console.log(`Upload progress: ${percentCompleted}%`);
           }
-        },
-      }
-    );
+          onProgress(percentCompleted);
+        }
+      },
+      // Set a longer timeout for uploads
+      timeout: 120000, // 120 seconds (increased timeout)
+    });
 
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Document upload API response:', response.data);
+    }
     return response.data;
   } catch (error) {
-    console.error('Document upload error:', error);
+    // Enhanced error logging
+    if (error.response) {
+      console.error(
+        `Document upload failed with status: ${error.response.status}`,
+        error.response.data
+      );
+    } else {
+      console.error('Document upload error:', error.message || 'Unknown error');
+    }
     throw error;
   }
 };
@@ -165,15 +214,10 @@ export const getDocumentTypes = async () => {
  */
 export const getVerifiedOrganizations = async () => {
   try {
-    console.log('Fetching verified organizations...');
-
     // Use the apiClient which already handles token management
     const response = await apiClient.get('/organizations/verified');
 
-    console.log('API response data:', response.data);
-
     if (!Array.isArray(response.data)) {
-      console.warn('Response is not an array:', response.data);
       return [];
     }
 
@@ -182,13 +226,11 @@ export const getVerifiedOrganizations = async () => {
       .map((org) => {
         // Ensure each organization has required fields
         if (!org.id) {
-          console.warn('Organization missing ID:', org);
           return null;
         }
 
         // Ensure name is present, use a default if not
         if (!org.name) {
-          console.warn(`Organization ${org.id} missing name:`, org);
           org.name = 'Unnamed Organization';
         }
 
@@ -207,14 +249,10 @@ export const getVerifiedOrganizations = async () => {
       })
       .filter((org) => org !== null); // Remove any null entries
 
-    console.log('Validated organizations:', validatedOrgs);
     return validatedOrgs;
   } catch (error) {
-    console.error('Error fetching verified organizations:', error);
-
     // In development, return fallback data
     if (process.env.NODE_ENV === 'development') {
-      console.log('Using fallback organization data in development');
       return [
         {
           id: 'org1',

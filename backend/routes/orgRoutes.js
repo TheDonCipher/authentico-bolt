@@ -192,20 +192,21 @@ router.get('/application/status', verifyToken, async (req, res) => {
  */
 router.get('/verified', verifyToken, async (req, res) => {
   try {
-    console.log('Getting verified organizations for user:', req.user.uid);
+    // Only log in development environment with minimal information
+    if (process.env.NODE_ENV === 'development') {
+      console.log(
+        `Verified organizations request from: ${req.user.uid.substring(
+          0,
+          8
+        )}...`
+      );
+    }
 
     // Query for verified organizations
     const snapshot = await usersCollection
       .where('userType', '==', 'organization')
       .where('isVerified', '==', true)
       .get();
-
-    console.log(`Found ${snapshot.size} verified organizations`);
-
-    // Log the raw data from Firestore
-    snapshot.docs.forEach((doc, index) => {
-      console.log(`Organization ${index + 1} (${doc.id}):`, doc.data());
-    });
 
     // Format results
     const organizations = snapshot.docs.map((doc) => {
@@ -229,7 +230,7 @@ router.get('/verified', verifyToken, async (req, res) => {
         industry: data.industry || orgDetails.industry || null,
         phoneNumber: data.phoneNumber || orgDetails.phoneNumber || null,
       };
-      console.log(`Formatted organization ${doc.id}:`, org);
+
       return org;
     });
 

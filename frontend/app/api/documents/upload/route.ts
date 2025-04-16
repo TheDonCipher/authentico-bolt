@@ -8,8 +8,6 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('Document upload API route called');
-
     // Get the authorization header
     const authHeader = request.headers.get('authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -23,12 +21,10 @@ export async function POST(request: NextRequest) {
     let uid;
     try {
       // Verify as an ID token
-      console.log('Verifying ID token...');
       const decodedToken = await auth.verifyIdToken(token);
       uid = decodedToken.uid;
-      console.log('ID token verified successfully for user:', uid);
     } catch (idTokenError) {
-      console.error('ID token verification failed:', idTokenError);
+      console.error('ID token verification failed:', idTokenError.message);
       return NextResponse.json(
         {
           error: 'INVALID_TOKEN',
@@ -40,33 +36,44 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log(`User ${uid} is uploading a document`);
-
     // Forward the request to the backend
     try {
+      console.log('Document upload API route called');
+
       // Get the form data from the request
       const formData = await request.formData();
-      console.log('Form data received, forwarding to backend');
 
-      // Log the form data keys for debugging
-      console.log('Form data keys:', Array.from(formData.keys()));
+      // Debug form data
+      const formEntries = Array.from(formData.entries());
+      console.log(`Form data entries count: ${formEntries.length}`);
 
-      // Log more details about each form field
-      for (const [key, value] of formData.entries()) {
-        if (key === 'document_file' && value instanceof File) {
-          console.log(`Form field: ${key}`, {
-            type: 'File',
-            name: value.name,
-            size: value.size,
-            type: value.type,
-            lastModified: new Date(value.lastModified).toISOString(),
-          });
+      if (formEntries.length === 0) {
+        console.error('Empty form data received');
+        return NextResponse.json(
+          { error: 'EMPTY_FORM', message: 'No form data provided' },
+          { status: 400 }
+        );
+      }
+
+      // Log form entries for debugging
+      formEntries.forEach(([key, value]) => {
+        if (value instanceof File) {
+          console.log(
+            `Form entry: ${key} = File (${value.name}, ${value.size} bytes, ${value.type})`
+          );
         } else {
-          console.log(`Form field: ${key}`, {
-            type: typeof value,
-            value: value instanceof File ? '[File object]' : value,
-          });
+          console.log(`Form entry: ${key} = ${value}`);
         }
+      });
+
+      // Check if document_file exists
+      const fileEntry = formEntries.find(([key]) => key === 'document_file');
+      if (!fileEntry || !(fileEntry[1] instanceof File)) {
+        console.error('No document file found in form data');
+        return NextResponse.json(
+          { error: 'NO_FILE', message: 'No document file provided' },
+          { status: 400 }
+        );
       }
 
       // Create a new FormData object for axios
@@ -75,65 +82,110 @@ export async function POST(request: NextRequest) {
 
       // Copy all entries from the original formData to the new one
       for (const [key, value] of formData.entries()) {
-        console.log(`Adding form field to axios FormData: ${key}`);
-
         // Special handling for file fields
         if (key === 'document_file' && value instanceof File) {
+          // Only log in development environment
+          if (process.env.NODE_ENV === 'development') {
+            console.log(`Processing file: ${value.name} (${value.size} bytes)`);
+          }
+
           // Convert the file to a Buffer
           const arrayBuffer = await value.arrayBuffer();
           const buffer = Buffer.from(arrayBuffer);
 
           // Add the file with proper filename and content type
-          axiosFormData.append(key, buffer, {
+          // IMPORTANT: Use the exact field name expected by multer in the backend
+          axiosFormData.append('document_file', buffer, {
             filename: value.name,
             contentType: value.type || 'application/octet-stream',
+            knownLength: buffer.length, // Add known length to help with content-length header
           });
 
-          console.log(
-            `Added file ${value.name} (${value.size} bytes) as Buffer`
-          );
+          // Log the buffer size for debugging
+          console.log(`File buffer size: ${buffer.length} bytes`);
+
+          // Only log in development environment
+          if (process.env.NODE_ENV === 'development') {
+            console.log(
+              `Added file to axios FormData with content type: ${
+                value.type || 'application/octet-stream'
+              }, length: ${buffer.length}`
+            );
+          }
         } else {
           // For non-file fields, just append the value
           axiosFormData.append(key, String(value));
+
+          // Only log in development environment
+          if (process.env.NODE_ENV === 'development') {
+            console.log(
+              `Added form field to axios FormData: ${key}=${String(value)}`
+            );
+          }
         }
       }
 
       // Forward the request to the backend
-      console.log('Sending request to:', `${API_URL}/documents/upload`);
+      if (process.env.NODE_ENV === 'development') {
+        console.log(
+          `Forwarding request to backend: ${API_URL}/documents/upload`
+        );
+      }
+
+      // Get the headers that form-data wants to set
+      const formHeaders = axiosFormData.getHeaders();
+
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Form headers:', formHeaders);
+      }
+
+      // Log the form data size
+      console.log(
+        `Form data size estimate: ${axiosFormData.getLengthSync()} bytes`
+      );
+
       const response = await axios.post(
         `${API_URL}/documents/upload`,
         axiosFormData,
         {
           headers: {
-            // Don't set Content-Type here, let axios set it with the correct boundary
+            // Use the content-type header from form-data with the correct boundary
+            ...formHeaders,
             Authorization: `Bearer ${token}`,
           },
           // Important: These settings help with large file uploads
-          timeout: 60000, // 60 seconds
+          timeout: 120000, // 120 seconds (increased timeout)
           maxBodyLength: Infinity,
           maxContentLength: Infinity,
-          // Don't transform the request data
-          transformRequest: [(data) => data],
+          // IMPORTANT: Remove transformRequest to let axios handle FormData properly
+          // validateStatus to handle all responses
+          validateStatus: (status) => {
+            // Log the status code for debugging in development
+            if (process.env.NODE_ENV === 'development') {
+              console.log(`Backend response status: ${status}`);
+            }
+            return true; // Handle all status codes in the catch block
+          },
         }
       );
 
-      console.log('Backend response:', response.data);
-
+      // Only log in development environment
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Backend response received:', response.data);
+      }
       return NextResponse.json(response.data);
     } catch (error: any) {
-      console.error(
-        'Error forwarding document upload to backend:',
-        error.message
-      );
+      console.error('Document upload error details:', {
+        message: error.message,
+        code: error.code,
+        response: error.response?.data,
+        status: error.response?.status,
+      });
 
       // If the backend is not available, create a mock response
       if (error.code === 'ECONNREFUSED' || !error.response) {
-        console.log('Backend not available, creating mock response');
-
         // Create a document ID
         const documentId = uuidv4();
-
-        // Use the Firestore instance imported at the top
 
         // Create a document in Firestore
         await db.collection('documents').doc(documentId).set({
@@ -152,14 +204,27 @@ export async function POST(request: NextRequest) {
         });
       }
 
+      // Check for specific error types
+      if (error.response?.status === 400) {
+        return NextResponse.json(
+          {
+            error: 'INVALID_REQUEST',
+            message:
+              'Invalid document upload request. Please check your file and try again.',
+            details: error.response?.data?.error || error.message,
+          },
+          { status: 400 }
+        );
+      }
+
       // Return the error from the backend
       return NextResponse.json(
-        { error: error.response?.data || 'Document upload failed' },
+        { error: error.response?.data?.error || 'Document upload failed' },
         { status: error.response?.status || 500 }
       );
     }
   } catch (error: any) {
-    console.error('Error in document upload API route:', error);
+    console.error('Error in document upload API route:', error.message);
 
     // Provide more detailed error messages based on error type
     if (error.name === 'FirebaseError') {
@@ -167,7 +232,6 @@ export async function POST(request: NextRequest) {
         {
           error: 'FIREBASE_ERROR',
           message: 'Database operation failed. Please try again later.',
-          details: error.message,
         },
         { status: 500 }
       );
@@ -176,7 +240,6 @@ export async function POST(request: NextRequest) {
         {
           error: 'AUTHENTICATION_ERROR',
           message: 'Authentication failed. Please sign in again.',
-          details: error.message,
         },
         { status: 401 }
       );
@@ -189,7 +252,6 @@ export async function POST(request: NextRequest) {
           error: 'DOCUMENT_ERROR',
           message:
             'There was a problem with your document. Please try again with a different file.',
-          details: error.message,
         },
         { status: 400 }
       );
@@ -200,7 +262,6 @@ export async function POST(request: NextRequest) {
       {
         error: 'UPLOAD_ERROR',
         message: 'Document upload failed. Please try again later.',
-        details: error.message,
       },
       { status: 500 }
     );

@@ -27,7 +27,12 @@
     "test:verify-env": "npm run verify-env --workspace=test-scripts",
     "test:auth": "npm run test:auth --workspace=test-scripts",
     "test:document": "npm run test:document --workspace=test-scripts",
-    "test:all": "npm run test --workspace=test-scripts"
+    "test:all": "npm run test --workspace=test-scripts",
+    "seed:verified-orgs": "node scripts/seed-verified-organizations.js",
+    "test:verified-org-upload": "node test-scripts/test-verified-org-upload.js",
+    "setup:firebase-env": "node scripts/setup-firebase-env.js",
+    "generate:master-key": "node scripts/generate-master-key.js",
+    "generate:fixed-master-key": "node scripts/generate-fixed-master-key.js"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.6.2",
@@ -61,6 +66,7 @@
     "react-cookie": "^8.0.1",
     "react-cookies": "^0.1.1",
     "server-only": "^0.0.1",
-    "util": "^0.12.5"
+    "util": "^0.12.5",
+    "uuid": "^11.1.0"
   }
 }

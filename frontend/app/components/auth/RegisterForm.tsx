@@ -137,6 +137,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
             type={toastMessage.type}
             message={toastMessage.message}
             onClose={() => setToastMessage(null)}
+            duration={5000}
           />
         )}
       </AnimatePresence>

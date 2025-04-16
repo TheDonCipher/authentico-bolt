@@ -22,16 +22,13 @@ export const getAuthToken = async () => {
 
         return token;
       } catch (e) {
-        console.error('Error getting ID token from Firebase Auth:', e);
+        // Silent error - token will be null
       }
-    } else {
-      console.log('No current user found in Firebase Auth');
     }
 
     // If we still don't have a token, return null
     return null;
   } catch (e) {
-    console.error('Error in getAuthToken:', e);
     return null;
   }
 };

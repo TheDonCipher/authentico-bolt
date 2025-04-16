@@ -11,111 +11,131 @@ interface OrgApplication {
   orgName: string;
   contactEmail: string;
   website: string;
+  phoneNumber?: string;
+  industry?: string;
+  registrationNumber?: string;
+  foundedYear?: string;
+  documentTypes?: string[];
+  description?: string;
+  address?: string;
   status: string;
   submittedAt: Date;
   updatedAt: Date | null;
+  notes?: string;
 }
 
 const OrganizationApplications = () => {
   const [applications, setApplications] = useState<OrgApplication[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedApp, setSelectedApp] = useState<string | null>(null);
+  const [viewingApp, setViewingApp] = useState<OrgApplication | null>(null);
   const [notes, setNotes] = useState('');
-  const [toastMessage, setToastMessage] = useState<{ type: 'success' | 'error', message: string } | null>(null);
-  
+  const [toastMessage, setToastMessage] = useState<{
+    type: 'success' | 'error';
+    message: string;
+  } | null>(null);
+
   useEffect(() => {
     fetchApplications();
   }, []);
-  
+
   const fetchApplications = async () => {
     try {
       setLoading(true);
-      
+
       // Get Firebase ID token
       const idToken = await auth.currentUser?.getIdToken();
       if (!idToken) {
         throw new Error('Not authenticated');
       }
-      
+
       const response = await axios.get('/api/organizations/applications', {
         headers: {
-          Authorization: `Bearer ${idToken}`
-        }
+          Authorization: `Bearer ${idToken}`,
+        },
       });
-      
+
       // Format dates
       const formattedApps = response.data.map((app: any) => ({
         ...app,
         submittedAt: new Date(app.submittedAt),
-        updatedAt: app.updatedAt ? new Date(app.updatedAt) : null
+        updatedAt: app.updatedAt ? new Date(app.updatedAt) : null,
       }));
-      
+
       setApplications(formattedApps);
     } catch (error) {
       console.error('Error fetching applications:', error);
       setToastMessage({
         type: 'error',
-        message: 'Failed to load organization applications'
+        message: 'Failed to load organization applications',
       });
     } finally {
       setLoading(false);
     }
   };
-  
-  const updateApplicationStatus = async (applicationId: string, status: 'approved' | 'rejected') => {
+
+  const updateApplicationStatus = async (
+    applicationId: string,
+    status: 'approved' | 'rejected'
+  ) => {
     try {
       // Get Firebase ID token
       const idToken = await auth.currentUser?.getIdToken();
       if (!idToken) {
         throw new Error('Not authenticated');
       }
-      
-      await axios.put(`/api/organizations/applications/${applicationId}`, {
-        status,
-        notes: notes
-      }, {
-        headers: {
-          Authorization: `Bearer ${idToken}`
+
+      await axios.put(
+        `/api/organizations/applications/${applicationId}`,
+        {
+          status,
+          notes: notes,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${idToken}`,
+          },
         }
-      });
-      
+      );
+
       // Update local state
-      setApplications(applications.map(app => 
-        app.id === applicationId ? { ...app, status } : app
-      ));
-      
+      setApplications(
+        applications.map((app) =>
+          app.id === applicationId ? { ...app, status } : app
+        )
+      );
+
       setSelectedApp(null);
       setNotes('');
-      
+
       setToastMessage({
         type: 'success',
-        message: `Organization application ${status} successfully`
+        message: `Organization application ${status} successfully`,
       });
-      
+
       // Refresh applications after a short delay
       setTimeout(() => {
         fetchApplications();
       }, 2000);
-      
     } catch (error) {
       console.error('Error updating application status:', error);
       setToastMessage({
         type: 'error',
-        message: `Failed to ${status} organization application`
+        message: `Failed to ${status} organization application`,
       });
     }
   };
-  
+
   const formatDate = (date: Date) => {
     return date.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
     });
   };
-  
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'approved':
@@ -142,7 +162,7 @@ const OrganizationApplications = () => {
         );
     }
   };
-  
+
   if (loading) {
     return (
       <div className="bg-[#E8EDE1] border-4 border-[#556B2F] p-6 shadow-brutal">
@@ -155,16 +175,22 @@ const OrganizationApplications = () => {
       </div>
     );
   }
-  
+
   return (
     <div className="bg-[#E8EDE1] border-4 border-[#556B2F] p-6 shadow-brutal">
-      <h2 className="text-3xl font-black mb-6 text-[#2F4F4F]">Organization Applications</h2>
-      
+      <h2 className="text-3xl font-black mb-6 text-[#2F4F4F]">
+        Organization Applications
+      </h2>
+
       {applications.length === 0 ? (
         <div className="bg-white p-6 border-2 border-[#556B2F] text-center">
           <Clock size={48} className="mx-auto mb-4 text-[#556B2F]" />
-          <p className="text-lg font-bold text-[#2F4F4F]">No applications found</p>
-          <p className="text-[#2F4F4F]">When organizations apply for verification, they will appear here.</p>
+          <p className="text-lg font-bold text-[#2F4F4F]">
+            No applications found
+          </p>
+          <p className="text-[#2F4F4F]">
+            When organizations apply for verification, they will appear here.
+          </p>
         </div>
       ) : (
         <>
@@ -172,65 +198,259 @@ const OrganizationApplications = () => {
             <table className="w-full bg-white border-2 border-[#556B2F]">
               <thead>
                 <tr className="bg-[#D2E3C8]">
-                  <th className="p-3 text-left font-bold text-[#2F4F4F] border-b-2 border-[#556B2F]">Organization</th>
-                  <th className="p-3 text-left font-bold text-[#2F4F4F] border-b-2 border-[#556B2F]">Email</th>
-                  <th className="p-3 text-left font-bold text-[#2F4F4F] border-b-2 border-[#556B2F]">Website</th>
-                  <th className="p-3 text-left font-bold text-[#2F4F4F] border-b-2 border-[#556B2F]">Status</th>
-                  <th className="p-3 text-left font-bold text-[#2F4F4F] border-b-2 border-[#556B2F]">Submitted</th>
-                  <th className="p-3 text-left font-bold text-[#2F4F4F] border-b-2 border-[#556B2F]">Actions</th>
+                  <th className="p-3 text-left font-bold text-[#2F4F4F] border-b-2 border-[#556B2F]">
+                    Organization
+                  </th>
+                  <th className="p-3 text-left font-bold text-[#2F4F4F] border-b-2 border-[#556B2F]">
+                    Email
+                  </th>
+                  <th className="p-3 text-left font-bold text-[#2F4F4F] border-b-2 border-[#556B2F]">
+                    Industry
+                  </th>
+                  <th className="p-3 text-left font-bold text-[#2F4F4F] border-b-2 border-[#556B2F]">
+                    Status
+                  </th>
+                  <th className="p-3 text-left font-bold text-[#2F4F4F] border-b-2 border-[#556B2F]">
+                    Submitted
+                  </th>
+                  <th className="p-3 text-left font-bold text-[#2F4F4F] border-b-2 border-[#556B2F]">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {applications.map((app) => (
-                  <tr key={app.id} className="border-b border-[#556B2F] hover:bg-[#F5F7F2]">
-                    <td className="p-3 text-[#2F4F4F] font-medium">{app.orgName}</td>
+                  <tr
+                    key={app.id}
+                    className="border-b border-[#556B2F] hover:bg-[#F5F7F2] cursor-pointer"
+                    onClick={() => setViewingApp(app)}
+                  >
+                    <td className="p-3 text-[#2F4F4F] font-medium">
+                      {app.orgName}
+                    </td>
                     <td className="p-3 text-[#2F4F4F]">{app.contactEmail}</td>
                     <td className="p-3 text-[#2F4F4F]">
-                      <a 
-                        href={app.website} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="flex items-center text-blue-600 hover:underline"
-                      >
-                        {app.website.replace(/^https?:\/\//, '').replace(/\/$/, '')}
-                        <ExternalLink size={14} className="ml-1" />
-                      </a>
+                      {app.industry || 'Not specified'}
                     </td>
                     <td className="p-3">{getStatusBadge(app.status)}</td>
-                    <td className="p-3 text-[#2F4F4F]">{formatDate(app.submittedAt)}</td>
-                    <td className="p-3">
-                      {app.status === 'pending' && (
-                        <div className="flex space-x-2">
-                          <button
-                            onClick={() => updateApplicationStatus(app.id, 'approved')}
-                            className="bg-[#698B69] text-white p-2 border border-[#556B2F] hover:shadow-[1px_1px_0px_0px_rgba(85,107,47,1)] transition-all"
-                            title="Approve Application"
+                    <td className="p-3 text-[#2F4F4F]">
+                      {formatDate(app.submittedAt)}
+                    </td>
+                    <td className="p-3" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => setViewingApp(app)}
+                          className="bg-[#D2E3C8] text-[#2F4F4F] p-2 border border-[#556B2F] hover:shadow-[1px_1px_0px_0px_rgba(85,107,47,1)] transition-all"
+                          title="View Details"
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
                           >
-                            <Check size={16} />
-                          </button>
-                          <button
-                            onClick={() => setSelectedApp(app.id)}
-                            className="bg-[#E6B8AF] text-[#2F4F4F] p-2 border border-[#556B2F] hover:shadow-[1px_1px_0px_0px_rgba(85,107,47,1)] transition-all"
-                            title="Reject Application"
-                          >
-                            <X size={16} />
-                          </button>
-                        </div>
-                      )}
+                            <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path>
+                            <circle cx="12" cy="12" r="3"></circle>
+                          </svg>
+                        </button>
+                        {app.status === 'pending' && (
+                          <>
+                            <button
+                              onClick={() =>
+                                updateApplicationStatus(app.id, 'approved')
+                              }
+                              className="bg-[#698B69] text-white p-2 border border-[#556B2F] hover:shadow-[1px_1px_0px_0px_rgba(85,107,47,1)] transition-all"
+                              title="Approve Application"
+                            >
+                              <Check size={16} />
+                            </button>
+                            <button
+                              onClick={() => setSelectedApp(app.id)}
+                              className="bg-[#E6B8AF] text-[#2F4F4F] p-2 border border-[#556B2F] hover:shadow-[1px_1px_0px_0px_rgba(85,107,47,1)] transition-all"
+                              title="Reject Application"
+                            >
+                              <X size={16} />
+                            </button>
+                          </>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-          
+
+          {/* Application Details Dialog */}
+          {viewingApp && (
+            <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4">
+              <div className="bg-white p-6 border-4 border-[#556B2F] max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+                <div className="flex justify-between items-start mb-4">
+                  <h3 className="text-xl font-bold text-[#2F4F4F]">
+                    {viewingApp.orgName}
+                    <span className="ml-3">
+                      {getStatusBadge(viewingApp.status)}
+                    </span>
+                  </h3>
+                  <button
+                    onClick={() => setViewingApp(null)}
+                    className="bg-[#E6B8AF] text-[#2F4F4F] p-2 border-2 border-[#556B2F] hover:shadow-[2px_2px_0px_0px_rgba(85,107,47,1)] transition-all"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                  <div className="bg-[#F5F7F2] p-4 border-2 border-[#556B2F]">
+                    <h4 className="font-bold mb-3 text-[#2F4F4F]">
+                      Contact Information
+                    </h4>
+                    <div className="space-y-2">
+                      <div>
+                        <p className="text-sm font-bold text-gray-500">Email</p>
+                        <p>{viewingApp.contactEmail}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-gray-500">Phone</p>
+                        <p>{viewingApp.phoneNumber || 'Not provided'}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-gray-500">
+                          Website
+                        </p>
+                        <p className="flex items-center">
+                          <a
+                            href={viewingApp.website}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:underline flex items-center"
+                          >
+                            {viewingApp.website}
+                            <ExternalLink size={14} className="ml-1" />
+                          </a>
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-gray-500">
+                          Address
+                        </p>
+                        <p>{viewingApp.address || 'Not provided'}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-[#F5F7F2] p-4 border-2 border-[#556B2F]">
+                    <h4 className="font-bold mb-3 text-[#2F4F4F]">
+                      Organization Details
+                    </h4>
+                    <div className="space-y-2">
+                      <div>
+                        <p className="text-sm font-bold text-gray-500">
+                          Industry
+                        </p>
+                        <p>{viewingApp.industry || 'Not specified'}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-gray-500">
+                          Registration/License Number
+                        </p>
+                        <p>{viewingApp.registrationNumber || 'Not provided'}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-gray-500">
+                          Founded Year
+                        </p>
+                        <p>{viewingApp.foundedYear || 'Not provided'}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-gray-500">
+                          Application Date
+                        </p>
+                        <p>{formatDate(viewingApp.submittedAt)}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mb-6">
+                  <h4 className="font-bold mb-3 text-[#2F4F4F]">Description</h4>
+                  <div className="bg-[#F5F7F2] p-4 border-2 border-[#556B2F]">
+                    <p>{viewingApp.description || 'No description provided'}</p>
+                  </div>
+                </div>
+
+                {viewingApp.documentTypes &&
+                  viewingApp.documentTypes.length > 0 && (
+                    <div className="mb-6">
+                      <h4 className="font-bold mb-3 text-[#2F4F4F]">
+                        Document Types
+                      </h4>
+                      <div className="bg-[#F5F7F2] p-4 border-2 border-[#556B2F]">
+                        <div className="flex flex-wrap gap-2">
+                          {viewingApp.documentTypes.map((type) => (
+                            <span
+                              key={type}
+                              className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-[#D2E3C8] text-[#2F4F4F] border border-[#556B2F]"
+                            >
+                              {type.charAt(0).toUpperCase() + type.slice(1)}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                {viewingApp.notes && (
+                  <div className="mb-6">
+                    <h4 className="font-bold mb-3 text-[#2F4F4F]">Notes</h4>
+                    <div className="bg-[#F5F7F2] p-4 border-2 border-[#556B2F]">
+                      <p>{viewingApp.notes}</p>
+                    </div>
+                  </div>
+                )}
+
+                {viewingApp.status === 'pending' && (
+                  <div className="flex justify-end space-x-3 mt-6">
+                    <button
+                      onClick={() => {
+                        updateApplicationStatus(viewingApp.id, 'approved');
+                        setViewingApp(null);
+                      }}
+                      className="bg-[#698B69] text-white px-4 py-2 font-bold border-2 border-[#556B2F] hover:shadow-[2px_2px_0px_0px_rgba(85,107,47,1)] transition-all"
+                    >
+                      Approve Application
+                    </button>
+                    <button
+                      onClick={() => {
+                        setSelectedApp(viewingApp.id);
+                        setViewingApp(null);
+                      }}
+                      className="bg-[#E6B8AF] text-[#2F4F4F] px-4 py-2 font-bold border-2 border-[#556B2F] hover:shadow-[2px_2px_0px_0px_rgba(85,107,47,1)] transition-all"
+                    >
+                      Reject Application
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Rejection Dialog */}
           {selectedApp && (
             <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4">
               <div className="bg-white p-6 border-4 border-[#556B2F] max-w-md w-full">
-                <h3 className="text-xl font-bold mb-4 text-[#2F4F4F]">Reject Organization Application</h3>
-                <p className="mb-4 text-[#2F4F4F]">Please provide a reason for rejection:</p>
-                
+                <h3 className="text-xl font-bold mb-4 text-[#2F4F4F]">
+                  Reject Organization Application
+                </h3>
+                <p className="mb-4 text-[#2F4F4F]">
+                  Please provide a reason for rejection:
+                </p>
+
                 <textarea
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
@@ -239,7 +459,7 @@ const OrganizationApplications = () => {
                   placeholder="Enter rejection reason..."
                   required
                 />
-                
+
                 <div className="flex justify-end space-x-3">
                   <button
                     onClick={() => {
@@ -251,7 +471,9 @@ const OrganizationApplications = () => {
                     Cancel
                   </button>
                   <button
-                    onClick={() => updateApplicationStatus(selectedApp, 'rejected')}
+                    onClick={() =>
+                      updateApplicationStatus(selectedApp, 'rejected')
+                    }
                     className="bg-[#E6B8AF] text-[#2F4F4F] px-4 py-2 font-bold border-2 border-[#556B2F] hover:shadow-[2px_2px_0px_0px_rgba(85,107,47,1)] transition-all"
                     disabled={!notes}
                   >
@@ -263,7 +485,7 @@ const OrganizationApplications = () => {
           )}
         </>
       )}
-      
+
       {/* Toast Notifications */}
       {toastMessage && (
         <div className="fixed bottom-4 right-4 z-50">

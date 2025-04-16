@@ -9,52 +9,55 @@ declare global {
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { LogOut, Plus, Check, X, RefreshCw, SearchIcon } from 'lucide-react';
-import {
-  useActiveAccount,
-  useDisconnect,
-  useActiveWallet,
-  ConnectButton,
-} from 'thirdweb/react';
+import { Plus, Check, X, Bell } from 'lucide-react';
+import { useActiveAccount, useActiveWallet } from 'thirdweb/react';
 import { AuthGuard } from '../components/auth/AuthGuard';
 import { useAuth } from '../contexts/AuthContext';
 import { SignOutButton } from '../components/auth/SignOutButton';
 import { Toast } from '../components/ui/Toast';
 
-import { useSendTransaction } from 'thirdweb/react';
-import { getContract, prepareContractCall } from 'thirdweb';
-import { sepolia, localhost } from 'thirdweb/chains';
-import { auth } from '../../lib/firebase';
+import { auth, db } from '../../lib/firebase';
+import {
+  collection,
+  query,
+  where,
+  onSnapshot,
+  orderBy,
+  Timestamp,
+  doc,
+  updateDoc,
+} from 'firebase/firestore';
 
 import { Document } from '../models/Document';
-import type { Activity } from '../types/dashboard';
+interface Activity {
+  id: string;
+  text: string;
+  date: string;
+  icon: React.ReactNode;
+  notification?: {
+    id: string;
+    [key: string]: any;
+  };
+}
 import { DocumentCard } from '../components/dashboard/DocumentCard';
-import { RecentActivity } from '../components/dashboard/RecentActivity';
-import { SearchBar } from '../components/dashboard/SearchBar';
+
 import { NotificationBell } from '../components/dashboard/NotificationBell';
 import { ProfileCard } from '../components/dashboard/ProfileCard';
 import { Stats } from '../components/dashboard/Stats';
-import axios from 'axios';
-import { client } from '../client';
-import AuthenticoContractAbi from 'public/contractsData/AuthenticoContract.json';
-import AuthenticoContractAddress from 'public/contractsData/AuthenticoContract-address.json';
-
-import { ethers } from 'ethers';
+import {
+  getDocumentTypes,
+  getVerifiedOrganizations,
+} from '../../lib/api-client';
 
 const IndividualDashboard = () => {
   const [activeTab, setActiveTab] = useState('documents');
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
   const [uploadingStatus, setUploadingStatus] = useState('Upload');
-  const [selectedDocument, setSelectedDocument] = useState<Document | null>(
-    null
-  );
   const [documents, setDocuments] = useState<Document[]>([]);
   const [docName, setDocName] = useState('');
-  const [documentType, setDocumentType] = useState('');
+  const [documentType, setDocumentType] = useState('identity');
   const [account, setAccount] = useState(null);
-  const [provider, setProvider] = useState(null);
-  const [signer, setSigner] = useState(null);
   const { user } = useAuth();
   const [toastMessage, setToastMessage] = useState<{
     type: 'success' | 'error' | 'warning';
@@ -63,12 +66,24 @@ const IndividualDashboard = () => {
   const [file, setFile] = useState<File | null>(null);
   const [verifyingOrgId, setVerifyingOrgId] = useState('');
   const [verifyingOrgs, setVerifyingOrgs] = useState<
-    Array<{ id: string; name: string }>
+    Array<{
+      id: string;
+      name: string;
+      website?: string;
+      description?: string;
+      verificationBadge?: boolean;
+      documentTypes?: string[];
+      industry?: string;
+      phoneNumber?: string;
+    }>
   >([]);
-  const [uploadProgress, setUploadProgress] = useState('');
+  const [documentTypes, setDocumentTypes] = useState<
+    Array<{ id: string; name: string; description: string }>
+  >([]);
 
+  // Add state to track loading and error
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [IPFSHash, setIPFSHash] = useState('');
 
   function gotoActivityPane() {
     setActiveTab('activity');
@@ -77,17 +92,11 @@ const IndividualDashboard = () => {
   const thirdwebAccount = useActiveAccount();
 
   const router = useRouter();
-  const { disconnect } = useDisconnect();
-  const [isClient, setIsClient] = useState(false);
-
-  useEffect(() => {
-    setIsClient(true); // Mark component as client-side rendered
-  }, []);
 
   useEffect(() => {
     const fetchDocuments = async () => {
-      // Only proceed if we have a Thirdweb account
-      if (thirdwebAccount) {
+      // Only proceed if we have a Thirdweb account and user is authenticated
+      if (thirdwebAccount && user) {
         try {
           console.log('Using Thirdweb account:', thirdwebAccount.address);
 
@@ -96,34 +105,51 @@ const IndividualDashboard = () => {
           console.log('Wallet address:', walletAddress);
           setAccount(walletAddress);
 
-          // For now, just set some sample documents
-          // This avoids using ethers.js directly which was causing MetaMask popups
-          const sampleDocs = [
-            new Document(
-              1,
-              'ipfs://sample1',
-              walletAddress,
-              'sample-hash-1',
-              '0', // Verified
-              'Document',
-              'org1'
-            ),
-            new Document(
-              2,
-              'ipfs://sample2',
-              walletAddress,
-              'sample-hash-2',
-              '1', // Pending
-              'Document',
-              'org2'
-            ),
-          ];
+          // Set up real-time listener for documents
+          const documentsRef = collection(db, 'documents');
+          const q = query(
+            documentsRef,
+            where('ownerUid', '==', user.uid),
+            orderBy('createdAt', 'desc')
+          );
 
-          setDocuments(sampleDocs);
-          console.log('Set sample documents');
+          const unsubscribe = onSnapshot(
+            q,
+            (snapshot) => {
+              const fetchedDocs = [];
+              snapshot.forEach((doc) => {
+                const data = doc.data();
+                // Convert Firestore document to our Document model
+                fetchedDocs.push(
+                  new Document(
+                    doc.id, // Use Firestore document ID
+                    data.encryptedIpfsCid || '',
+                    data.userWalletAddress || walletAddress,
+                    data.originalDocHash || '',
+                    mapStatusToCode(data.status), // Convert status string to code
+                    data.documentType || 'Document',
+                    data.verifyingOrgId || ''
+                  )
+                );
+              });
 
-          // In a future update, we can implement proper contract interaction using Thirdweb
-          // instead of ethers.js directly to avoid MetaMask popups
+              setDocuments(fetchedDocs);
+              console.log(
+                'Fetched documents from Firestore:',
+                fetchedDocs.length
+              );
+            },
+            (error) => {
+              console.error('Error in document listener:', error);
+              setToastMessage({
+                type: 'error',
+                message: 'Failed to listen for document updates.',
+              });
+            }
+          );
+
+          // Clean up listener on unmount
+          return () => unsubscribe();
         } catch (error) {
           console.error('Error fetching documents:', error);
           setToastMessage({
@@ -132,7 +158,7 @@ const IndividualDashboard = () => {
           });
         }
       } else {
-        console.log('No wallet connected');
+        console.log('No wallet connected or user not authenticated');
         setToastMessage({
           type: 'warning',
           message: 'Please connect your wallet to view your documents.',
@@ -141,7 +167,31 @@ const IndividualDashboard = () => {
     };
 
     fetchDocuments();
-  }, [thirdwebAccount]);
+
+    // Return cleanup function
+    return () => {
+      // Cleanup will be handled by the unsubscribe function returned in fetchDocuments
+    };
+  }, [thirdwebAccount, user]);
+
+  // Helper function to map status strings to codes
+  const mapStatusToCode = (status: string): string => {
+    switch (status) {
+      case 'Verified':
+        return '0';
+      case 'Pending Verification':
+      case 'Pending Blockchain Submission':
+      case 'Submitting to Blockchain':
+        return '1';
+      case 'Rejected':
+        return '2';
+      case 'Blockchain Failed':
+      case 'Verification Failed':
+        return '3';
+      default:
+        return '1'; // Default to pending
+    }
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setUploadingStatus('Uploading File ...');
@@ -164,53 +214,275 @@ const IndividualDashboard = () => {
     setUploadingStatus('Upload');
   };
 
+  const handleDocTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setUploadingStatus('Updating...');
+    setDocumentType(e.target.value);
+    setUploadingStatus('Upload');
+  };
+
+  // Fetch document types from API
+  const fetchDocumentTypes = async () => {
+    try {
+      const types = await getDocumentTypes();
+      setDocumentTypes(types);
+      console.log('Fetched document types:', types);
+    } catch (error) {
+      console.error('Error fetching document types:', error);
+
+      // Use fallback data if API fails
+      console.log('Using fallback document types');
+      setDocumentTypes([
+        {
+          id: 'identity',
+          name: 'Identity Document',
+          description: 'Government-issued identity documents',
+        },
+        {
+          id: 'education',
+          name: 'Educational Certificate',
+          description: 'Diplomas, degrees, transcripts',
+        },
+        {
+          id: 'employment',
+          name: 'Employment Document',
+          description: 'Employment contracts, offer letters',
+        },
+        {
+          id: 'financial',
+          name: 'Financial Document',
+          description: 'Bank statements, tax returns',
+        },
+        {
+          id: 'other',
+          name: 'Other Document',
+          description: 'Any other document type',
+        },
+      ]);
+    }
+  };
+
   // Fetch verified organizations
   useEffect(() => {
-    const fetchVerifiedOrgs = async () => {
+    let mounted = true;
+    console.log('Initial organizations fetch useEffect triggered');
+    console.log(
+      'Current state - user:',
+      !!user,
+      'isLoading:',
+      isLoading,
+      'thirdwebAccount:',
+      !!thirdwebAccount
+    );
+
+    const fetchOrganizations = async () => {
+      // Prevent multiple simultaneous requests
+      if (isLoading) {
+        console.log('Already loading organizations, skipping fetch');
+        return;
+      }
+
+      setIsLoading(true);
       try {
-        // Get Firebase ID token
-        const idToken = await auth.currentUser?.getIdToken();
-        if (!idToken) {
-          throw new Error('Not authenticated');
+        // Make sure we have a Firebase user and wallet connected
+        if (!user || !auth.currentUser) {
+          console.warn('No authenticated user when fetching organizations');
+          throw new Error('User not authenticated');
         }
 
-        try {
-          const response = await axios.get('/api/organizations/verified', {
-            headers: {
-              Authorization: `Bearer ${idToken}`,
-            },
-          });
+        if (!thirdwebAccount) {
+          console.warn('No wallet connected when fetching organizations');
+        }
 
-          setVerifyingOrgs(response.data);
-        } catch (apiError) {
-          console.error('Error fetching verified organizations:', apiError);
+        console.log('Fetching verified organizations with user:', user.uid);
 
-          // Use fallback data if API fails
-          console.log('Using fallback organization data');
-          setVerifyingOrgs([
-            { id: 'org1', name: 'Example Organization 1' },
-            { id: 'org2', name: 'Example Organization 2' },
-          ]);
+        // Use the getVerifiedOrganizations function
+        const organizations = await getVerifiedOrganizations();
+        console.log('Verified organizations response:', organizations);
+        console.log('Verified organizations count:', organizations.length);
 
-          // Only show toast message in development
-          if (process.env.NODE_ENV === 'development') {
-            setToastMessage({
-              type: 'warning',
-              message: 'Using sample organizations (API error)',
-            });
+        if (mounted) {
+          if (organizations.length > 0) {
+            console.log('Setting verified organizations:', organizations);
+            setVerifyingOrgs(organizations);
+            setError(null);
+          } else {
+            console.warn('No verified organizations returned from API');
+            setError('No verified organizations available');
+            // Use fallback data in development
+            if (process.env.NODE_ENV === 'development') {
+              console.log('Using fallback data in development mode');
+              const fallbackOrgs = [
+                {
+                  id: 'org1',
+                  name: 'Example Organization 1',
+                  website: 'https://example.org',
+                  description: 'Example verified organization for testing',
+                  verificationBadge: true,
+                  documentTypes: ['identity', 'education'],
+                },
+                {
+                  id: 'org2',
+                  name: 'Example Organization 2',
+                  website: 'https://example2.org',
+                  description: 'Another example organization',
+                  verificationBadge: true,
+                  documentTypes: ['financial', 'legal'],
+                },
+              ];
+              setVerifyingOrgs(fallbackOrgs);
+            }
           }
         }
-      } catch (error) {
-        console.error('Authentication error:', error);
-        setToastMessage({
-          type: 'error',
-          message: 'Authentication error. Please sign in again.',
-        });
+      } catch (apiError) {
+        console.error('Error fetching verified organizations:', apiError);
+        if (mounted) {
+          setError('Failed to fetch organizations');
+          // Use fallback data only in development
+          if (process.env.NODE_ENV === 'development') {
+            console.log('Using fallback organization data in development');
+            const fallbackOrgs = [
+              {
+                id: 'org1',
+                name: 'Example Organization 1',
+                website: 'https://example.org',
+                description: 'Example verified organization for testing',
+                verificationBadge: true,
+                documentTypes: ['identity', 'education'],
+              },
+              {
+                id: 'org2',
+                name: 'Example Organization 2',
+                website: 'https://example2.org',
+                description: 'Another example organization',
+                verificationBadge: true,
+                documentTypes: ['financial', 'legal'],
+              },
+            ];
+            setVerifyingOrgs(fallbackOrgs);
+          }
+        }
+      } finally {
+        if (mounted) {
+          setIsLoading(false);
+        }
       }
     };
 
-    fetchVerifiedOrgs();
-  }, []);
+    // Only fetch organizations if user is authenticated
+    if (user) {
+      console.log('User authenticated, calling fetchOrganizations');
+      fetchOrganizations();
+    } else {
+      console.log('No user, skipping organization fetch');
+    }
+
+    return () => {
+      mounted = false;
+    };
+  }, [user, isLoading, thirdwebAccount]); // Add thirdwebAccount as dependency
+
+  // Add useEffect to fetch document types and organizations when dialog opens
+  useEffect(() => {
+    console.log(
+      'Dialog open useEffect triggered, isUploadDialogOpen:',
+      isUploadDialogOpen
+    );
+    console.log(
+      'Current state - user:',
+      !!user,
+      'isLoading:',
+      isLoading,
+      'verifyingOrgs.length:',
+      verifyingOrgs.length
+    );
+
+    if (isUploadDialogOpen) {
+      // Fetch document types
+      fetchDocumentTypes();
+
+      // Force fetch organizations when dialog opens, regardless of current state
+      if (user && !isLoading && verifyingOrgs.length === 0) {
+        console.log('Upload dialog opened, fetching organizations');
+
+        // Set loading state
+        setIsLoading(true);
+
+        // Use the API client to fetch organizations
+        getVerifiedOrganizations()
+          .then((orgs) => {
+            console.log('Organizations fetched successfully:', orgs);
+            if (orgs.length > 0) {
+              console.log('Setting verified organizations in state:', orgs);
+              setVerifyingOrgs(orgs);
+              setError(null);
+            } else {
+              console.warn('No organizations found');
+              setError('No verified organizations available');
+
+              // Use fallback data in development
+              if (process.env.NODE_ENV === 'development') {
+                console.log('Using fallback data in development mode');
+                const fallbackOrgs = [
+                  {
+                    id: 'org1',
+                    name: 'Example Organization 1',
+                    website: 'https://example.org',
+                    description: 'Example verified organization for testing',
+                    verificationBadge: true,
+                    documentTypes: ['identity', 'education'],
+                  },
+                  {
+                    id: 'org2',
+                    name: 'Example Organization 2',
+                    website: 'https://example2.org',
+                    description: 'Another example organization',
+                    verificationBadge: true,
+                    documentTypes: ['financial', 'legal'],
+                  },
+                ];
+                setVerifyingOrgs(fallbackOrgs);
+              }
+            }
+          })
+          .catch((error) => {
+            console.error('Error fetching organizations:', error);
+            setError('Failed to load organizations');
+
+            // Use fallback data in development
+            if (process.env.NODE_ENV === 'development') {
+              console.log('Using fallback data in development mode');
+              const fallbackOrgs = [
+                {
+                  id: 'org1',
+                  name: 'Example Organization 1',
+                  website: 'https://example.org',
+                  description: 'Example verified organization for testing',
+                  verificationBadge: true,
+                  documentTypes: ['identity', 'education'],
+                },
+                {
+                  id: 'org2',
+                  name: 'Example Organization 2',
+                  website: 'https://example2.org',
+                  description: 'Another example organization',
+                  verificationBadge: true,
+                  documentTypes: ['financial', 'legal'],
+                },
+              ];
+              setVerifyingOrgs(fallbackOrgs);
+            }
+          })
+          .finally(() => {
+            setIsLoading(false);
+          });
+      } else {
+        console.log(
+          'Not fetching organizations - loading in progress or no user or organizations already loaded'
+        );
+        console.log('Current verifyingOrgs:', verifyingOrgs);
+      }
+    }
+  }, [isUploadDialogOpen, user, isLoading, verifyingOrgs.length]);
 
   const handleUpload = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -247,9 +519,9 @@ const IndividualDashboard = () => {
     const formData = new FormData();
     formData.append('document_file', file);
     formData.append('documentName', docName);
-    formData.append('documentType', 'Document');
+    formData.append('documentType', documentType);
     formData.append('verifyingOrgId', verifyingOrgId);
-    formData.append('walletAddress', thirdwebAccount.address);
+    // User identity will be extracted from the ID token on the server
 
     try {
       // Check if we're using example organizations (fallback data)
@@ -273,7 +545,6 @@ const IndividualDashboard = () => {
         const simulateProgress = setInterval(() => {
           progress += 10;
           if (progress <= 100) {
-            setUploadProgress(`${progress}%`);
             setUploadingStatus(`Uploading: ${progress}%`);
           } else {
             clearInterval(simulateProgress);
@@ -293,26 +564,19 @@ const IndividualDashboard = () => {
           thirdwebAccount?.address || 'unknown', // User's wallet address from Thirdweb
           'example-hash', // Mock hash
           '1', // Status (Pending)
-          'Document', // Document type
+          documentType, // Document type
           verifyingOrgId // Verifying org ID
         );
 
         // Add the mock document to the list
         setDocuments([mockDocument, ...documents]);
       } else {
+        // Import the API client
+        const { uploadDocument } = await import('../../lib/api-client');
+
         // Real API upload
-        await axios.post('/api/documents/upload', formData, {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-            Authorization: `Bearer ${idToken}`,
-          },
-          onUploadProgress: (progressEvent) => {
-            const percentCompleted = Math.round(
-              (progressEvent.loaded * 100) / (progressEvent.total || 100)
-            );
-            setUploadProgress(`${percentCompleted}%`);
-            setUploadingStatus(`Uploading: ${percentCompleted}%`);
-          },
+        await uploadDocument(formData, (percentCompleted: number) => {
+          setUploadingStatus(`Uploading: ${percentCompleted}%`);
         });
       }
 
@@ -347,65 +611,82 @@ const IndividualDashboard = () => {
     }
   };
 
-  const handleSignOut = () => {
-    if (wallet) {
-      disconnect(wallet);
+  // Redirect to home page when wallet is disconnected
+  useEffect(() => {
+    if (!wallet && user) {
       router.push('/');
     }
-  };
+  }, [wallet, user, router]);
 
-  const showToast = (type: 'success' | 'error', message: string) => {
-    setToastMessage({ type, message });
+  const showToast = (
+    type: 'success' | 'error' | 'warning' | 'info',
+    message: string
+  ) => {
+    // Convert info to success for toast display (since our Toast only supports success/error/warning)
+    const toastType = type === 'info' ? 'success' : type;
+    setToastMessage({ type: toastType, message });
     setTimeout(() => setToastMessage(null), 5000);
   };
 
+  // Set up notifications listener
   useEffect(() => {
-    // Generate activities based on documents
-    const newActivities = documents.map((doc) => ({
-      id: doc.documentId,
-      text: `${doc.documentType} - ${doc.status}`,
-      date: new Date(
-        Date.now() - Math.floor(Math.random() * 7 * 24 * 60 * 60 * 1000)
-      ).toLocaleDateString(),
-      icon:
-        doc.status === 'verified' ? (
-          <Check size={14} />
-        ) : doc.status === 'pending' ? (
-          <RefreshCw size={14} />
-        ) : (
-          <X size={14} />
-        ),
-    }));
-    const sortedActivities = newActivities
-      .sort((a, b) => b.id - a.id)
-      .slice(0, 5);
-    setActivities(sortedActivities);
-  }, [documents]);
+    if (!user) return;
+
+    // Set up real-time listener for notifications
+    const notificationsRef = collection(db, 'notifications');
+    const q = query(
+      notificationsRef,
+      where('userId', '==', user.uid),
+      where('read', '==', false),
+      orderBy('createdAt', 'desc')
+    );
+
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        const fetchedNotifications = [];
+        snapshot.forEach((doc) => {
+          const data = doc.data();
+          fetchedNotifications.push({
+            id: doc.id,
+            ...data,
+            createdAt:
+              data.createdAt instanceof Timestamp
+                ? data.createdAt.toDate()
+                : new Date(),
+          });
+        });
+
+        // Update activities based on notifications
+        const notificationActivities = fetchedNotifications.map(
+          (notification) => ({
+            id: notification.id,
+            text: notification.message,
+            date: notification.createdAt.toLocaleDateString(),
+            icon:
+              notification.data?.status === 'Verified' ? (
+                <Check size={14} />
+              ) : notification.data?.status === 'Rejected' ? (
+                <X size={14} />
+              ) : (
+                <Bell size={14} />
+              ),
+            notification: notification,
+          })
+        );
+
+        setActivities(notificationActivities.slice(0, 5));
+      },
+      (error) => {
+        console.error('Error in notifications listener:', error);
+      }
+    );
+
+    // Clean up listener on unmount
+    return () => unsubscribe();
+  }, [user]);
 
   const [activities, setActivities] = useState<Activity[]>([]);
-
-  useEffect(() => {
-    // Generate activities based on documents
-    const newActivities = documents.map((doc) => ({
-      id: doc.documentId,
-      text: `${doc.documentType} - ${doc.status}`,
-      date: new Date(
-        Date.now() - Math.floor(Math.random() * 7 * 24 * 60 * 60 * 1000)
-      ).toLocaleDateString(),
-      icon:
-        doc.status === 'verified' ? (
-          <Check size={14} />
-        ) : doc.status === 'pending' ? (
-          <RefreshCw size={14} />
-        ) : (
-          <X size={14} />
-        ),
-    }));
-    const sortedActivities = newActivities
-      .sort((a, b) => b.id - a.id)
-      .slice(0, 5);
-    setActivities(sortedActivities);
-  }, [documents]);
 
   return (
     <AuthGuard allowedUserTypes={['individual']}>
@@ -468,7 +749,29 @@ const IndividualDashboard = () => {
               <div className="flex items-center gap-4 md:gap-6">
                 <NotificationBell
                   count={activities.length}
-                  onClick={gotoActivityPane}
+                  onClick={() => {
+                    // Show activity pane
+                    gotoActivityPane();
+
+                    // Mark all notifications as read
+                    activities.forEach(async (activity) => {
+                      if (activity.notification?.id) {
+                        try {
+                          const notificationRef = doc(
+                            db,
+                            'notifications',
+                            activity.notification.id
+                          );
+                          await updateDoc(notificationRef, { read: true });
+                        } catch (error) {
+                          console.error(
+                            'Error marking notification as read:',
+                            error
+                          );
+                        }
+                      }
+                    });
+                  }}
                 />
                 <ProfileCard />
               </div>
@@ -504,27 +807,60 @@ const IndividualDashboard = () => {
                   <h3 className="text-lg md:text-2xl font-archivo font-bold mb-4">
                     Your Documents
                   </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-                    {documents.map((doc) => (
-                      <DocumentCard
-                        key={doc.documentId}
-                        doc={doc}
-                        onShare={() => {
-                          setSelectedDocument(doc);
-                          setIsShareDialogOpen(true);
-                        }}
-                        onAction={(doc) => {
-                          if (doc.status === 'pending') {
-                            // Handle check status
-                          } else if (doc.status === 'verified') {
-                            // Handle download
-                          } else if (doc.status === 'rejected') {
-                            alert(`Rejection Reason: ${doc.metadataHash}`);
-                          }
-                        }}
-                      />
-                    ))}
-                  </div>
+                  {error && (
+                    <div className="bg-burnt-sienna bg-opacity-20 p-4 border-2 border-deep-moss mb-4">
+                      <p className="text-deep-moss font-bold">{error}</p>
+                    </div>
+                  )}
+                  {documents.length === 0 ? (
+                    <div className="bg-ivory p-6 border-2 border-deep-moss text-center">
+                      <p className="text-lg font-bold text-deep-moss">
+                        No documents found
+                      </p>
+                      <p className="text-deep-moss">
+                        Upload your first document using the + button below
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+                      {documents.map((doc) => (
+                        <DocumentCard
+                          key={doc.documentId}
+                          doc={doc}
+                          onShare={() => {
+                            setIsShareDialogOpen(true);
+                          }}
+                          onAction={(doc) => {
+                            if (doc.status === '1') {
+                              // Pending
+                              showToast(
+                                'info',
+                                'Your document is pending verification'
+                              );
+                            } else if (doc.status === '0') {
+                              // Verified
+                              showToast(
+                                'success',
+                                'Document verified successfully'
+                              );
+                            } else if (doc.status === '2') {
+                              // Rejected
+                              showToast(
+                                'error',
+                                `Document was rejected: ${doc.metadataHash}`
+                              );
+                            } else if (doc.status === '3') {
+                              // Failed
+                              showToast(
+                                'error',
+                                `Document processing failed: ${doc.metadataHash}`
+                              );
+                            }
+                          }}
+                        />
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -535,7 +871,14 @@ const IndividualDashboard = () => {
           type="button"
           title="Upload Document"
           className="fixed bottom-24 md:bottom-8 right-4 md:right-8 bg-soft-sage text-deep-moss p-3 md:p-4 rounded-full border-4 border-deep-moss hover:shadow-[4px_4px_0px_0px_rgba(27,67,50,0.8)] transition-all z-40"
-          onClick={() => setIsUploadDialogOpen(true)}
+          onClick={() => {
+            // Simply open the dialog - organizations will be loaded by the useEffect
+            console.log(
+              'Upload button clicked, current verifyingOrgs:',
+              verifyingOrgs
+            );
+            setIsUploadDialogOpen(true);
+          }}
         >
           <Plus size={24} />
         </button>
@@ -587,6 +930,33 @@ const IndividualDashboard = () => {
                   </p>
                 </div>
 
+                <div className="mb-4">
+                  <label
+                    htmlFor="documentType"
+                    className="block font-bold mb-1 text-deep-moss"
+                  >
+                    Document Type *
+                  </label>
+                  <select
+                    id="documentType"
+                    name="documentType"
+                    value={documentType}
+                    onChange={handleDocTypeChange}
+                    className="w-full p-3 border-2 border-deep-moss focus:border-forest-green focus:outline-none"
+                    required
+                  >
+                    <option value="">Select document type</option>
+                    {documentTypes.map((type) => (
+                      <option key={type.id} value={type.id}>
+                        {type.name}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Select the type of document you are uploading
+                  </p>
+                </div>
+
                 <div className="mb-6">
                   <label
                     htmlFor="verifyingOrgId"
@@ -594,21 +964,130 @@ const IndividualDashboard = () => {
                   >
                     Verifying Organization *
                   </label>
-                  <select
-                    id="verifyingOrgId"
-                    name="verifyingOrgId"
-                    value={verifyingOrgId}
-                    onChange={handleVerOrgChange}
-                    className="w-full p-3 border-2 border-deep-moss focus:border-forest-green focus:outline-none"
-                    required
-                  >
-                    <option value="">Select an organization</option>
-                    {verifyingOrgs.map((org) => (
-                      <option key={org.id} value={org.id}>
-                        {org.name}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="relative">
+                    {isLoading ? (
+                      <div className="w-full p-3 border-2 border-deep-moss bg-soft-sage">
+                        <div className="flex items-center">
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-deep-moss mr-2"></div>
+                          <span>Loading organizations...</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        {/* Log the organizations being rendered */}
+                        {(() => {
+                          console.log(
+                            'Rendering dropdown with orgs:',
+                            verifyingOrgs
+                          );
+                          console.log('isLoading state:', isLoading);
+                          console.log(
+                            'verifyingOrgId selected:',
+                            verifyingOrgId
+                          );
+                          console.log(
+                            'verifyingOrgs.length:',
+                            verifyingOrgs.length
+                          );
+                          return null;
+                        })()}
+
+                        <select
+                          id="verifyingOrgId"
+                          name="verifyingOrgId"
+                          value={verifyingOrgId}
+                          onChange={handleVerOrgChange}
+                          className="w-full p-3 border-2 border-deep-moss focus:border-forest-green focus:outline-none"
+                          required
+                        >
+                          <option value="">Select an organization</option>
+
+                          {verifyingOrgs.length === 0 ? (
+                            <option value="" disabled>
+                              No verified organizations available
+                            </option>
+                          ) : (
+                            verifyingOrgs.map((org) => {
+                              // Log each organization to help with debugging
+                              console.log(
+                                `Rendering org option: ${org.id}`,
+                                org
+                              );
+
+                              // Check if org.name is defined
+                              if (!org.name) {
+                                console.warn(
+                                  `Organization ${org.id} has no name property:`,
+                                  org
+                                );
+                              }
+
+                              // Create the display text for the option
+                              const displayName =
+                                org.name || 'Unnamed Organization';
+                              const badge = org.verificationBadge ? '✓' : '';
+                              const industryText = org.industry
+                                ? ` (${org.industry})`
+                                : '';
+                              const optionText = `${displayName} ${badge}${industryText}`;
+                              console.log(
+                                `Option text for ${org.id}:`,
+                                optionText
+                              );
+
+                              return (
+                                <option key={org.id} value={org.id}>
+                                  {displayName} {badge}
+                                  {industryText}
+                                </option>
+                              );
+                            })
+                          )}
+                        </select>
+                      </>
+                    )}
+                  </div>
+                  {error && (
+                    <p className="text-burnt-sienna text-sm mt-1">{error}</p>
+                  )}
+
+                  {verifyingOrgId && (
+                    <div className="mt-3 p-3 bg-soft-sage border-2 border-deep-moss">
+                      {verifyingOrgs.find((org) => org.id === verifyingOrgId)
+                        ?.verificationBadge && (
+                        <div className="flex items-center mb-2">
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-400 mr-2">
+                            <Check className="mr-1" size={12} />
+                            Verified
+                          </span>
+                        </div>
+                      )}
+                      <p className="text-sm text-deep-moss mb-2">
+                        {verifyingOrgs.find((org) => org.id === verifyingOrgId)
+                          ?.description || 'No description available'}
+                      </p>
+                      {verifyingOrgs.find((org) => org.id === verifyingOrgId)
+                        ?.documentTypes && (
+                        <div className="mt-2">
+                          <p className="text-xs font-bold text-deep-moss mb-1">
+                            Verifies document types:
+                          </p>
+                          <div className="flex flex-wrap gap-1">
+                            {verifyingOrgs
+                              .find((org) => org.id === verifyingOrgId)
+                              ?.documentTypes?.map((type) => (
+                                <span
+                                  key={type}
+                                  className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-[#D2E3C8] text-[#2F4F4F] border border-[#556B2F]"
+                                >
+                                  {type.charAt(0).toUpperCase() + type.slice(1)}
+                                </span>
+                              ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex justify-end">
@@ -634,22 +1113,22 @@ const IndividualDashboard = () => {
 
         {/* Share Dialog */}
         {isShareDialogOpen && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-            <div className="bg-ivory p-6 rounded-lg shadow-xl max-w-md w-full border-2 border-deep-moss">
-              <h3 className="text-2xl font-bold mb-4 text-deep-moss">
+          <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4">
+            <div className="bg-ivory p-4 md:p-6 border-2 md:border-4 border-deep-moss max-w-md w-full shadow-brutal">
+              <h3 className="text-xl md:text-2xl font-black mb-4 text-deep-moss bg-soft-sage p-2 border-2 border-deep-moss inline-block">
                 Share Document
               </h3>
-              <p className="mb-4">
+              <p className="mb-6 text-deep-moss">
                 Are you sure you want to share this document?
               </p>
-              <div className="flex justify-end">
+              <div className="flex justify-end gap-2">
                 <button
                   onClick={() => setIsShareDialogOpen(false)}
-                  className="mr-2 bg-stone-gray text-deep-moss px-4 py-2 rounded hover:bg-deep-moss hover:text-ivory transition"
+                  className="bg-burnt-sienna bg-opacity-20 text-deep-moss px-3 py-2 font-bold border-2 border-deep-moss hover:shadow-[2px_2px_0px_0px_rgba(27,67,50,0.8)] transition-all"
                 >
                   Cancel
                 </button>
-                <button className="bg-forest-green text-ivory px-4 py-2 rounded hover:bg-deep-moss transition">
+                <button className="bg-forest-green text-ivory px-3 py-2 font-bold border-2 border-deep-moss hover:shadow-[2px_2px_0px_0px_rgba(27,67,50,0.8)] transition-all">
                   Share
                 </button>
               </div>
@@ -660,7 +1139,7 @@ const IndividualDashboard = () => {
 
       {/* Toast Notifications */}
       {toastMessage && (
-        <div className="fixed bottom-4 right-4 z-50">
+        <div className="fixed bottom-20 md:bottom-4 right-4 z-50">
           <Toast type={toastMessage.type} message={toastMessage.message} />
         </div>
       )}

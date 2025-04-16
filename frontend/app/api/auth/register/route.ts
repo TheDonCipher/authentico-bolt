@@ -1,90 +1,58 @@
 import { NextResponse } from 'next/server';
-import { db, auth } from '../../../../lib/firebase-admin-server';
-import admin from 'firebase-admin';
+import axios from 'axios';
 
-// Standardize on a single collection name
-const USER_COLLECTION = 'users';
+// Get the backend API URL from environment variables
+const BACKEND_API_URL = process.env.NEXT_PUBLIC_API_URL?.replace('/api', ''); // Assuming NEXT_PUBLIC_API_URL points to the backend's /api path
 
 export async function POST(request: Request) {
+  if (!BACKEND_API_URL) {
+    console.error('Backend API URL is not configured.');
+    return NextResponse.json(
+      { error: 'Server configuration error' },
+      { status: 500 }
+    );
+  }
+
   try {
-    const { walletAddress, userType, userData } = await request.json();
+    const body = await request.json();
 
-    if (!walletAddress || !userType || !userData) {
-      return NextResponse.json(
-        {
-          error: 'Wallet address, user type, and user data are required',
+    // Forward the request to the backend registration endpoint
+    const backendResponse = await axios.post(
+      `${BACKEND_API_URL}/api/auth/register`, // Adjust endpoint if needed
+      body,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          // Forward any other relevant headers if necessary
         },
-        { status: 400 }
-      );
-    }
-
-    try {
-      // Check if user already exists
-      const usersRef = db.collection(USER_COLLECTION);
-      const snapshot = await usersRef
-        .where('walletAddress', '==', walletAddress)
-        .get();
-
-      if (!snapshot.empty) {
-        return NextResponse.json(
-          {
-            error: 'WALLET_ALREADY_REGISTERED',
-            message:
-              'This wallet address is already registered. Please sign in instead.',
-          },
-          { status: 409 }
-        );
+        // Ensure Axios throws errors for non-2xx responses
+        validateStatus: (status) => status >= 200 && status < 300,
       }
+    );
 
-      // Create a new user in Firebase Auth
-      const userRecord = await auth.createUser({
-        // No email/password for wallet-based auth
-        displayName: userData.name || 'Authentico User',
+    // Return the response from the backend
+    return NextResponse.json(backendResponse.data, {
+      status: backendResponse.status,
+    });
+  } catch (error: any) {
+    console.error('Error proxying registration request:', error);
+
+    // Handle Axios errors specifically
+    if (axios.isAxiosError(error) && error.response) {
+      // Return the error response from the backend
+      return NextResponse.json(error.response.data, {
+        status: error.response.status,
       });
-
-      // Store user data in Firestore
-      const userDocRef = usersRef.doc(userRecord.uid);
-      await userDocRef.set({
-        uid: userRecord.uid,
-        walletAddress,
-        userType,
-        name: userData.name,
-        ...(userType === 'organization' && {
-          organizationName: userData.organizationName,
-        }),
-        createdAt: new Date(),
-      });
-
-      return NextResponse.json(
-        {
-          success: true,
-          uid: userRecord.uid,
-          message: 'User registered successfully',
-        },
-        { status: 201 }
-      );
-    } catch (authError) {
-      console.error('Firestore/Auth error during registration:', authError);
-      return NextResponse.json(
-        {
-          error: 'AUTHENTICATION_ERROR',
-          message: 'Unable to create user account. Please try again later.',
-        },
-        { status: 500 }
-      );
     }
-  } catch (error) {
-    console.error('Registration error:', error);
-    const errorMessage =
-      error instanceof Error ? error.message : 'Unknown error';
-    console.error('Registration error details:', errorMessage);
 
+    // Handle other errors (e.g., network issues, JSON parsing)
     return NextResponse.json(
       {
-        error: 'REGISTRATION_FAILED',
-        message: 'Registration failed. Please try again later.',
+        error: 'PROXY_REQUEST_FAILED',
+        message: 'Failed to forward registration request to the backend.',
+        details: error instanceof Error ? error.message : 'Unknown error',
       },
-      { status: 500 }
+      { status: 502 } // Bad Gateway might be appropriate here
     );
   }
 }

@@ -3,6 +3,7 @@ import { StatusBadge } from './StatusBadge';
 import { useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { X } from 'lucide-react';
+import { getDocumentTypeName } from '../../constants/documentTypes';
 
 interface DocumentCardProps {
   doc: Document;
@@ -18,7 +19,9 @@ export const DocumentCard = ({ doc, onShare, onAction }: DocumentCardProps) => {
   return (
     <div className="bg-ivory p-4 md:p-6 border-2 md:border-4 border-deep-moss hover:shadow-[4px_4px_0px_0px_rgba(27,67,50,0.8)] md:hover:shadow-[8px_8px_0px_0px_rgba(27,67,50,0.8)] transition-all">
       <div className="flex justify-between items-start mb-4">
-        <h4 className="font-bold text-xl">{doc.documentType}</h4>
+        <h4 className="font-bold text-xl">
+          {getDocumentTypeName(doc.documentType)}
+        </h4>
         <StatusBadge status={doc.status} />
       </div>
 

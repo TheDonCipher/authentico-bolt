@@ -17,8 +17,10 @@ import OrganizationApplications from './components/OrganizationApplications';
 import UserManagement from './components/UserManagement';
 import AdminStats from './components/AdminStats';
 
-// Admin wallet address
-const ADMIN_WALLET_ADDRESS = '0x4Ca717EAAC6Ec3917Cb6E23557e1CEa7267E2A1c';
+// Admin wallet address from environment variable
+const ADMIN_WALLET_ADDRESS =
+  process.env.NEXT_PUBLIC_ADMIN_WALLET_ADDRESS ||
+  '0x4Ca717EAAC6Ec3917Cb6E23557e1CEa7267E2A1c';
 
 const AdminDashboard = () => {
   const [isAuthorized, setIsAuthorized] = useState(false);

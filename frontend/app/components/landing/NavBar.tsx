@@ -8,52 +8,57 @@ interface INavbar {
 
 export const NavBar = ({ toogleShow, openForm }: INavbar) => {
   return (
-    <nav className="flex justify-evenly fixed top-0 z-50 bg-ivory p-4 rounded gap-2 list-none border-4 border-b-deep-moss w-full shadow-md">
-      <div className="flex justify-center items-center">
-        <li className="flex justify-center items-center">
-          <button className="font-bold text-2xl bg-soft-sage px-4 py-2 border-2 border-deep-moss shadow-[4px_4px_0px_0px_rgba(27,67,50,0.8)] hover:translate-x-[3px] hover:translate-y-[3px] hover:shadow-none transition-all">
-            Authentico
+    <nav className="fixed top-0 z-40 w-full bg-ivory px-4 py-3 md:py-4 border-b-4 border-deep-moss shadow-md">
+      <div className="max-w-7xl mx-auto flex justify-between items-center">
+        {/* Logo */}
+        <div className="flex-shrink-0">
+          <button className="font-black text-xl md:text-2xl bg-soft-sage px-3 py-1 md:px-4 md:py-2 border-2 md:border-4 border-deep-moss shadow-[4px_4px_0px_0px_rgba(27,67,50,0.8)] hover:translate-y-[-2px] transition-all">
+            AUTHENTICO
           </button>
-        </li>
-      </div>
-      <div className="hidden md:flex gap-7 w-1/2 items-center font-bold list-none justify-evenly">
-        <li>
-          <a href="#home">
-            <button className="bg-soft-sage px-3 py-1 border-2 border-deep-moss shadow-[3px_3px_0px_0px_rgba(27,67,50,0.8)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all">
-              Home
-            </button>
+        </div>
+
+        {/* Desktop Navigation */}
+        <div className="hidden md:flex items-center space-x-6">
+          <a
+            href="#home"
+            className="font-bold text-deep-moss hover:text-forest-green transition-colors"
+          >
+            Home
           </a>
-        </li>
-        <li>
-          <a href="#guide">
-            <button className="bg-soft-sage px-3 py-1 border-2 border-deep-moss shadow-[3px_3px_0px_0px_rgba(27,67,50,0.8)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all">
-              Guide
-            </button>
+          <a
+            href="#guide"
+            className="font-bold text-deep-moss hover:text-forest-green transition-colors"
+          >
+            Guide
           </a>
-        </li>
-        <li>
-          <a href="#features">
-            <button className="bg-soft-sage px-3 py-1 border-2 border-deep-moss shadow-[3px_3px_0px_0px_rgba(27,67,50,0.8)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all">
-              Features
-            </button>
+          <a
+            href="#features"
+            className="font-bold text-deep-moss hover:text-forest-green transition-colors"
+          >
+            Features
           </a>
-        </li>
-        <li>
-          <a href="#faq">
-            <button className="bg-soft-sage px-3 py-1 border-2 border-deep-moss shadow-[3px_3px_0px_0px_rgba(27,67,50,0.8)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all">
-              FaQ
-            </button>
+          <a
+            href="#faq"
+            className="font-bold text-deep-moss hover:text-forest-green transition-colors"
+          >
+            FAQ
           </a>
-        </li>
-      </div>
-      <div className="flex gap-4 items-center">
-        {/* <button
-          className="sm:outline-deep-moss outline-2 px-10 py-2 rounded-md outline sm:h-auto h-8 text-sm sm:p-3 bg-forest-green text-ivory font-bold hover:bg-deep-moss transition duration-300"
-          onClick={openForm}
-        >
-          Login
-        </button> */}
-        <div className="flex justify-center sm:hidden">
+          <button
+            onClick={toogleShow}
+            className="bg-forest-green text-ivory px-4 py-2 font-bold border-2 border-deep-moss shadow-[4px_4px_0px_0px_rgba(27,67,50,0.8)] hover:translate-y-[-2px] transition-all"
+          >
+            Connect Wallet
+          </button>
+        </div>
+
+        {/* Mobile Navigation */}
+        <div className="flex items-center md:hidden">
+          <button
+            onClick={toogleShow}
+            className="mr-4 bg-forest-green text-ivory px-3 py-1 text-sm font-bold border-2 border-deep-moss shadow-[3px_3px_0px_0px_rgba(27,67,50,0.8)] hover:translate-y-[-2px] transition-all"
+          >
+            Connect
+          </button>
           <HamburgerMenu />
         </div>
       </div>

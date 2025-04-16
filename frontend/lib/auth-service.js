@@ -35,8 +35,16 @@ const loginWithWallet = async (walletAddress) => {
       if (response.ok) {
         console.log('Login API response OK, signing in with custom token');
         // Sign in with the custom token from Firebase
-        await signInWithCustomToken(auth, data.token);
+        const userCredential = await signInWithCustomToken(auth, data.token);
         console.log('Successfully signed in with custom token');
+
+        // Get the ID token from the user credential
+        const idToken = await userCredential.user.getIdToken();
+        console.log('Successfully obtained ID token for API calls');
+
+        // Store the ID token in localStorage for API calls
+        localStorage.setItem('authToken', idToken);
+
         return {
           success: true,
           user: data.user,
@@ -153,7 +161,15 @@ const registerUser = async (walletAddress, userType, userData) => {
     const loginData = await loginResponse.json();
 
     if (loginResponse.ok) {
-      await signInWithCustomToken(auth, loginData.token);
+      const userCredential = await signInWithCustomToken(auth, loginData.token);
+
+      // Get the ID token from the user credential
+      const idToken = await userCredential.user.getIdToken();
+      console.log('Successfully obtained ID token after registration');
+
+      // Store the ID token in localStorage for API calls
+      localStorage.setItem('authToken', idToken);
+
       return {
         success: true,
         user: loginData.user,
@@ -185,7 +201,12 @@ const getUserData = async () => {
     }
 
     try {
-      const token = await currentUser.getIdToken();
+      // Get a fresh ID token
+      const token = await currentUser.getIdToken(true); // Force refresh
+
+      // Store the fresh token in localStorage
+      localStorage.setItem('authToken', token);
+
       const response = await fetch('/api/auth/me', {
         headers: { Authorization: `Bearer ${token}` },
       });

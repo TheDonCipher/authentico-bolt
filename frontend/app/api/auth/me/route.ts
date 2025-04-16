@@ -1,23 +1,23 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { db, auth } from '../../../../lib/firebase-admin-server';
+import { verifyAuth } from '../../../../lib/auth-middleware';
 
 // Standardize on a single collection name
 const USER_COLLECTION = 'users';
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
-    // Get the authorization header
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json({ error: 'No token provided' }, { status: 401 });
+    // Verify the authentication token
+    const authResult = await verifyAuth(request);
+
+    if (!authResult.success) {
+      return NextResponse.json(
+        { error: authResult.error },
+        { status: authResult.status }
+      );
     }
 
-    // Extract the token
-    const token = authHeader.split('Bearer ')[1];
-
-    // Verify the token
-    const decodedToken = await auth.verifyIdToken(token);
-    const uid = decodedToken.uid;
+    const uid = authResult.uid;
 
     try {
       // Get user data from the standardized collection

@@ -27,7 +27,6 @@ export const OrganizationSignUp: React.FC<OrganizationSignUpProps> = ({
     password: '',
     walletAddress: '',
     role: '1',
-
   });
 
   const [loading, setLoading] = React.useState(false);
@@ -37,10 +36,10 @@ export const OrganizationSignUp: React.FC<OrganizationSignUpProps> = ({
   const [isWalletConnected, setIsWalletConnected] = React.useState(false);
 
   const [name, setName] = React.useState<string | null>(null);
-  const [email, setEmail] = React.useState<string | null>(null)
-  const [password, setPassword] = React.useState<string | null>(null)
+  const [email, setEmail] = React.useState<string | null>(null);
+  const [password, setPassword] = React.useState<string | null>(null);
 
-  const [role, setRole] = React.useState<string | null>(null)
+  const [role, setRole] = React.useState<string | null>(null);
   useEffect(() => {
     const initializeWallet = async () => {
       console.log('------window.ethereum-----', window.ethereum);
@@ -77,8 +76,8 @@ export const OrganizationSignUp: React.FC<OrganizationSignUpProps> = ({
     setName(value);
     console.log('Name set in state:', name);
     setFormData((prev) => ({ ...prev, name: value }));
-    console.log
-  }
+    console.log;
+  };
 
   const handleSetEmail = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const { value } = e.target;
@@ -87,7 +86,7 @@ export const OrganizationSignUp: React.FC<OrganizationSignUpProps> = ({
     setEmail(value);
     console.log('Email set in state:', email);
     setFormData((prev) => ({ ...prev, email: value }));
-  }
+  };
   const handleSetPassword = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const { value } = e.target;
     console.log('Password changed:', value);
@@ -95,7 +94,7 @@ export const OrganizationSignUp: React.FC<OrganizationSignUpProps> = ({
     setPassword(value);
     console.log('Password set in state:', password);
     setFormData((prev) => ({ ...prev, password: value }));
-  }
+  };
 
   const [showPassword, setShowPassword] = React.useState(false);
   const togglePasswordVisibility = () => {
@@ -110,14 +109,18 @@ export const OrganizationSignUp: React.FC<OrganizationSignUpProps> = ({
     console.log('Name:', name);
     console.log('Email:', email);
 
-    setFormData({ name: name, email: email, password: email, walletAddress: account, role: '1' });
+    setFormData({
+      name: name,
+      email: email,
+      password: email,
+      walletAddress: account,
+      role: '1',
+    });
 
-    console.log("data set in formdat object ", formData)
+    console.log('data set in formdat object ', formData);
     setLoading(true);
     setError(null);
     setSuccess(null);
-
-
 
     if (error) {
       setError('Please fix the errors above.');
@@ -128,15 +131,21 @@ export const OrganizationSignUp: React.FC<OrganizationSignUpProps> = ({
     setError(null);
     setSuccess(null);
 
-    setFormData({ name: name, email: email, password: password, walletAddress: account, role: '0' });
-
+    setFormData({
+      name: name,
+      email: email,
+      password: password,
+      walletAddress: account,
+      role: '0',
+    });
 
     console.log('Form data:', formData);
     console.log('Submitting form...');
     console.log('Submitting form data:', formData);
 
     try {
-      const response = await fetch('http://localhost:666/create', {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || '/api';
+      const response = await fetch(`${apiUrl}/create`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -151,16 +160,23 @@ export const OrganizationSignUp: React.FC<OrganizationSignUpProps> = ({
       }
 
       const data = await response.json();
-      setSuccess('Sign-up successful! Please check your email for verification.');
-      setFormData({ name: '', email: '', password: '', walletAddress: '', role: '0' });
-      router.push('/organization-dashboard')
+      setSuccess(
+        'Sign-up successful! Please check your email for verification.'
+      );
+      setFormData({
+        name: '',
+        email: '',
+        password: '',
+        walletAddress: '',
+        role: '0',
+      });
+      router.push('/organization-dashboard');
     } catch (error) {
       setError(error.message || 'An error occurred. Please try again.');
     } finally {
       setLoading(false);
     }
   };
-
 
   return (
     <motion.div
@@ -207,10 +223,8 @@ export const OrganizationSignUp: React.FC<OrganizationSignUpProps> = ({
               id="name"
               name="name"
               className="w-full p-2 border border-gray-300 rounded-md focus:ring-[#4A6741] focus:border-[#4A6741]"
-
               required
               onChange={(e) => handleSetName(e)}
-
             />
           </div>
           <div>
@@ -225,19 +239,17 @@ export const OrganizationSignUp: React.FC<OrganizationSignUpProps> = ({
               id="email"
               name="email"
               className="w-full p-2 border border-gray-300 rounded-md focus:ring-[#4A6741] focus:border-[#4A6741]"
-
               onChange={(e) => handleSetEmail(e)}
-
               required
             />
           </div>
           <button
             type="submit"
-            className={`w-full bg-[#4A6741] text-white text-lg font-bold py-3 px-6 rounded-lg border-2 border-[#2C3E50] hover:bg-[#5D8C5D] transition duration-300 ${isLoading ? 'opacity-50 cursor-not-allowed' : ''
-              }`}
+            className={`w-full bg-[#4A6741] text-white text-lg font-bold py-3 px-6 rounded-lg border-2 border-[#2C3E50] hover:bg-[#5D8C5D] transition duration-300 ${
+              isLoading ? 'opacity-50 cursor-not-allowed' : ''
+            }`}
             disabled={isLoading}
             onClick={handleSubmit}
-
           >
             {isLoading ? 'Signing Up...' : 'Sign Up'}
           </button>

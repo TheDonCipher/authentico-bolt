@@ -19,7 +19,6 @@ export const PersonalSignUp: React.FC<PersonalSignUpProps> = ({
     password: '',
     walletAddress: '',
     role: '0',
-
   });
 
   const [loading, setLoading] = React.useState(false);
@@ -29,10 +28,10 @@ export const PersonalSignUp: React.FC<PersonalSignUpProps> = ({
   const [isWalletConnected, setIsWalletConnected] = React.useState(false);
 
   const [name, setName] = React.useState<string | null>(null);
-  const [email, setEmail] = React.useState<string | null>(null)
-  const [password, setPassword] = React.useState<string | null>(null)
+  const [email, setEmail] = React.useState<string | null>(null);
+  const [password, setPassword] = React.useState<string | null>(null);
 
-  const [role, setRole] = React.useState<string | null>(null)
+  const [role, setRole] = React.useState<string | null>(null);
   useEffect(() => {
     const initializeWallet = async () => {
       console.log('------window.ethereum-----', window.ethereum);
@@ -69,8 +68,8 @@ export const PersonalSignUp: React.FC<PersonalSignUpProps> = ({
     setName(value);
     console.log('Name set in state:', name);
     setFormData((prev) => ({ ...prev, name: value }));
-    console.log
-  }
+    console.log;
+  };
 
   const handleSetEmail = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const { value } = e.target;
@@ -79,7 +78,7 @@ export const PersonalSignUp: React.FC<PersonalSignUpProps> = ({
     setEmail(value);
     console.log('Email set in state:', email);
     setFormData((prev) => ({ ...prev, email: value }));
-  }
+  };
   const handleSetPassword = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const { value } = e.target;
     console.log('Password changed:', value);
@@ -87,7 +86,7 @@ export const PersonalSignUp: React.FC<PersonalSignUpProps> = ({
     setPassword(value);
     console.log('Password set in state:', password);
     setFormData((prev) => ({ ...prev, password: value }));
-  }
+  };
 
   const [showPassword, setShowPassword] = React.useState(false);
   const togglePasswordVisibility = () => {
@@ -102,14 +101,18 @@ export const PersonalSignUp: React.FC<PersonalSignUpProps> = ({
     console.log('Name:', name);
     console.log('Email:', email);
 
-    setFormData({ name: name, email: email, password: password, walletAddress: account, role: '0' });
+    setFormData({
+      name: name,
+      email: email,
+      password: password,
+      walletAddress: account,
+      role: '0',
+    });
 
-    console.log("data set in formdat object ", formData)
+    console.log('data set in formdat object ', formData);
     setLoading(true);
     setError(null);
     setSuccess(null);
-
-
 
     if (error) {
       setError('Please fix the errors above.');
@@ -120,15 +123,21 @@ export const PersonalSignUp: React.FC<PersonalSignUpProps> = ({
     setError(null);
     setSuccess(null);
 
-    setFormData({ name: name, email: email, password: password, walletAddress: account, role: '0' });
-
+    setFormData({
+      name: name,
+      email: email,
+      password: password,
+      walletAddress: account,
+      role: '0',
+    });
 
     console.log('Form data:', formData);
     console.log('Submitting form...');
     console.log('Submitting form data:', formData);
 
     try {
-      const response = await fetch('http://localhost:666/create', {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || '/api';
+      const response = await fetch(`${apiUrl}/create`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -143,10 +152,18 @@ export const PersonalSignUp: React.FC<PersonalSignUpProps> = ({
       }
 
       const data = await response.json();
-      setSuccess('Sign-up successful! Please check your email for verification.');
-      setFormData({ name: '', email: '', password: '', walletAddress: '', role: '0' });
+      setSuccess(
+        'Sign-up successful! Please check your email for verification.'
+      );
+      setFormData({
+        name: '',
+        email: '',
+        password: '',
+        walletAddress: '',
+        role: '0',
+      });
 
-      router.push('/individul-dashboard')
+      router.push('/individul-dashboard');
     } catch (error) {
       setError(error.message || 'An error occurred. Please try again.');
     } finally {
@@ -184,7 +201,7 @@ export const PersonalSignUp: React.FC<PersonalSignUpProps> = ({
             <X size={20} />
           </button>
         </div>
-        <form className="space-y-4" onSubmit={handleSubmit} >
+        <form className="space-y-4" onSubmit={handleSubmit}>
           <div>
             <label
               htmlFor="name"
@@ -199,8 +216,6 @@ export const PersonalSignUp: React.FC<PersonalSignUpProps> = ({
               className="w-full p-2 border border-gray-300 rounded-md focus:ring-[#4A6741] focus:border-[#4A6741]"
               required
               onChange={(e) => handleSetName(e)}
-
-
             />
           </div>
           <div>
@@ -217,8 +232,6 @@ export const PersonalSignUp: React.FC<PersonalSignUpProps> = ({
               className="w-full p-2 border border-gray-300 rounded-md focus:ring-[#4A6741] focus:border-[#4A6741]"
               required
               onChange={(e) => handleSetEmail(e)}
-
-
             />
           </div>
           <div>
@@ -235,7 +248,6 @@ export const PersonalSignUp: React.FC<PersonalSignUpProps> = ({
               className="w-full p-2 border border-gray-300 rounded-md focus:ring-[#4A6741] focus:border-[#4A6741]"
               required
               onChange={(e) => handleSetPassword(e)}
-
             />
           </div>
           <button

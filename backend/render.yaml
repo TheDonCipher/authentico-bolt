@@ -1,0 +1,56 @@
+services:
+  - type: web
+    name: authentico-backend
+    env: node
+    region: oregon
+    plan: free
+    buildCommand: npm install
+    startCommand: node index.js
+    envVars:
+      # Environment type
+      - key: NODE_ENV
+        value: production
+
+      # Server configuration
+      - key: PORT
+        value: 10000
+
+      # Firebase Admin Configuration
+      - key: FIREBASE_TYPE
+        value: service_account
+      - key: FIREBASE_PROJECT_ID
+        value: your_project_id_here
+      - key: FIREBASE_PRIVATE_KEY_ID
+        value: your_private_key_id_here
+      - key: FIREBASE_PRIVATE_KEY
+        value: your_private_key_here
+      - key: FIREBASE_CLIENT_EMAIL
+        value: your_client_email_here
+      - key: FIREBASE_CLIENT_ID
+        value: your_client_id_here
+      - key: FIREBASE_AUTH_URI
+        value: https://accounts.google.com/o/oauth2/auth
+      - key: FIREBASE_TOKEN_URI
+        value: https://oauth2.googleapis.com/token
+      - key: FIREBASE_AUTH_PROVIDER_X509_CERT_URL
+        value: https://www.googleapis.com/oauth2/v1/certs
+      - key: FIREBASE_CLIENT_X509_CERT_URL
+        value: your_cert_url_here
+      - key: FIREBASE_UNIVERSE_DOMAIN
+        value: googleapis.com
+
+      # Pinata Configuration (IPFS)
+      - key: PINATA_JWT
+        value: your_pinata_jwt_here
+      - key: GATEWAY_URL
+        value: https://fuchsia-fantastic-python-686.mypinata.cloud
+
+      # Blockchain Configuration
+      - key: BLOCKCHAIN_RPC_URL
+        value: https://sepolia.infura.io/v3/your_infura_key_here
+      - key: SPONSOR_WALLET_PRIVATE_KEY
+        value: your_private_key_here
+
+      # Encryption
+      - key: MASTER_KEY_SECRET
+        value: your_32_character_master_key_secret

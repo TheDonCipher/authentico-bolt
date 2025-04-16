@@ -6,11 +6,14 @@
 const express = require('express');
 const router = express.Router();
 const { verifyToken } = require('../authMiddleware');
-const { admin, db, USER_COLLECTION } = require('../config');
+const { admin, adminDb, USER_COLLECTION } = require('../config');
+const NotificationService = require('../services/NotificationService');
 
-// Collection references
-const orgApplicationsCollection = db.collection('organizationApplications');
-const usersCollection = db.collection(USER_COLLECTION);
+// Collection references - use adminDb for server-side operations
+const orgApplicationsCollection = adminDb.collection(
+  'organizationApplications'
+);
+const usersCollection = adminDb.collection(USER_COLLECTION);
 
 /**
  * Submit an organization application
@@ -18,11 +21,27 @@ const usersCollection = db.collection(USER_COLLECTION);
  */
 router.post('/apply', verifyToken, async (req, res) => {
   try {
-    const { orgName, contactEmail, website, description, address } = req.body;
+    const {
+      orgName,
+      contactEmail,
+      website,
+      description,
+      address,
+      phoneNumber,
+      industry,
+      registrationNumber,
+      foundedYear,
+      documentTypes,
+    } = req.body;
 
     // Validate required fields
     if (!orgName || !contactEmail || !website) {
       return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    // Validate document types if provided
+    if (documentTypes && !Array.isArray(documentTypes)) {
+      return res.status(400).json({ error: 'Document types must be an array' });
     }
 
     // Check if an application already exists for this email
@@ -43,6 +62,11 @@ router.post('/apply', verifyToken, async (req, res) => {
       website,
       description: description || '',
       address: address || '',
+      phoneNumber: phoneNumber || '',
+      industry: industry || '',
+      registrationNumber: registrationNumber || '',
+      foundedYear: foundedYear || '',
+      documentTypes: documentTypes || [],
       status: 'pending',
       submittedBy: req.user.uid,
       submittedAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -93,6 +117,13 @@ router.get('/application/:applicationId', verifyToken, async (req, res) => {
       orgName: appData.orgName,
       contactEmail: appData.contactEmail,
       website: appData.website,
+      phoneNumber: appData.phoneNumber || '',
+      industry: appData.industry || '',
+      registrationNumber: appData.registrationNumber || '',
+      foundedYear: appData.foundedYear || '',
+      documentTypes: appData.documentTypes || [],
+      description: appData.description || '',
+      address: appData.address || '',
       status: appData.status,
       notes: appData.notes || null,
       submittedAt: appData.submittedAt.toDate(),
@@ -134,6 +165,13 @@ router.get('/application/status', verifyToken, async (req, res) => {
       orgName: appData.orgName,
       contactEmail: appData.contactEmail,
       website: appData.website,
+      phoneNumber: appData.phoneNumber || '',
+      industry: appData.industry || '',
+      registrationNumber: appData.registrationNumber || '',
+      foundedYear: appData.foundedYear || '',
+      documentTypes: appData.documentTypes || [],
+      description: appData.description || '',
+      address: appData.address || '',
       status: appData.status,
       notes: appData.notes || null,
       submittedAt: appData.submittedAt.toDate(),
@@ -154,22 +192,73 @@ router.get('/application/status', verifyToken, async (req, res) => {
  */
 router.get('/verified', verifyToken, async (req, res) => {
   try {
+    console.log('Getting verified organizations for user:', req.user.uid);
+
     // Query for verified organizations
     const snapshot = await usersCollection
       .where('userType', '==', 'organization')
       .where('isVerified', '==', true)
       .get();
 
+    console.log(`Found ${snapshot.size} verified organizations`);
+
+    // Log the raw data from Firestore
+    snapshot.docs.forEach((doc, index) => {
+      console.log(`Organization ${index + 1} (${doc.id}):`, doc.data());
+    });
+
     // Format results
     const organizations = snapshot.docs.map((doc) => {
       const data = doc.data();
-      return {
+      // Check if organization details are in the orgDetails field
+      const orgDetails = data.orgDetails || {};
+
+      // Ensure name is present
+      if (!data.name && !orgDetails.name) {
+        console.warn(`Organization ${doc.id} has no name property`);
+      }
+
+      const org = {
         id: doc.id,
-        name: data.name,
-        website: data.website || null,
-        description: data.description || null,
+        name: data.name || orgDetails.name || 'Unnamed Organization',
+        website: data.website || orgDetails.website || null,
+        description: data.description || orgDetails.description || null,
+        verificationBadge:
+          data.verificationBadge || data.status === 'verified' || false,
+        documentTypes: data.documentTypes || orgDetails.documentTypes || [],
+        industry: data.industry || orgDetails.industry || null,
+        phoneNumber: data.phoneNumber || orgDetails.phoneNumber || null,
       };
+      console.log(`Formatted organization ${doc.id}:`, org);
+      return org;
     });
+
+    // If no organizations found, return fallback data in development
+    if (organizations.length === 0 && process.env.NODE_ENV === 'development') {
+      console.log('No verified organizations found, returning fallback data');
+      return res.json([
+        {
+          id: 'org1',
+          name: 'Example Organization 1',
+          website: 'https://example.org',
+          description: 'Example verified organization for testing',
+          verificationBadge: true,
+          documentTypes: ['identity', 'education'],
+          industry: 'Education',
+          phoneNumber: '+1234567890',
+        },
+        {
+          id: 'org2',
+          name: 'Example Organization 2',
+          website: 'https://example2.org',
+          description: 'Another example organization',
+          verificationBadge: true,
+          documentTypes: ['financial', 'legal'],
+          industry: 'Financial Services',
+          phoneNumber: '+0987654321',
+        },
+      ]);
+    }
 
     res.json(organizations);
   } catch (error) {
@@ -261,6 +350,79 @@ router.put('/applications/:applicationId', verifyToken, async (req, res) => {
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
 
+    // Send notification to the organization user
+    try {
+      // Get the user who submitted the application
+      const userSnapshot = await usersCollection.doc(appData.submittedBy).get();
+      if (userSnapshot.exists) {
+        const userData = userSnapshot.data();
+
+        // Send notification
+        const title = `Organization Verification ${
+          status.charAt(0).toUpperCase() + status.slice(1)
+        }`;
+        const message =
+          status === 'approved'
+            ? 'Your organization has been verified! You can now verify documents.'
+            : `Your organization verification was rejected. Reason: ${
+                notes || 'No reason provided'
+              }`;
+
+        await NotificationService.sendInAppNotification(
+          appData.submittedBy,
+          title,
+          message,
+          { status, applicationId }
+        );
+
+        // Send email notification if email is available
+        if (userData.email) {
+          const emailSubject = `Organization Verification ${
+            status.charAt(0).toUpperCase() + status.slice(1)
+          }`;
+          const emailText =
+            status === 'approved'
+              ? `Your organization ${appData.orgName} has been verified! You can now verify documents submitted by users.`
+              : `Your organization ${
+                  appData.orgName
+                } verification was rejected. Reason: ${
+                  notes || 'No reason provided'
+                }`;
+
+          const emailHtml =
+            status === 'approved'
+              ? `
+              <h2>Organization Verification Approved</h2>
+              <p>Congratulations! Your organization <strong>${
+                appData.orgName
+              }</strong> has been verified.</p>
+              <p>You can now verify documents submitted by users through the Authentico platform.</p>
+              <p>Visit your <a href="${
+                process.env.FRONTEND_URL || 'http://localhost:3000'
+              }/organization-dashboard">Organization Dashboard</a> to get started.</p>
+            `
+              : `
+              <h2>Organization Verification Rejected</h2>
+              <p>We regret to inform you that your organization <strong>${
+                appData.orgName
+              }</strong> verification request has been rejected.</p>
+              <p><strong>Reason:</strong> ${notes || 'No reason provided'}</p>
+              <p>You may submit a new application with the required corrections.</p>
+            `;
+
+          await NotificationService.sendEmailNotification(
+            userData.email,
+            emailSubject,
+            emailText,
+            emailHtml
+          );
+        }
+      }
+    } catch (notificationError) {
+      console.error('Error sending notification:', notificationError);
+      // Continue with the process even if notification fails
+    }
+
     // If approved, create or update user account
     if (status === 'approved') {
       try {
@@ -292,6 +454,12 @@ router.put('/applications/:applicationId', verifyToken, async (req, res) => {
             website: appData.website,
             description: appData.description || '',
             address: appData.address || '',
+            phoneNumber: appData.phoneNumber || '',
+            industry: appData.industry || '',
+            registrationNumber: appData.registrationNumber || '',
+            foundedYear: appData.foundedYear || '',
+            documentTypes: appData.documentTypes || [],
+            verificationBadge: true,
             createdAt: admin.firestore.FieldValue.serverTimestamp(),
             createdBy: req.user.uid,
           });
@@ -313,6 +481,12 @@ router.put('/applications/:applicationId', verifyToken, async (req, res) => {
             website: appData.website,
             description: appData.description || '',
             address: appData.address || '',
+            phoneNumber: appData.phoneNumber || '',
+            industry: appData.industry || '',
+            registrationNumber: appData.registrationNumber || '',
+            foundedYear: appData.foundedYear || '',
+            documentTypes: appData.documentTypes || [],
+            verificationBadge: true,
             updatedAt: admin.firestore.FieldValue.serverTimestamp(),
             updatedBy: req.user.uid,
           });

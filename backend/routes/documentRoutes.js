@@ -6,28 +6,113 @@
 const express = require('express');
 const router = express.Router();
 const { verifyToken } = require('../authMiddleware');
-const { admin, db, USER_COLLECTION } = require('../config');
+const { admin, adminDb, USER_COLLECTION } = require('../config');
 const EncryptionService = require('../services/EncryptionService');
 const StorageService = require('../services/StorageService');
 const BlockchainService = require('../services/BlockchainService');
 const NotificationService = require('../services/NotificationService');
+const {
+  isValidDocumentType,
+  getDocumentTypeName,
+} = require('../constants/documentTypes');
 const crypto = require('crypto');
 const multer = require('multer');
-const upload = multer({ limits: { fileSize: 10 * 1024 * 1024 } }); // 10MB limit
+// Configure multer storage with memory storage for better handling
+const storage = multer.memoryStorage();
+const upload = multer({
+  storage,
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+  fileFilter: (req, file, cb) => {
+    // Accept only PDF, JPG, JPEG, and PNG files
+    if (
+      file.mimetype === 'application/pdf' ||
+      file.mimetype === 'image/jpeg' ||
+      file.mimetype === 'image/jpg' ||
+      file.mimetype === 'image/png'
+    ) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only PDF, JPG, JPEG, and PNG files are allowed'));
+    }
+  },
+}); // 10MB limit
 
-// Collection references
-const documentsCollection = db.collection('documents');
-const usersCollection = db.collection(USER_COLLECTION);
+// Collection references - use adminDb for server-side operations
+const documentsCollection = adminDb.collection('documents');
+const usersCollection = adminDb.collection(USER_COLLECTION);
+
+/**
+ * Get all document types - public endpoint, no authentication required
+ * GET /api/documents/types
+ */
+router.get('/types', async (req, res) => {
+  try {
+    const documentTypes =
+      require('../constants/documentTypes').getAllDocumentTypes();
+    res.json(documentTypes);
+  } catch (error) {
+    console.error('Error getting document types:', error);
+    res.status(500).json({
+      error: 'Failed to get document types',
+      details: error.message,
+    });
+  }
+});
 
 /**
  * Upload and process a document
  * POST /api/documents/upload
  */
-router.post(
-  '/upload',
-  verifyToken,
-  upload.single('document_file'),
-  async (req, res) => {
+router.post('/upload', verifyToken, (req, res) => {
+  console.log('Document upload request received');
+  console.log('Headers:', req.headers);
+
+  // Use multer middleware manually to better handle errors
+  const uploadMiddleware = upload.single('document_file');
+
+  uploadMiddleware(req, res, async (err) => {
+    if (err) {
+      console.error('Multer error:', err);
+      console.error('Request headers:', req.headers);
+
+      // Log more details about the request
+      console.error('Content-Type:', req.headers['content-type']);
+      console.error('Content-Length:', req.headers['content-length']);
+      console.error('Request method:', req.method);
+      console.error('Request URL:', req.originalUrl);
+      console.error(
+        'Authorization header present:',
+        !!req.headers['authorization']
+      );
+      console.error('Request body:', req.body);
+      console.error('Request files:', req.files);
+
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(413).json({
+          error: 'FILE_TOO_LARGE',
+          message: 'The uploaded file exceeds the size limit (10MB)',
+        });
+      }
+
+      // Check for specific multer errors
+      if (err.message === 'Unexpected end of form') {
+        return res.status(400).json({
+          error: 'INCOMPLETE_FORM_DATA',
+          message:
+            'The form data was incomplete or malformed. Please ensure all required fields are provided.',
+          details:
+            'This error often occurs when the Content-Type header is incorrect or when the form data is truncated.',
+        });
+      }
+
+      return res.status(400).json({
+        error: 'FILE_UPLOAD_ERROR',
+        message: `File upload error: ${err.message}`,
+        details: err.stack || 'No additional details available',
+      });
+    }
+
+    // Continue with the rest of the handler
     try {
       // Input validation
       if (!req.file) {
@@ -38,6 +123,17 @@ router.post(
 
       if (!documentName || !documentType || !verifyingOrgId) {
         return res.status(400).json({ error: 'Missing required fields' });
+      }
+
+      // Validate document type
+      if (!isValidDocumentType(documentType)) {
+        return res.status(400).json({
+          error: 'INVALID_DOCUMENT_TYPE',
+          message: `Invalid document type: ${documentType}`,
+          validTypes: require('../constants/documentTypes')
+            .getAllDocumentTypes()
+            .map((type) => ({ id: type.id, name: type.name })),
+        });
       }
 
       // Get user information
@@ -110,6 +206,7 @@ router.post(
         verifyingOrgName: orgData.name || 'Unknown',
         documentName,
         documentType,
+        documentTypeName: getDocumentTypeName(documentType),
         originalDocHash,
         encryptedIpfsCid,
         encryptedDek: encryptedDek.toString('base64'),
@@ -178,12 +275,47 @@ router.post(
       });
     } catch (error) {
       console.error('Error uploading document:', error);
-      res
-        .status(500)
-        .json({ error: 'Document upload failed', details: error.message });
+
+      // Provide more detailed error information based on the error type
+      if (error.name === 'MulterError') {
+        // Handle multer-specific errors
+        return res.status(400).json({
+          error: 'FILE_UPLOAD_ERROR',
+          message: `File upload error: ${error.message}`,
+          details: error.field || 'document_file',
+        });
+      } else if (error.code === 'LIMIT_FILE_SIZE') {
+        // Handle file size limit errors
+        return res.status(413).json({
+          error: 'FILE_TOO_LARGE',
+          message: 'The uploaded file exceeds the size limit (10MB)',
+          details: error.message,
+        });
+      } else if (error.message && error.message.includes('IPFS')) {
+        // Handle IPFS storage errors
+        return res.status(502).json({
+          error: 'STORAGE_ERROR',
+          message: 'Failed to store document in IPFS',
+          details: error.message,
+        });
+      } else if (error.message && error.message.includes('Firebase')) {
+        // Handle Firestore errors
+        return res.status(500).json({
+          error: 'DATABASE_ERROR',
+          message: 'Failed to store document metadata',
+          details: error.message,
+        });
+      }
+
+      // Default error response
+      res.status(500).json({
+        error: 'DOCUMENT_UPLOAD_FAILED',
+        message: 'Document upload failed due to an unexpected error',
+        details: error.message,
+      });
     }
-  }
-);
+  });
+});
 
 /**
  * Get document details
@@ -215,6 +347,8 @@ router.get('/:documentId', verifyToken, async (req, res) => {
       id: docSnapshot.id,
       documentName: docData.documentName,
       documentType: docData.documentType,
+      documentTypeName:
+        docData.documentTypeName || getDocumentTypeName(docData.documentType),
       status: docData.status,
       createdAt: docData.createdAt.toDate(),
       updatedAt: docData.updatedAt ? docData.updatedAt.toDate() : null,
@@ -226,12 +360,10 @@ router.get('/:documentId', verifyToken, async (req, res) => {
     });
   } catch (error) {
     console.error('Error getting document details:', error);
-    res
-      .status(500)
-      .json({
-        error: 'Failed to get document details',
-        details: error.message,
-      });
+    res.status(500).json({
+      error: 'Failed to get document details',
+      details: error.message,
+    });
   }
 });
 
@@ -254,11 +386,9 @@ router.get('/:documentId/secure-details', verifyToken, async (req, res) => {
 
     // Check if user is the verifying organization
     if (docData.verifyingOrgId !== req.user.uid) {
-      return res
-        .status(403)
-        .json({
-          error: 'Only the verifying organization can access secure details',
-        });
+      return res.status(403).json({
+        error: 'Only the verifying organization can access secure details',
+      });
     }
 
     // Get the encrypted file from IPFS
@@ -285,6 +415,8 @@ router.get('/:documentId/secure-details', verifyToken, async (req, res) => {
       id: docSnapshot.id,
       documentName: docData.documentName,
       documentType: docData.documentType,
+      documentTypeName:
+        docData.documentTypeName || getDocumentTypeName(docData.documentType),
       status: docData.status,
       ownerName: docData.ownerName,
       decryptedFile: decryptedFile.toString('base64'),
@@ -292,12 +424,10 @@ router.get('/:documentId/secure-details', verifyToken, async (req, res) => {
     });
   } catch (error) {
     console.error('Error getting secure document details:', error);
-    res
-      .status(500)
-      .json({
-        error: 'Failed to get secure document details',
-        details: error.message,
-      });
+    res.status(500).json({
+      error: 'Failed to get secure document details',
+      details: error.message,
+    });
   }
 });
 
@@ -329,20 +459,16 @@ router.post('/:documentId/verify', verifyToken, async (req, res) => {
 
     // Check if user is the verifying organization
     if (docData.verifyingOrgId !== req.user.uid) {
-      return res
-        .status(403)
-        .json({
-          error: 'Only the verifying organization can verify documents',
-        });
+      return res.status(403).json({
+        error: 'Only the verifying organization can verify documents',
+      });
     }
 
     // Check if document is in a verifiable state
     if (docData.status !== 'Pending Verification') {
-      return res
-        .status(400)
-        .json({
-          error: `Document cannot be verified in status: ${docData.status}`,
-        });
+      return res.status(400).json({
+        error: `Document cannot be verified in status: ${docData.status}`,
+      });
     }
 
     // Update document status in Firestore
@@ -444,6 +570,8 @@ router.get('/', verifyToken, async (req, res) => {
         id: doc.id,
         documentName: data.documentName,
         documentType: data.documentType,
+        documentTypeName:
+          data.documentTypeName || getDocumentTypeName(data.documentType),
         status: data.status,
         createdAt: data.createdAt.toDate(),
         updatedAt: data.updatedAt ? data.updatedAt.toDate() : null,

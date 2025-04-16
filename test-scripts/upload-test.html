@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document Upload Test</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      .form-group {
+        margin-bottom: 15px;
+      }
+      label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+      }
+      input,
+      button {
+        padding: 8px;
+        font-size: 16px;
+      }
+      button {
+        background-color: #4caf50;
+        color: white;
+        border: none;
+        cursor: pointer;
+      }
+      button:hover {
+        background-color: #45a049;
+      }
+      #result {
+        margin-top: 20px;
+        padding: 10px;
+        border: 1px solid #ddd;
+        background-color: #f9f9f9;
+        white-space: pre-wrap;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Document Upload Test</h1>
+
+    <div class="form-group">
+      <label for="apiUrl">API URL:</label>
+      <input
+        type="text"
+        id="apiUrl"
+        value="http://localhost:8080/api"
+        style="width: 300px"
+      />
+    </div>
+
+    <div class="form-group">
+      <label for="authToken">Auth Token:</label>
+      <input type="text" id="authToken" style="width: 500px" />
+      <button onclick="getNewToken()">Get New Token</button>
+    </div>
+
+    <div class="form-group">
+      <label for="walletAddress">Wallet Address:</label>
+      <input
+        type="text"
+        id="walletAddress"
+        value="0x1234567890123456789012345678901234567890"
+        style="width: 500px"
+      />
+    </div>
+
+    <div class="form-group">
+      <label for="verifyingOrgId">Verifying Organization ID:</label>
+      <input
+        type="text"
+        id="verifyingOrgId"
+        value="test-org-id"
+        style="width: 300px"
+      />
+    </div>
+
+    <div class="form-group">
+      <label for="documentName">Document Name:</label>
+      <input
+        type="text"
+        id="documentName"
+        value="Test Document"
+        style="width: 300px"
+      />
+    </div>
+
+    <div class="form-group">
+      <label for="documentType">Document Type:</label>
+      <select id="documentType" style="width: 300px; padding: 8px">
+        <option value="">Loading document types...</option>
+      </select>
+      <button onclick="fetchDocumentTypes()">Refresh Types</button>
+    </div>
+
+    <div class="form-group">
+      <label for="documentFile">Document File:</label>
+      <input type="file" id="documentFile" />
+    </div>
+
+    <button onclick="uploadDocument()">Upload Document</button>
+
+    <div id="result"></div>
+
+    <script>
+      // Function to fetch document types
+      async function fetchDocumentTypes() {
+        const apiUrl = document.getElementById('apiUrl').value;
+        const resultDiv = document.getElementById('result');
+        const documentTypeSelect = document.getElementById('documentType');
+
+        resultDiv.textContent = 'Fetching document types...';
+
+        try {
+          const response = await fetch(`${apiUrl}/documents/types`);
+          const documentTypes = await response.json();
+
+          // Clear existing options
+          documentTypeSelect.innerHTML = '';
+
+          // Add default option
+          const defaultOption = document.createElement('option');
+          defaultOption.value = '';
+          defaultOption.textContent = 'Select document type';
+          documentTypeSelect.appendChild(defaultOption);
+
+          // Add document types
+          documentTypes.forEach((type) => {
+            const option = document.createElement('option');
+            option.value = type.id;
+            option.textContent = type.name;
+            option.title = type.description || '';
+            documentTypeSelect.appendChild(option);
+          });
+
+          resultDiv.textContent = `Fetched ${documentTypes.length} document types`;
+        } catch (error) {
+          console.error('Error fetching document types:', error);
+          resultDiv.textContent = `Error fetching document types: ${error.message}`;
+
+          // Add fallback document types
+          documentTypeSelect.innerHTML = `
+            <option value="">Select document type</option>
+            <option value="identity">Identity Document</option>
+            <option value="education">Educational Certificate</option>
+            <option value="employment">Employment Document</option>
+            <option value="financial">Financial Document</option>
+            <option value="other">Other Document</option>
+          `;
+        }
+      }
+
+      // Function to get a new token
+      async function getNewToken() {
+        const apiUrl = document.getElementById('apiUrl').value;
+        const walletAddress = document.getElementById('walletAddress').value;
+        const resultDiv = document.getElementById('result');
+
+        resultDiv.textContent = 'Getting a new token...';
+
+        try {
+          // First try to register the user
+          try {
+            const registerResponse = await fetch(
+              `${apiUrl.replace('/api', '')}/api/auth/register`,
+              {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  walletAddress,
+                  userType: 'individual',
+                  userData: {
+                    name: 'Test User',
+                  },
+                }),
+              }
+            );
+
+            const registerData = await registerResponse.json();
+            resultDiv.textContent += `\nRegistration response: ${JSON.stringify(
+              registerData,
+              null,
+              2
+            )}`;
+          } catch (regError) {
+            resultDiv.textContent += `\nRegistration skipped, user might already exist`;
+          }
+
+          // Now login to get a token
+          const loginResponse = await fetch(
+            `${apiUrl.replace('/api', '')}/api/auth/login`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                walletAddress,
+              }),
+            }
+          );
+
+          const loginData = await loginResponse.json();
+
+          if (!loginData.token) {
+            throw new Error('Login failed: No token returned');
+          }
+
+          document.getElementById('authToken').value = loginData.token;
+          resultDiv.textContent += `\nLogin successful, token received`;
+        } catch (error) {
+          resultDiv.textContent += `\nError getting auth token: ${error.message}`;
+        }
+      }
+
+      // Function to upload a document
+      async function uploadDocument() {
+        const apiUrl = document.getElementById('apiUrl').value;
+        const authToken = document.getElementById('authToken').value;
+        const documentName = document.getElementById('documentName').value;
+        const documentType = document.getElementById('documentType').value;
+        const verifyingOrgId = document.getElementById('verifyingOrgId').value;
+        const documentFile = document.getElementById('documentFile').files[0];
+        const resultDiv = document.getElementById('result');
+
+        if (!authToken) {
+          resultDiv.textContent = 'Please get an auth token first';
+          return;
+        }
+
+        if (!documentFile) {
+          resultDiv.textContent = 'Please select a document file';
+          return;
+        }
+
+        resultDiv.textContent = 'Uploading document...';
+
+        try {
+          const formData = new FormData();
+          formData.append('document_file', documentFile);
+          formData.append('documentName', documentName);
+          formData.append('documentType', documentType);
+          formData.append('verifyingOrgId', verifyingOrgId);
+
+          const response = await fetch(`${apiUrl}/documents/upload`, {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${authToken}`,
+            },
+            body: formData,
+          });
+
+          const data = await response.json();
+
+          if (response.ok) {
+            resultDiv.textContent = `Upload successful!\nResponse: ${JSON.stringify(
+              data,
+              null,
+              2
+            )}`;
+          } else {
+            resultDiv.textContent = `Upload failed!\nResponse status: ${
+              response.status
+            }\nResponse data: ${JSON.stringify(data, null, 2)}`;
+          }
+        } catch (error) {
+          resultDiv.textContent = `Upload failed!\nError message: ${error.message}`;
+        }
+      }
+
+      // Fetch document types when the page loads
+      document.addEventListener('DOMContentLoaded', fetchDocumentTypes);
+    </script>
+  </body>
+</html>

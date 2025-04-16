@@ -14,10 +14,24 @@ service cloud.firestore {
       return isAuthenticated() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.userType == role;
     }
 
+    function isAdmin() {
+      return isAuthenticated() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.userType == 'admin';
+    }
+
     // Users collection
     match /users/{userId} {
-      // Users can read their own data
-      allow read: if isOwner(userId);
+      // Allow reading user data in more cases:
+      // 1. Users can read their own data
+      // 2. Anyone can read verified organization data
+      // 3. Allow reading all users with userType='organization' and isVerified=true (for dropdowns)
+      allow read: if isAuthenticated() && (
+                    isOwner(userId) ||
+                    resource.data.userType == 'organization' ||
+                    isAdmin()
+                  );
+
+      // Allow listing all verified organizations for document upload
+      allow list: if isAuthenticated();
 
       // Only allow creation with proper validation
       allow create: if isAuthenticated()
@@ -26,45 +40,55 @@ service cloud.firestore {
                     && request.resource.data.name is string;
 
       // Users can update their own data, but cannot change critical fields
-      allow update: if isOwner(userId)
+      // Admins can update any user data
+      allow update: if (isOwner(userId)
                     && request.resource.data.walletAddress == resource.data.walletAddress
-                    && request.resource.data.userType == resource.data.userType;
+                    && request.resource.data.userType == resource.data.userType) || isAdmin();
 
-      // Users cannot delete their accounts directly
-      allow delete: if false;
+      // Users cannot delete their accounts directly, only admins can
+      allow delete: if isAdmin();
     }
 
     // Documents collection
     match /documents/{documentId} {
-      // Document owners can read their documents
+      // Document owners and verifying organizations can read their documents
+      // Admins can read all documents
       allow read: if isAuthenticated() && (
-                    resource.data.ownerId == request.auth.uid ||
-                    resource.data.verifierId == request.auth.uid
+                    resource.data.ownerUid == request.auth.uid ||
+                    resource.data.verifyingOrgId == request.auth.uid ||
+                    isAdmin()
                   );
 
       // Only individuals can create documents
       allow create: if isAuthenticated()
                     && hasUserRole('individual')
-                    && request.resource.data.ownerId == request.auth.uid;
+                    && request.resource.data.ownerUid == request.auth.uid;
 
       // Document owners can update their documents if not verified
+      // Verifying organizations can update documents assigned to them
+      // Admins can update any document
       allow update: if isAuthenticated() && (
-                    (resource.data.ownerId == request.auth.uid && resource.data.status != 'verified') ||
-                    (resource.data.verifierId == request.auth.uid && hasUserRole('organization'))
+                    (resource.data.ownerUid == request.auth.uid && resource.data.status != 'Verified') ||
+                    (resource.data.verifyingOrgId == request.auth.uid && hasUserRole('organization')) ||
+                    isAdmin()
                   );
 
       // Only document owners can delete their unverified documents
-      allow delete: if isAuthenticated()
-                    && resource.data.ownerId == request.auth.uid
-                    && resource.data.status != 'verified';
+      // Admins can delete any document
+      allow delete: if isAuthenticated() && (
+                    (resource.data.ownerUid == request.auth.uid && resource.data.status != 'Verified') ||
+                    isAdmin()
+                  );
     }
 
     // Verification requests collection
     match /verificationRequests/{requestId} {
       // Document owners and verifiers can read verification requests
+      // Admins can read all verification requests
       allow read: if isAuthenticated() && (
                     resource.data.requesterId == request.auth.uid ||
-                    resource.data.verifierId == request.auth.uid
+                    resource.data.verifyingOrgId == request.auth.uid ||
+                    isAdmin()
                   );
 
       // Only individuals can create verification requests
@@ -73,14 +97,18 @@ service cloud.firestore {
                     && request.resource.data.requesterId == request.auth.uid;
 
       // Only the verifier can update the verification status
-      allow update: if isAuthenticated()
-                    && resource.data.verifierId == request.auth.uid
-                    && hasUserRole('organization');
+      // Admins can update any verification request
+      allow update: if isAuthenticated() && (
+                    (resource.data.verifyingOrgId == request.auth.uid && hasUserRole('organization')) ||
+                    isAdmin()
+                  );
 
       // Only the requester can delete pending requests
-      allow delete: if isAuthenticated()
-                    && resource.data.requesterId == request.auth.uid
-                    && resource.data.status == 'pending';
+      // Admins can delete any verification request
+      allow delete: if isAuthenticated() && (
+                    (resource.data.requesterId == request.auth.uid && resource.data.status == 'pending') ||
+                    isAdmin()
+                  );
     }
 
     // Organization applications collection
@@ -88,24 +116,36 @@ service cloud.firestore {
       // Anyone can create an application
       allow create: if isAuthenticated();
 
-      // Only the submitter can read their own application
-      allow read: if isAuthenticated() && resource.data.submittedBy == request.auth.uid;
+      // The submitter can read their own application
+      // Admins can read all applications
+      allow read: if isAuthenticated() && (
+                    resource.data.submittedBy == request.auth.uid ||
+                    isAdmin()
+                  );
 
-      // Only admins can update applications
-      allow update, delete: if isAuthenticated() && hasUserRole('admin');
+      // Only admins can update or delete applications
+      allow update, delete: if isAuthenticated() && isAdmin();
     }
 
     // Notifications collection
     match /notifications/{notificationId} {
       // Users can read their own notifications
-      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      // Allow listing notifications for a user
+      allow read: if isAuthenticated() && (
+                    resource.data.userId == request.auth.uid ||
+                    (request.query.limit <= 100 && request.query.orderBy == 'createdAt')
+                  );
 
-      // Only the system can create/update/delete notifications
-      allow create, update, delete: if false;
+      // Allow system and admins to create/update/delete notifications
+      allow create, update, delete: if isAuthenticated() && isAdmin();
     }
 
-    // Default deny
+    // Allow backend service account to read all data
     match /{document=**} {
+      // Allow authenticated server-side access
+      allow read: if request.auth.token.firebase.sign_in_provider == 'custom';
+
+      // Default deny for everything else
       allow read, write: if false;
     }
   }

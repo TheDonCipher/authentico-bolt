@@ -11,7 +11,6 @@ const Settings = () => {
     password: '',
     walletAddress: '',
     role: '0',
-
   });
 
   const [loading, setLoading] = React.useState(false);
@@ -21,10 +20,10 @@ const Settings = () => {
   const [isWalletConnected, setIsWalletConnected] = React.useState(false);
 
   const [name, setName] = React.useState<string | null>(null);
-  const [email, setEmail] = React.useState<string | null>(null)
-  const [password, setPassword] = React.useState<string | null>(null)
+  const [email, setEmail] = React.useState<string | null>(null);
+  const [password, setPassword] = React.useState<string | null>(null);
 
-  const [role, setRole] = React.useState<string | null>(null)
+  const [role, setRole] = React.useState<string | null>(null);
   useEffect(() => {
     const initializeWallet = async () => {
       console.log('------window.ethereum-----', window.ethereum);
@@ -61,8 +60,8 @@ const Settings = () => {
     setName(value);
     console.log('Name set in state:', name);
     setFormData((prev) => ({ ...prev, name: value }));
-    console.log
-  }
+    console.log;
+  };
 
   const handleSetEmail = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const { value } = e.target;
@@ -71,7 +70,7 @@ const Settings = () => {
     setEmail(value);
     console.log('Email set in state:', email);
     setFormData((prev) => ({ ...prev, email: value }));
-  }
+  };
   const handleSetPassword = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const { value } = e.target;
     console.log('Password changed:', value);
@@ -79,7 +78,7 @@ const Settings = () => {
     setPassword(value);
     console.log('Password set in state:', password);
     setFormData((prev) => ({ ...prev, password: value }));
-  }
+  };
 
   const [showPassword, setShowPassword] = React.useState(false);
   const togglePasswordVisibility = () => {
@@ -94,14 +93,18 @@ const Settings = () => {
     console.log('Name:', name);
     console.log('Email:', email);
 
-    setFormData({ name: name, email: email, password: password, walletAddress: account, role: '0' });
+    setFormData({
+      name: name,
+      email: email,
+      password: password,
+      walletAddress: account,
+      role: '0',
+    });
 
-    console.log("data set in formdat object ", formData)
+    console.log('data set in formdat object ', formData);
     setLoading(true);
     setError(null);
     setSuccess(null);
-
-
 
     if (error) {
       setError('Please fix the errors above.');
@@ -112,15 +115,21 @@ const Settings = () => {
     setError(null);
     setSuccess(null);
 
-    setFormData({ name: name, email: email, password: password, walletAddress: account, role: '0' });
-
+    setFormData({
+      name: name,
+      email: email,
+      password: password,
+      walletAddress: account,
+      role: '0',
+    });
 
     console.log('Form data:', formData);
     console.log('Submitting form...');
     console.log('Submitting form data:', formData);
 
     try {
-      const response = await fetch('http://localhost:666/create', {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || '/api';
+      const response = await fetch(`${apiUrl}/create`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -135,16 +144,22 @@ const Settings = () => {
       }
 
       const data = await response.json();
-      setSuccess('Sign-up successful! Please check your email for verification.');
-      setFormData({ name: '', email: '', password: '', walletAddress: '', role: '0' });
-
-
+      setSuccess(
+        'Sign-up successful! Please check your email for verification.'
+      );
+      setFormData({
+        name: '',
+        email: '',
+        password: '',
+        walletAddress: '',
+        role: '0',
+      });
     } catch (error) {
       setError(error.message || 'An error occurred. Please try again.');
     } finally {
       setLoading(false);
     }
-  }
+  };
   return (
     <div className="relative flex min-h-screen bg-[#F5F5F0]">
       <SidebarNavigation />
@@ -165,8 +180,8 @@ const Settings = () => {
                     Organization Name
                   </label>
                   <input
-                    id='name'
-                    name='name'
+                    id="name"
+                    name="name"
                     placeholder="Enter your organization name"
                     onChange={(e) => handleSetName(e)}
                     required
@@ -184,7 +199,6 @@ const Settings = () => {
                     name="email"
                     placeholder="Enter your email"
                     onChange={(e) => handleSetEmail(e)}
-
                     required
                     className="w-full p-3 border-2 border-[#4A5043] bg-[#F5F5F0]"
                   />
@@ -194,17 +208,20 @@ const Settings = () => {
                     Webhook URL
                   </label>
                   <input
-
                     type="text"
                     placeholder="Enter your webhook URL"
-                    name='webhook'
-                    id='webhook'
+                    name="webhook"
+                    id="webhook"
                     required
                     onChange={(e) => handleSetPassword(e)}
                     className="w-full p-3 border-2 border-[#4A5043] bg-[#F5F5F0]"
                   />
                 </div>
-                <button onClick={handleSubmit} type="submit" className="bg-[#4A5043] text-white px-6 py-3 font-bold hover:bg-[#5A6053]">
+                <button
+                  onClick={handleSubmit}
+                  type="submit"
+                  className="bg-[#4A5043] text-white px-6 py-3 font-bold hover:bg-[#5A6053]"
+                >
                   Save Changes
                 </button>
               </div>
@@ -235,7 +252,10 @@ const Settings = () => {
                       Automatically log out after inactivity
                     </p>
                   </div>
-                  <label htmlFor="session-timeout" className="block font-bold text-[#2C3639]">
+                  <label
+                    htmlFor="session-timeout"
+                    className="block font-bold text-[#2C3639]"
+                  >
                     Session Timeout Duration
                   </label>
                   <select
@@ -256,12 +276,8 @@ const Settings = () => {
   );
 };
 
-
-
 export default Settings;
 
 // function useEffect(effect: () => void, deps: any[]) {
 //   React.useEffect(effect, deps);
 // }
-
-

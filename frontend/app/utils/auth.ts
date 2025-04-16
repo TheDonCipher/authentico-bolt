@@ -1,7 +1,7 @@
 export const handleWalletAuth = async (account: any, router: any) => {
   try {
     if (!account) {
-      console.log("No account found. Redirecting to login.");
+      console.log('No account found. Redirecting to login.');
       router.push('/login');
       return {
         error: 'Please connect your wallet before signing in.',
@@ -9,20 +9,20 @@ export const handleWalletAuth = async (account: any, router: any) => {
       };
     }
 
-    console.log("Account found:", account);
+    console.log('Account found:', account);
     const { address, balance } = account;
-    console.log("Account address:", address);
-    console.log("Account balance:", balance);
-    const baseUrl = 'http://localhost:666/';
-    console.log("Base URL:", baseUrl);
+    console.log('Account address:', address);
+    console.log('Account balance:', balance);
+    // Use environment variable for API URL
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || '/api';
+    console.log('API URL:', apiUrl);
 
-    const response = await fetch(`${baseUrl}`);
-    console.log("Response from fetch:", response);
+    const response = await fetch(`${apiUrl}`);
+    console.log('Response from fetch:', response);
     const data = await response.json();
-    console.log("Data from fetch:", data);
+    console.log('Data from fetch:', data);
 
     if (response.ok && data.walletAddress == account.address) {
-
       return { user: data, error: null };
     } else if (response.status === 404) {
       return {

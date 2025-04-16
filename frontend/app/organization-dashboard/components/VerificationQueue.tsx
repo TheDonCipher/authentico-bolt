@@ -2,10 +2,19 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Check, X, Eye, Clock } from 'lucide-react';
-import { auth } from '../../../lib/firebase';
+import { Check, X, Eye, Clock, Bell } from 'lucide-react';
+import { auth, db } from '../../../lib/firebase';
+import {
+  collection,
+  query,
+  where,
+  onSnapshot,
+  orderBy,
+  Timestamp,
+} from 'firebase/firestore';
 import axios from 'axios';
 import { Toast } from '../../components/ui/Toast';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface Document {
   id: string;
@@ -32,47 +41,85 @@ const VerificationQueue = () => {
   } | null>(null);
   const router = useRouter();
 
+  const { user } = useAuth();
+
+  // Set up real-time listener for pending documents
   useEffect(() => {
-    fetchPendingDocuments();
-  }, []);
+    if (!user) return;
 
-  const fetchPendingDocuments = async () => {
-    try {
-      setLoading(true);
-      const idToken = await auth.currentUser?.getIdToken();
+    setLoading(true);
 
-      if (!idToken) {
-        throw new Error('Not authenticated');
+    // Set up real-time listener for documents
+    const documentsRef = collection(db, 'documents');
+    const q = query(
+      documentsRef,
+      where('verifyingOrgId', '==', user.uid),
+      where('status', '==', 'Pending Verification'),
+      orderBy('createdAt', 'desc')
+    );
+
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        const fetchedDocs = [];
+        snapshot.forEach((doc) => {
+          const data = doc.data();
+          // Convert Firestore document to our Document model
+          fetchedDocs.push({
+            id: doc.id,
+            documentName: data.documentName || 'Unnamed Document',
+            documentType: data.documentType || 'Unknown Type',
+            status: data.status || 'Unknown',
+            createdAt:
+              data.createdAt instanceof Timestamp
+                ? data.createdAt.toDate()
+                : new Date(),
+            ownerName: data.ownerName || 'Unknown User',
+          });
+        });
+
+        setDocuments(fetchedDocs);
+        setLoading(false);
+      },
+      (error) => {
+        console.error('Error in document listener:', error);
+        setToastMessage({
+          type: 'error',
+          message: 'Failed to listen for document updates.',
+        });
+        setLoading(false);
       }
+    );
 
-      const response = await axios.get('/api/documents', {
-        headers: {
-          Authorization: `Bearer ${idToken}`,
-        },
-      });
+    // Set up notification listener for new verification requests
+    const notificationsRef = collection(db, 'notifications');
+    const notificationQuery = query(
+      notificationsRef,
+      where('userId', '==', user.uid),
+      where('read', '==', false),
+      where('title', '==', 'New Verification Request'),
+      orderBy('createdAt', 'desc')
+    );
 
-      // Filter for pending verification documents
-      const pendingDocs = response.data.filter(
-        (doc: any) => doc.status === 'Pending Verification'
-      );
+    const notificationUnsubscribe = onSnapshot(
+      notificationQuery,
+      (snapshot) => {
+        if (!snapshot.empty) {
+          // Show notification for new verification requests
+          setToastMessage({
+            type: 'success',
+            message: 'New document verification request received',
+          });
+        }
+      }
+    );
 
-      // Format dates
-      const formattedDocs = pendingDocs.map((doc: any) => ({
-        ...doc,
-        createdAt: new Date(doc.createdAt),
-      }));
-
-      setDocuments(formattedDocs);
-    } catch (error) {
-      console.error('Error fetching documents:', error);
-      setToastMessage({
-        type: 'error',
-        message: 'Failed to load verification queue',
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+    // Clean up listeners on unmount
+    return () => {
+      unsubscribe();
+      notificationUnsubscribe();
+    };
+  }, [user]);
 
   const viewDocument = async (docId: string) => {
     try {

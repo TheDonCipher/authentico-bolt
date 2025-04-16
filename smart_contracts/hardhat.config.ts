@@ -1,15 +1,18 @@
-import { HardhatUserConfig } from "hardhat/config";
-import "@nomicfoundation/hardhat-toolbox";
-const { vars } = require("hardhat/config");
+import { HardhatUserConfig } from 'hardhat/config';
+import '@nomicfoundation/hardhat-toolbox';
+import * as dotenv from 'dotenv';
+const { vars } = require('hardhat/config');
 
-const ETHERSCAN_API_KEY = vars.get("ETHERSCAN_API_KEY");
+// Load environment variables from ../backend/.env
+dotenv.config({ path: '../backend/.env' });
+
+const ETHERSCAN_API_KEY = vars.get('ETHERSCAN_API_KEY');
 
 const config: HardhatUserConfig = {
-
   solidity: {
     compilers: [
       {
-        version: "0.8.28",
+        version: '0.8.28',
         settings: {
           optimizer: {
             enabled: true,
@@ -18,7 +21,7 @@ const config: HardhatUserConfig = {
         },
       },
       {
-        version: "0.8.24",
+        version: '0.8.24',
         settings: {
           optimizer: {
             enabled: true,
@@ -27,7 +30,7 @@ const config: HardhatUserConfig = {
         },
       },
       {
-        version: "0.6.12",
+        version: '0.6.12',
         settings: {
           optimizer: {
             enabled: true,
@@ -36,7 +39,7 @@ const config: HardhatUserConfig = {
         },
       },
       {
-        version: "0.8.20",
+        version: '0.8.20',
         settings: {
           optimizer: {
             enabled: true,
@@ -48,14 +51,16 @@ const config: HardhatUserConfig = {
   },
   networks: {
     localhost: {
-      url: "http://127.0.0.1:8545",
-      accounts: [`0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80`],
+      url: 'http://127.0.0.1:8545',
+      accounts: [
+        `0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80`,
+      ],
     },
     sepolia: {
-      url: "https://sepolia.infura.io/v3/fbe90be3403d47068b85a400a75fb456",
-      accounts: [
-        `0x2698e2b8fd205ff4fbbdd5e7271a3bdf087440a4d62fd73aa7cc22449b75bb3c`,
-      ],
+      url: process.env.BLOCKCHAIN_RPC_URL || '',
+      accounts: process.env.SPONSOR_WALLET_PRIVATE_KEY
+        ? [process.env.SPONSOR_WALLET_PRIVATE_KEY]
+        : [],
     },
   },
   etherscan: {

@@ -5,6 +5,8 @@ import { Wallet, X } from 'lucide-react';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../contexts/AuthContext';
+import { useOrganization } from '../../contexts/OrganizationContext';
+import { redirectToDashboard } from '../../../lib/redirect-utils';
 import { Toast } from '../ui/Toast';
 import { AnimatePresence } from 'framer-motion';
 
@@ -25,7 +27,8 @@ export const WalletConnectionModal: React.FC<WalletConnectionModalProps> = ({
     message: string;
   } | null>(null);
   const account = useActiveAccount();
-  const { login } = useAuth();
+  const { login, activeContext } = useAuth();
+  const { userOrganizations } = useOrganization();
   const router = useRouter();
   const handleClose = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -58,8 +61,21 @@ export const WalletConnectionModal: React.FC<WalletConnectionModalProps> = ({
           message:
             result.message || 'Sign in successful! Redirecting to dashboard...',
         });
-        // Redirect will happen automatically via AuthContext
-        // Do NOT close the modal - let the redirect happen naturally
+        // Use the redirect utility to determine the best dashboard
+        setTimeout(() => {
+          // Get active org ID if in organization context
+          const activeOrgId =
+            activeContext === 'organization' && userOrganizations.length > 0
+              ? userOrganizations[0].orgId
+              : null;
+
+          redirectToDashboard(
+            router,
+            { ...account, userType: 'individual' },
+            activeContext,
+            activeOrgId
+          );
+        }, 1000);
       } else if (result.newUser) {
         // New user needs to register
         setToastMessage({
@@ -165,6 +181,8 @@ export const WalletConnectionModal: React.FC<WalletConnectionModalProps> = ({
                 title: 'Welcome to Authentico',
                 subtitle: 'Secure document verification powered by blockchain',
               },
+              // Prevent modal from closing after connecting
+              closeOnConnect: false,
             }}
           />
         </div>

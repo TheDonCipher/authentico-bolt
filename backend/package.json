@@ -18,6 +18,7 @@
   },
   "scripts": {
     "start:dev": "nodemon index.js",
-    "start": "node index.js"
+    "start": "node index.js",
+    "migrate": "node migrations/run-migrations.js"
   }
 }

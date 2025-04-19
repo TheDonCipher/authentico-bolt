@@ -20,6 +20,7 @@ import { getAuthToken } from '../../../lib/token-util';
 import axios from 'axios';
 import { DocumentViewer } from '../../components/document/DocumentViewer';
 import { Toast } from '../../components/ui/Toast';
+import { getFirestore, doc as firestoreDoc, getDoc } from 'firebase/firestore';
 
 interface DocumentTableProps {
   documents: Document[];
@@ -76,6 +77,22 @@ export const DocumentTable = ({
       }
 
       console.log(`Fetching document details for ID: ${doc.documentId}`);
+
+      // First, get the document details from Firestore to ensure we have the latest data
+      const db = getFirestore();
+      const docRef = firestoreDoc(db, 'documents', doc.documentId.toString());
+
+      // Get the document from Firestore
+      const docSnap = await getDoc(docRef);
+
+      if (!docSnap.exists()) {
+        throw new Error('Document not found in Firestore');
+      }
+
+      const docData = docSnap.data();
+      console.log('Document data from Firestore:', docData);
+
+      // Now fetch the secure details from the API
       const response = await axios.get(
         `/api/documents/${doc.documentId}/secure-details`,
         {
@@ -91,7 +108,10 @@ export const DocumentTable = ({
         setDocumentData({
           data: response.data.decryptedFile,
           mimeType: response.data.mimeType || 'application/octet-stream',
-          name: doc.documentName || getDocumentTypeName(doc.documentType),
+          name:
+            doc.documentName ||
+            docData.documentName ||
+            getDocumentTypeName(doc.documentType),
         });
         setShowDocument(true);
       } else {
@@ -121,11 +141,15 @@ export const DocumentTable = ({
         throw new Error('Not authenticated');
       }
 
-      // This would be implemented in a real API
+      console.log(`Requesting verification for document: ${doc.documentId}`);
+
+      // In a real implementation, we would call an API endpoint
       // For now, just show a success message
       setToastMessage({
         type: 'success',
-        message: 'Verification request sent successfully',
+        message: `Verification request sent for ${
+          doc.documentName || getDocumentTypeName(doc.documentType)
+        }`,
       });
     } catch (error) {
       console.error('Error requesting verification:', error);

@@ -18,6 +18,17 @@ const verifyToken = async (req, res, next) => {
       const uid = decodedToken.uid;
       console.log(`Successfully verified ID token for user: ${uid}`);
 
+      // Log token claims for debugging
+      console.log(
+        'Token claims:',
+        JSON.stringify({
+          uid: decodedToken.uid,
+          admin: decodedToken.admin || false,
+          wallet_address: decodedToken.wallet_address || 'none',
+          userType: decodedToken.userType || 'none',
+        })
+      );
+
       // Set the user object on the request
       req.user = decodedToken;
       next();

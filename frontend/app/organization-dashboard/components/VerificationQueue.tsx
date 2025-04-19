@@ -11,6 +11,7 @@ import {
   onSnapshot,
   orderBy,
   Timestamp,
+  addDoc,
 } from 'firebase/firestore';
 import axios from 'axios';
 import { getAuthToken } from '../../../lib/token-util';

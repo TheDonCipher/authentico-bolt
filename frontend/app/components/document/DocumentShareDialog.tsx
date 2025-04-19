@@ -153,7 +153,12 @@ export const DocumentShareDialog = ({
       {/* Toast Notifications */}
       {toastMessage && (
         <div className="fixed bottom-4 right-4 z-50">
-          <Toast type={toastMessage.type} message={toastMessage.message} />
+          <Toast
+            type={toastMessage.type}
+            message={toastMessage.message}
+            onClose={() => setToastMessage(null)}
+            duration={5000}
+          />
         </div>
       )}
     </div>

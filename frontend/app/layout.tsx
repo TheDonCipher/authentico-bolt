@@ -4,6 +4,7 @@ import { ThirdwebProvider } from 'thirdweb/react';
 import { ReactNode } from 'react';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { AuthProvider } from './contexts/AuthContext';
+import { OrganizationProvider } from './contexts/OrganizationContext';
 import { Inter, Archivo } from 'next/font/google';
 
 const inter = Inter({
@@ -38,7 +39,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <body className="font-inter">
         <ThirdwebProvider>
           <ThemeProvider>
-            <AuthProvider>{children}</AuthProvider>
+            <AuthProvider>
+              <OrganizationProvider>{children}</OrganizationProvider>
+            </AuthProvider>
           </ThemeProvider>
         </ThirdwebProvider>
       </body>

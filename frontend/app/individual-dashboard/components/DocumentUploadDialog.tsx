@@ -207,8 +207,19 @@ export const DocumentUploadDialog = ({
         setUploadProgress(percentCompleted);
       });
 
+      // Ensure we maintain authentication state
+      const currentUser = user;
+
+      // Call success callback and close dialog
       onSuccess();
       onClose();
+
+      // Verify authentication state is maintained
+      if (!user && currentUser) {
+        console.error('Authentication state lost after document upload');
+        // Attempt to restore session
+        window.location.reload();
+      }
     } catch (error: any) {
       console.error('Document upload error in component:', error.message);
       setError(

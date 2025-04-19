@@ -57,14 +57,11 @@ export default function SidebarNavigation() {
       label: 'Document History',
       icon: <Icons.History />,
     },
-    { path: '/settings', label: 'Settings', icon: <Icons.Settings /> },
-    { path: '/api-keys', label: 'API Keys', icon: <Icons.ApiKey /> },
     {
-      path: '/usage-billing',
-      label: 'Usage & Billing',
-      icon: <Icons.Billing />,
+      path: '/organization-settings',
+      label: 'Settings',
+      icon: <Icons.Settings />,
     },
-    { path: '/support', label: 'Support', icon: <Icons.Support /> },
   ];
 
   return (
@@ -128,7 +125,7 @@ export default function SidebarNavigation() {
         </nav>
 
         <div className="pt-6 pb-4">
-          <SignOutButton className="flex items-center gap-3 px-4 py-3 bg-deep-moss text-ivory border-2 border-deep-moss shadow-brutal hover:-translate-y-0.5 transition-all w-full" />
+          <SignOutButton className="flex items-center gap-3 px-4 py-3 bg-burnt-sienna bg-opacity-20 text-deep-moss border-2 border-deep-moss hover:shadow-brutal hover:-translate-y-0.5 transition-all w-full" />
         </div>
       </div>
     </>

@@ -146,48 +146,81 @@ class StorageService {
     try {
       console.log(`Retrieving file with CID ${cid} from IPFS`);
 
-      // Try using the Pinata SDK first
+      // Try using the Pinata API directly
       try {
-        // Use the Pinata API directly since the SDK's getFile method is not working
         const axios = require('axios');
+        const pinataApiKey = process.env.PINATA_API_KEY;
+        const pinataSecretApiKey = process.env.PINATA_API_SECRET;
         const pinataJwt = process.env.PINATA_JWT;
 
-        if (!pinataJwt) {
-          throw new Error('Pinata JWT token is not configured');
+        // Check if we have the necessary credentials
+        if (!pinataJwt && (!pinataApiKey || !pinataSecretApiKey)) {
+          throw new Error('Pinata credentials are not configured');
         }
 
-        // Use the authenticated gateway URL
-        const gatewayUrl =
-          process.env.GATEWAY_URL ||
-          'https://fuchsia-fantastic-python-686.mypinata.cloud';
+        // Try the dedicated Pinata gateway with authentication
+        const gatewayUrl = 'https://gateway.pinata.cloud';
         const fileUrl = `${gatewayUrl}/ipfs/${cid}`;
 
-        console.log(`Requesting file from authenticated gateway: ${fileUrl}`);
+        console.log(`Requesting file from Pinata gateway: ${fileUrl}`);
+
+        // Set up headers based on available credentials
+        const headers = {};
+        if (pinataJwt) {
+          headers['Authorization'] = `Bearer ${pinataJwt}`;
+        } else if (pinataApiKey && pinataSecretApiKey) {
+          headers['pinata_api_key'] = pinataApiKey;
+          headers['pinata_secret_api_key'] = pinataSecretApiKey;
+        }
+
         const response = await axios.get(fileUrl, {
-          headers: {
-            Authorization: `Bearer ${pinataJwt}`,
-          },
+          headers,
           responseType: 'arraybuffer',
           timeout: 30000, // 30 second timeout
         });
 
         console.log(
-          `Successfully retrieved file with CID ${cid} using authenticated gateway`
+          `Successfully retrieved file with CID ${cid} from Pinata gateway`
         );
         return Buffer.from(response.data);
       } catch (pinataError) {
         console.error(
-          `Error retrieving file with Pinata: ${pinataError.message}`
+          `Error retrieving file from Pinata gateway: ${pinataError.message}`
         );
 
-        // Try using a public IPFS gateway as a fallback
-        console.log(`Falling back to public IPFS gateway for CID ${cid}`);
+        // Try using the custom gateway if configured
+        try {
+          const axios = require('axios');
+          const customGatewayUrl = process.env.GATEWAY_URL;
+
+          if (customGatewayUrl) {
+            const fileUrl = `${customGatewayUrl}/ipfs/${cid}`;
+            console.log(`Trying custom gateway: ${fileUrl}`);
+
+            const response = await axios.get(fileUrl, {
+              responseType: 'arraybuffer',
+              timeout: 30000, // 30 second timeout
+            });
+
+            console.log(
+              `Successfully retrieved file with CID ${cid} using custom gateway`
+            );
+            return Buffer.from(response.data);
+          }
+        } catch (customGatewayError) {
+          console.error(
+            `Failed to retrieve from custom gateway: ${customGatewayError.message}`
+          );
+        }
+
+        // Try using public IPFS gateways as a fallback
+        console.log(`Falling back to public IPFS gateways for CID ${cid}`);
         const axios = require('axios');
         const publicGateways = [
           'https://ipfs.io/ipfs/',
-          'https://gateway.pinata.cloud/ipfs/',
           'https://cloudflare-ipfs.com/ipfs/',
           'https://dweb.link/ipfs/',
+          'https://ipfs.fleek.co/ipfs/',
         ];
 
         // Try each gateway until one works

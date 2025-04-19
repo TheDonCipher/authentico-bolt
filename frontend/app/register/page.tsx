@@ -131,6 +131,7 @@ export default function RegisterPage() {
             type={toastMessage.type}
             message={toastMessage.message}
             onClose={() => setToastMessage(null)}
+            duration={5000}
           />
         )}
       </AnimatePresence>

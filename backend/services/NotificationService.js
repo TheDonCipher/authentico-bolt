@@ -1,6 +1,6 @@
 /**
  * NotificationService.js
- * Handles notifications for document status updates
+ * Handles notifications for document status updates and organization verification
  */
 
 const { admin, adminDb, USER_COLLECTION } = require('../config');
@@ -160,6 +160,137 @@ class NotificationService {
     } catch (error) {
       console.error('Error notifying pending verification:', error);
       throw error;
+    }
+  }
+
+  /**
+   * Notify an organization about their verification status change
+   * @param {string} orgId - The organization's Firebase user ID
+   * @param {string} orgEmail - The organization's email address
+   * @param {string} orgName - The organization name
+   * @param {string} status - The new verification status ('approved' or 'rejected')
+   * @param {string} notes - Optional notes/reason (especially for rejection)
+   * @returns {Object} Notification IDs
+   */
+  async notifyOrganizationVerificationStatus(
+    orgId,
+    orgEmail,
+    orgName,
+    status,
+    notes = ''
+  ) {
+    try {
+      const title = `Organization Verification ${
+        status.charAt(0).toUpperCase() + status.slice(1)
+      }`;
+      const message =
+        status === 'approved'
+          ? `Your organization ${orgName} has been verified! You can now verify documents.`
+          : `Your organization verification was rejected. Reason: ${
+              notes || 'No reason provided'
+            }`;
+
+      const data = { status, orgName };
+
+      // Send in-app notification
+      const notificationId = await this.sendInAppNotification(
+        orgId,
+        title,
+        message,
+        data
+      );
+
+      // Send email notification
+      const emailSubject = `Organization Verification ${
+        status.charAt(0).toUpperCase() + status.slice(1)
+      }`;
+      const emailText =
+        status === 'approved'
+          ? `Your organization ${orgName} has been verified! You can now verify documents submitted by users.`
+          : `Your organization ${orgName} verification was rejected. Reason: ${
+              notes || 'No reason provided'
+            }`;
+
+      const emailHtml =
+        status === 'approved'
+          ? `
+          <h2>Organization Verification Approved</h2>
+          <p>Congratulations! Your organization <strong>${orgName}</strong> has been verified.</p>
+          <p>You can now verify documents submitted by users through the Authentico platform.</p>
+          <p>Visit your <a href="${
+            process.env.FRONTEND_URL || 'http://localhost:3000'
+          }/organization-dashboard">Organization Dashboard</a> to get started.</p>
+        `
+          : `
+          <h2>Organization Verification Rejected</h2>
+          <p>We regret to inform you that your organization <strong>${orgName}</strong> verification request has been rejected.</p>
+          <p><strong>Reason:</strong> ${notes || 'No reason provided'}</p>
+          <p>You may submit a new application with the required corrections.</p>
+        `;
+
+      const emailSent = await this.sendEmailNotification(
+        orgEmail,
+        emailSubject,
+        emailText,
+        emailHtml
+      );
+
+      return { notificationId, emailSent };
+    } catch (error) {
+      console.error('Error notifying organization verification status:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Notify admins about a new organization verification application
+   * @param {string} orgName - The organization name
+   * @param {string} applicationId - The application ID
+   * @returns {boolean} Success status
+   */
+  async notifyAdminsNewApplication(orgName, applicationId) {
+    try {
+      // Get admin users
+      const adminsSnapshot = await adminDb
+        .collection(USER_COLLECTION)
+        .where('userType', '==', 'admin')
+        .get();
+
+      if (adminsSnapshot.empty) {
+        console.log('No admin users found to notify');
+        return false;
+      }
+
+      const title = 'New Organization Verification Request';
+      const message = `${orgName} has applied for organization verification.`;
+      const data = { applicationId };
+
+      // Notify each admin
+      for (const adminDoc of adminsSnapshot.docs) {
+        await this.sendInAppNotification(adminDoc.id, title, message, data);
+
+        // If admin has email, send email notification
+        const adminData = adminDoc.data();
+        if (adminData.email) {
+          await this.sendEmailNotification(
+            adminData.email,
+            title,
+            message,
+            `
+              <h2>New Organization Verification Request</h2>
+              <p>${orgName} has applied for organization verification.</p>
+              <p>Please review this application in the <a href="${
+                process.env.FRONTEND_URL || 'http://localhost:3000'
+              }/admin">Admin Dashboard</a>.</p>
+            `
+          );
+        }
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error notifying admins about new application:', error);
+      return false;
     }
   }
 }

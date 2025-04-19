@@ -1,136 +1,162 @@
 'use client';
-import React, { useState } from 'react';
-import SidebarNavigation from '../organization-dashboard/components/SidebarNavigation';
-import DocumentsList from '../document-history/components/DocumentsList';
 
-const DocumentDetails = () => {
-  const mockDocuments = [
-    {
-      id: '1',
-      name: 'Passport - John Smith',
-      type: 'Identity Document',
-      status: 'verified' as const,
-      sender: 'John Smith',
-      receivedDate: 'Mar 15, 2024',
-      fileSize: '2.4 MB',
-    },
-    {
-      id: '2',
-      name: 'Birth Certificate - Sarah Johnson',
-      type: 'Legal Document',
-      status: 'pending' as const,
-      sender: 'Sarah Johnson',
-      receivedDate: 'Mar 14, 2024',
-      fileSize: '1.8 MB',
-    },
-    {
-      id: '3',
-      name: 'Driver License - Mike Brown',
-      type: 'Identity Document',
-      status: 'rejected' as const,
-      sender: 'Mike Brown',
-      receivedDate: 'Mar 13, 2024',
-      fileSize: '1.2 MB',
-    },
-    {
-      id: '4',
-      name: 'Business Registration',
-      type: 'Legal Document',
-      status: 'verified' as const,
-      sender: 'Alice Corp',
-      receivedDate: 'Mar 12, 2024',
-      fileSize: '3.1 MB',
-    },
-    {
-      id: '5',
-      name: 'Medical Certificate - Emma Wilson',
-      type: 'Medical Document',
-      status: 'verified' as const,
-      sender: 'Emma Wilson',
-      receivedDate: 'Mar 11, 2024',
-      fileSize: '1.5 MB',
-    },
-    {
-      id: '6',
-      name: 'Property Deed - Robert Taylor',
-      type: 'Legal Document',
-      status: 'pending' as const,
-      sender: 'Robert Taylor',
-      receivedDate: 'Mar 10, 2024',
-      fileSize: '4.2 MB',
-    },
-    {
-      id: '7',
-      name: 'Marriage Certificate - Lisa & James',
-      type: 'Legal Document',
-      status: 'verified' as const,
-      sender: 'Lisa Chen',
-      receivedDate: 'Mar 9, 2024',
-      fileSize: '2.8 MB',
-    },
-    {
-      id: '8',
-      name: 'Student ID - Tom Wilson',
-      type: 'Identity Document',
-      status: 'pending' as const,
-      sender: 'Tom Wilson',
-      receivedDate: 'Mar 8, 2024',
-      fileSize: '0.8 MB',
-    },
-    {
-      id: '9',
-      name: 'Work Permit - Maria Garcia',
-      type: 'Government Document',
-      status: 'rejected' as const,
-      sender: 'Maria Garcia',
-      receivedDate: 'Mar 7, 2024',
-      fileSize: '1.9 MB',
-    },
-    {
-      id: '10',
-      name: 'Insurance Policy',
-      type: 'Financial Document',
-      status: 'verified' as const,
-      sender: 'XYZ Insurance',
-      receivedDate: 'Mar 6, 2024',
-      fileSize: '2.1 MB',
-    },
-  ];
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import SidebarNavigation from '../organization-dashboard/components/SidebarNavigation';
+import { AuthGuard } from '../components/auth/AuthGuard';
+import { useAuth } from '../contexts/AuthContext';
+import { Loader } from '../components/ui/Loader';
+import { Toast } from '../components/ui/Toast';
+import { NotificationBell } from '../components/dashboard/NotificationBell';
+import { ProfileCard } from '../components/dashboard/ProfileCard';
+import { ContextSwitcher } from '../components/dashboard/ContextSwitcher';
+import DocumentsList from '../document-history/components/DocumentsList';
+import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
+import { db } from '../../lib/firebase';
+
+interface ToastMessage {
+  type: 'success' | 'error' | 'info';
+  message: string;
+}
+
+export default function DocumentHistoryPage() {
+  const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
+  const [isLoading, setIsLoading] = useState(true);
+  const [toastMessage, setToastMessage] = useState<ToastMessage | null>(null);
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [documents, setDocuments] = useState<any[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+
+  useEffect(() => {
+    if (!authLoading && user) {
+      setIsLoading(false);
+      fetchDocuments();
+    }
+  }, [authLoading, user]);
+
+  const fetchDocuments = async () => {
+    if (!user) return;
+
+    try {
+      setIsLoading(true);
+      const documentsRef = collection(db, 'documents');
+      const q = query(
+        documentsRef,
+        where('verifyingOrgId', '==', user.uid),
+        orderBy('createdAt', 'desc')
+      );
+
+      const querySnapshot = await getDocs(q);
+      const docs = querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        name: doc.data().name || 'Unnamed Document',
+        type: doc.data().documentType || 'Unknown',
+        status: doc.data().status || 'pending',
+        sender: doc.data().ownerName || doc.data().ownerUid,
+        receivedDate: doc.data().createdAt
+          ? new Date(doc.data().createdAt.toDate()).toLocaleDateString()
+          : 'Unknown',
+        fileSize: doc.data().fileSize || 'Unknown',
+      }));
+
+      setDocuments(docs);
+    } catch (error) {
+      console.error('Error fetching documents:', error);
+      setToastMessage({
+        type: 'error',
+        message: 'Failed to load documents',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Filter documents based on search term and status filter
+  const filteredDocuments = documents.filter((doc) => {
+    const matchesSearch =
+      searchTerm === '' ||
+      doc.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      doc.sender.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      doc.type.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesStatus = statusFilter === 'all' || doc.status === statusFilter;
+
+    return matchesSearch && matchesStatus;
+  });
+
+  if (authLoading || isLoading) {
+    return (
+      <div className="min-h-screen bg-ivory flex items-center justify-center">
+        <Loader fullScreen text="Loading document history..." size="large" />
+      </div>
+    );
+  }
 
   return (
-    <div className="relative flex min-h-screen bg-[#F5F5F0]">
-      <SidebarNavigation />
-      <main className="flex-1 p-8">
-        <div className="max-w-7xl mx-auto">
-          <h1 className="text-5xl font-black mb-8 border-b-4 border-[#4A5043] pb-4 text-[#2C3639]">
-            Document History
-          </h1>
-
-          <section className="bg-[#E6E5DD] border-4 border-[#4A5043] p-6 shadow-brutal">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-3xl font-black text-[#2C3639]">
-                All Documents
-              </h2>
-              <div className="flex gap-4">
-                <input
-                  type="text"
-                  placeholder="Search documents..."
-                  className="px-4 py-2 border-2 border-[#4A5043] bg-[#F5F5F0]"
+    <AuthGuard allowedUserTypes={['organization']}>
+      <div className="relative flex flex-col md:flex-row min-h-screen bg-ivory">
+        <SidebarNavigation />
+        <main className="flex-1 p-4 md:p-8 pb-20 md:pb-8">
+          <div className="max-w-7xl mx-auto">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b-4 border-deep-moss pb-4 mb-6 md:mb-8 gap-4">
+              <div className="flex items-center">
+                <h1 className="text-3xl md:text-4xl lg:text-5xl font-black text-deep-moss mr-4">
+                  Document History
+                </h1>
+                <ContextSwitcher />
+              </div>
+              <div className="flex items-center gap-4">
+                <NotificationBell
+                  count={notifications.length}
+                  onClick={() => {
+                    // Handle notifications
+                  }}
                 />
-                <select className="px-4 py-2 border-2 border-[#4A5043] bg-[#F5F5F0] text-[#2C3639]">
-                  <option value="all">All Status</option>
-                  <option value="verified">Verified</option>
-                  <option value="pending">Pending</option>
-                  <option value="rejected">Rejected</option>
-                </select>
+                <ProfileCard />
               </div>
             </div>
-            <DocumentsList documents={mockDocuments} />
-          </section>
-        </div>
-      </main>
-    </div>
-  );
-};
 
-export default DocumentDetails;
+            <section className="bg-soft-sage border-2 md:border-4 border-deep-moss p-4 md:p-6 shadow-brutal">
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                <h2 className="text-2xl md:text-3xl font-black text-deep-moss">
+                  All Documents
+                </h2>
+                <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto">
+                  <input
+                    type="text"
+                    placeholder="Search documents..."
+                    className="px-4 py-2 border-2 border-deep-moss bg-ivory focus:outline-none"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                  <select
+                    className="px-4 py-2 border-2 border-deep-moss bg-ivory text-deep-moss focus:outline-none"
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                  >
+                    <option value="all">All Status</option>
+                    <option value="verified">Verified</option>
+                    <option value="pending">Pending</option>
+                    <option value="rejected">Rejected</option>
+                  </select>
+                </div>
+              </div>
+              <DocumentsList documents={filteredDocuments} />
+            </section>
+          </div>
+        </main>
+
+        {toastMessage && (
+          <Toast
+            type={toastMessage.type}
+            message={toastMessage.message}
+            onClose={() => setToastMessage(null)}
+            duration={5000}
+          />
+        )}
+      </div>
+    </AuthGuard>
+  );
+}

@@ -1,18 +1,8 @@
 import React from 'react';
 import { getDocumentTypeName } from '../../constants/documentTypes';
-import { ethers } from 'ethers';
-import AuthenticoContractAbi from 'public/contractsData/AuthenticoContract.json';
-import AuthenticoContractAddress from 'public/contractsData/AuthenticoContract-address.json';
-
-interface Document {
-  documentId: number;
-  documentType: string;
-  status: string;
-  publicAddress: string;
-  metadataHash: string;
-  urlPicture: string;
-  verifier: string;
-}
+import { Document } from '../../models/Document';
+import axios from 'axios';
+import { getAuthToken } from '../../../lib/token-util';
 
 export default function DocumentTable({
   documents,
@@ -75,15 +65,38 @@ export default function DocumentTable({
               <td className="px-4 py-4 text-deep-moss">
                 <button
                   type="button"
-                  onClick={() => {
-                    const gateway =
-                      process.env.NEXT_PUBLIC_GATEWAY_URL ||
-                      'fuchsia-fantastic-python-686.mypinata.cloud';
-                    const gatewayUrl = `https://${gateway}/ipfs/${doc.urlPicture}`;
-                    const fallbackUrl = `https://ipfs.io/ipfs/${doc.urlPicture}`;
-                    window.open(gatewayUrl, '_blank').onerror = () => {
-                      window.open(fallbackUrl, '_blank');
-                    };
+                  onClick={async () => {
+                    try {
+                      const idToken = await getAuthToken();
+                      if (!idToken) {
+                        alert('You must be logged in to view documents');
+                        return;
+                      }
+
+                      // Call the API to get secure document details
+                      const response = await axios.get(
+                        `/api/documents/${doc.documentId}/secure-details`,
+                        {
+                          headers: {
+                            Authorization: `Bearer ${idToken}`,
+                          },
+                        }
+                      );
+
+                      if (response.data && response.data.decryptedFile) {
+                        // Open the document in a new tab
+                        const blob = new Blob([response.data.decryptedFile], {
+                          type: response.data.mimeType,
+                        });
+                        const url = URL.createObjectURL(blob);
+                        window.open(url, '_blank');
+                      } else {
+                        alert('Failed to load document');
+                      }
+                    } catch (error) {
+                      console.error('Error viewing document:', error);
+                      alert('An error occurred while loading the document');
+                    }
                   }}
                   className="bg-forest-green text-ivory px-3 py-1 text-sm font-bold hover:bg-deep-moss transition-colors border-2 border-deep-moss"
                 >
@@ -94,41 +107,36 @@ export default function DocumentTable({
                 <button
                   type="button"
                   onClick={async () => {
-                    console.log('------window.ethereum-----', window.ethereum);
-                    await window.ethereum.enable();
+                    try {
+                      const idToken = await getAuthToken();
+                      if (!idToken) {
+                        alert('You must be logged in to verify documents');
+                        return;
+                      }
 
-                    const provider = new ethers.providers.Web3Provider(
-                      window.ethereum
-                    );
-                    console.log('------provider-----', provider);
-                    await provider.send('eth_requestAccounts', []);
-                    const signer = provider.getSigner();
-                    console.log('------signer-----', signer);
-                    const account = await signer.getAddress();
-                    console.log('------account-----', account);
-
-                    const AuthenticoContract = new ethers.Contract(
-                      AuthenticoContractAddress.address,
-                      AuthenticoContractAbi.abi,
-                      signer
-                    );
-
-                    const verifyDoc = await AuthenticoContract.verifyDocument(
-                      doc.documentId
-                    );
-                    console.log('Document verified:', verifyDoc);
-                    const tx = await verifyDoc.wait();
-                    console.log('Transaction:', tx);
-                    const txHash = tx.transactionHash;
-                    console.log('Transaction hash:', txHash);
-                    const docNewStatus =
-                      await AuthenticoContract.getDocumentDetailsByID(
-                        doc.documentId
+                      // Call the API to verify the document
+                      const response = await axios.post(
+                        `/api/documents/${doc.documentId}/verify`,
+                        {},
+                        {
+                          headers: {
+                            Authorization: `Bearer ${idToken}`,
+                          },
+                        }
                       );
-                    console.log(
-                      'Document status:',
-                      docNewStatus.status.toString()
-                    );
+
+                      if (response.data.success) {
+                        alert('Document verified successfully!');
+                        // The document list will update automatically via the Firestore listener
+                      } else {
+                        alert(
+                          `Failed to verify document: ${response.data.message}`
+                        );
+                      }
+                    } catch (error) {
+                      console.error('Error verifying document:', error);
+                      alert('An error occurred while verifying the document');
+                    }
                   }}
                   className="bg-forest-green text-ivory px-3 py-1 text-sm font-bold hover:bg-deep-moss transition-colors border-2 border-deep-moss"
                 >
@@ -179,15 +187,38 @@ export default function DocumentTable({
             <div className="flex flex-wrap gap-2 mt-4">
               <button
                 type="button"
-                onClick={() => {
-                  const gateway =
-                    process.env.NEXT_PUBLIC_GATEWAY_URL ||
-                    'fuchsia-fantastic-python-686.mypinata.cloud';
-                  const gatewayUrl = `https://${gateway}/ipfs/${doc.urlPicture}`;
-                  const fallbackUrl = `https://ipfs.io/ipfs/${doc.urlPicture}`;
-                  window.open(gatewayUrl, '_blank').onerror = () => {
-                    window.open(fallbackUrl, '_blank');
-                  };
+                onClick={async () => {
+                  try {
+                    const idToken = await getAuthToken();
+                    if (!idToken) {
+                      alert('You must be logged in to view documents');
+                      return;
+                    }
+
+                    // Call the API to get secure document details
+                    const response = await axios.get(
+                      `/api/documents/${doc.documentId}/secure-details`,
+                      {
+                        headers: {
+                          Authorization: `Bearer ${idToken}`,
+                        },
+                      }
+                    );
+
+                    if (response.data && response.data.decryptedFile) {
+                      // Open the document in a new tab
+                      const blob = new Blob([response.data.decryptedFile], {
+                        type: response.data.mimeType,
+                      });
+                      const url = URL.createObjectURL(blob);
+                      window.open(url, '_blank');
+                    } else {
+                      alert('Failed to load document');
+                    }
+                  } catch (error) {
+                    console.error('Error viewing document:', error);
+                    alert('An error occurred while loading the document');
+                  }
                 }}
                 className="bg-forest-green text-ivory px-3 py-1 text-sm font-bold hover:bg-deep-moss transition-colors border-2 border-deep-moss flex-1"
               >
@@ -197,41 +228,36 @@ export default function DocumentTable({
               <button
                 type="button"
                 onClick={async () => {
-                  console.log('------window.ethereum-----', window.ethereum);
-                  await window.ethereum.enable();
+                  try {
+                    const idToken = await getAuthToken();
+                    if (!idToken) {
+                      alert('You must be logged in to verify documents');
+                      return;
+                    }
 
-                  const provider = new ethers.providers.Web3Provider(
-                    window.ethereum
-                  );
-                  console.log('------provider-----', provider);
-                  await provider.send('eth_requestAccounts', []);
-                  const signer = provider.getSigner();
-                  console.log('------signer-----', signer);
-                  const account = await signer.getAddress();
-                  console.log('------account-----', account);
-
-                  const AuthenticoContract = new ethers.Contract(
-                    AuthenticoContractAddress.address,
-                    AuthenticoContractAbi.abi,
-                    signer
-                  );
-
-                  const verifyDoc = await AuthenticoContract.verifyDocument(
-                    doc.documentId
-                  );
-                  console.log('Document verified:', verifyDoc);
-                  const tx = await verifyDoc.wait();
-                  console.log('Transaction:', tx);
-                  const txHash = tx.transactionHash;
-                  console.log('Transaction hash:', txHash);
-                  const docNewStatus =
-                    await AuthenticoContract.getDocumentDetailsByID(
-                      doc.documentId
+                    // Call the API to verify the document
+                    const response = await axios.post(
+                      `/api/documents/${doc.documentId}/verify`,
+                      {},
+                      {
+                        headers: {
+                          Authorization: `Bearer ${idToken}`,
+                        },
+                      }
                     );
-                  console.log(
-                    'Document status:',
-                    docNewStatus.status.toString()
-                  );
+
+                    if (response.data.success) {
+                      alert('Document verified successfully!');
+                      // The document list will update automatically via the Firestore listener
+                    } else {
+                      alert(
+                        `Failed to verify document: ${response.data.message}`
+                      );
+                    }
+                  } catch (error) {
+                    console.error('Error verifying document:', error);
+                    alert('An error occurred while verifying the document');
+                  }
                 }}
                 className="bg-forest-green text-ivory px-3 py-1 text-sm font-bold hover:bg-deep-moss transition-colors border-2 border-deep-moss flex-1"
               >

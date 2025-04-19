@@ -18,6 +18,12 @@ service cloud.firestore {
       return isAuthenticated() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.userType == 'admin';
     }
 
+    // Add wallet address validation
+    function isWalletOwner(walletAddress) {
+      return isAuthenticated() && 
+        request.auth.token.wallet_address.toLowerCase() == walletAddress.toLowerCase();
+    }
+
     // Users collection
     match /users/{userId} {
       // Allow reading user data in more cases:
@@ -26,6 +32,7 @@ service cloud.firestore {
       // 3. Allow reading all users with userType='organization' and isVerified=true (for dropdowns)
       allow read: if isAuthenticated() && (
                     isOwner(userId) ||
+                    isWalletOwner(resource.data.walletAddress) ||
                     resource.data.userType == 'organization' ||
                     isAdmin()
                   );
@@ -36,6 +43,7 @@ service cloud.firestore {
       // Only allow creation with proper validation
       allow create: if isAuthenticated()
                     && request.resource.data.walletAddress is string
+                    && request.resource.data.walletAddress.matches('^0x[a-fA-F0-9]{40}$')
                     && request.resource.data.userType in ['individual', 'organization']
                     && request.resource.data.name is string;
 
@@ -150,3 +158,4 @@ service cloud.firestore {
     }
   }
 }
+

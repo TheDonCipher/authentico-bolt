@@ -5,7 +5,8 @@ import { ConnectButton, darkTheme, useActiveAccount } from 'thirdweb/react';
 import { client } from '../../client';
 import { createWallet, inAppWallet } from 'thirdweb/wallets';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { LoadingSpinner } from '../ui/LoadingSpinner';
 
 // Wallet Configuration
 const wallets = [
@@ -18,19 +19,25 @@ const wallets = [
 ];
 
 export const ProfileCard = () => {
-  const { user, logout, login } = useAuth();
+  const { user, logout, login, loading: authLoading } = useAuth();
   const router = useRouter();
   const account = useActiveAccount();
+  const [loading, setLoading] = useState(false);
 
   // Handle wallet disconnection
   const handleWalletDisconnect = async () => {
     try {
+      setLoading(true);
       // Log the user out
       await logout();
       // Redirect to home page
       router.push('/');
+      // Keep loading state for a moment to show the user something is happening
+      await new Promise((resolve) => setTimeout(resolve, 1000));
     } catch (error) {
       console.error('Error during logout:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -70,66 +77,123 @@ export const ProfileCard = () => {
         {/* User Profile */}
         <div className="flex items-center p-3 border-r-4 border-deep-moss">
           <div className="w-12 h-12 bg-soft-sage border-4 border-deep-moss rounded-full flex items-center justify-center mr-3 shadow-[2px_2px_0px_0px_rgba(27,67,50,0.7)]">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="3"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="text-deep-moss"
-            >
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-              <circle cx="12" cy="7" r="4" />
-            </svg>
+            {user?.userType === 'admin' ? (
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="3"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="text-deep-moss"
+              >
+                <path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"></path>
+                <path d="M12 8v8"></path>
+                <path d="M12 16v.01"></path>
+              </svg>
+            ) : user?.userType === 'organization' ? (
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="3"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="text-deep-moss"
+              >
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                <polyline points="9 22 9 12 15 12 15 22"></polyline>
+              </svg>
+            ) : (
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="3"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="text-deep-moss"
+              >
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                <circle cx="12" cy="7" r="4" />
+              </svg>
+            )}
           </div>
           <div className="flex flex-col">
-            <span className="font-bold text-deep-moss text-base tracking-tight">
+            <span className="font-bold text-deep-moss text-base tracking-tight truncate max-w-[120px] sm:max-w-[150px]">
               {user?.name || 'User'}
             </span>
-            <span className="text-xs font-medium text-forest-green">
-              {user?.userType === 'individual'
-                ? 'Individual Account'
-                : 'Organization Account'}
-            </span>
+            <div className="flex items-center">
+              <span className="text-xs font-medium text-forest-green">
+                {user?.userType === 'admin'
+                  ? 'Admin Account'
+                  : user?.userType === 'individual'
+                  ? 'Individual Account'
+                  : 'Organization Account'}
+              </span>
+              {user?.userType === 'admin' && (
+                <span className="ml-1 bg-red-100 text-red-800 text-xs px-1 rounded-full">
+                  Admin
+                </span>
+              )}
+            </div>
+            {user?.walletAddress && (
+              <span className="text-xs text-gray-500 font-mono truncate max-w-[120px] sm:max-w-[150px]">
+                {user.walletAddress.substring(0, 6)}...
+                {user.walletAddress.substring(user.walletAddress.length - 4)}
+              </span>
+            )}
           </div>
         </div>
 
         {/* Connect Button */}
         <div className="bg-forest-green h-full flex items-center px-1">
-          <ConnectButton
-            client={client}
-            wallets={wallets}
-            theme={darkTheme({
-              colors: {
-                accentText: '#ffffff',
-                accentButtonBg: '#2E7D32', // Forest Green
-                primaryButtonBg: '#2E7D32', // Forest Green
-                modalOverlayBg: 'rgba(250, 249, 246, 0.8)', // Ivory
-                primaryText: '#FFFFFF',
-                secondaryText: '#FAF9F6', // Ivory
-                connectedButtonBg: '#2E7D32', // Forest Green
-              },
-            })}
-            connectButton={{
-              label: 'Wallet',
-            }}
-            onConnect={async () => {
-              // When wallet is connected, we need to check if the account is updated
-              // Wait a moment for the account to be updated
-              setTimeout(async () => {
-                if (account) {
-                  if (!user || user.walletAddress !== account.address) {
-                    await login(account.address);
+          {loading || authLoading ? (
+            <div className="flex items-center justify-center px-4 py-2 text-white">
+              <LoadingSpinner size={16} className="mr-2 animate-spin" />
+              <span className="text-sm">Loading...</span>
+            </div>
+          ) : (
+            <ConnectButton
+              client={client}
+              wallets={wallets}
+              theme={darkTheme({
+                colors: {
+                  accentText: '#ffffff',
+                  accentButtonBg: '#2E7D32', // Forest Green
+                  primaryButtonBg: '#2E7D32', // Forest Green
+                  modalOverlayBg: 'rgba(250, 249, 246, 0.8)', // Ivory
+                  primaryText: '#FFFFFF',
+                  secondaryText: '#FAF9F6', // Ivory
+                  connectedButtonBg: '#2E7D32', // Forest Green
+                },
+              })}
+              connectButton={{
+                label: 'Wallet',
+              }}
+              onConnect={async () => {
+                // When wallet is connected, we need to check if the account is updated
+                // Wait a moment for the account to be updated
+                setTimeout(async () => {
+                  if (account) {
+                    if (!user || user.walletAddress !== account.address) {
+                      await login(account.address);
+                    }
                   }
-                }
-              }, 500);
-            }}
-            onDisconnect={handleWalletDisconnect}
-          />
+                }, 500);
+              }}
+              onDisconnect={handleWalletDisconnect}
+            />
+          )}
         </div>
       </div>
     </div>

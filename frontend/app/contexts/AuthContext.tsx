@@ -22,9 +22,11 @@ import { useActiveAccount } from 'thirdweb/react';
 interface User {
   uid: string;
   walletAddress: string;
-  userType: 'individual' | 'organization';
+  userType: 'individual' | 'organization' | 'admin';
   name: string;
   organizationName?: string;
+  isVerified?: boolean;
+  email?: string;
 }
 
 // Define the shape of the auth context
@@ -33,6 +35,11 @@ interface AuthContextType {
   loading: boolean;
   error: string | null;
   isInitializing: boolean;
+  activeContext: 'individual' | 'organization' | null;
+  setActiveContext: (
+    context: 'individual' | 'organization',
+    orgId?: string
+  ) => void;
   login: (walletAddress: string) => Promise<{
     success: boolean;
     newUser?: boolean;
@@ -47,6 +54,7 @@ interface AuthContextType {
   ) => Promise<{ success: boolean; message?: string }>;
   logout: () => Promise<void>;
   clearError: () => void;
+  isAdmin: boolean;
 }
 
 // Create the auth context
@@ -60,10 +68,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [loading, setLoading] = useState<boolean>(false);
   const [isInitializing, setIsInitializing] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [activeContext, setActiveContextState] = useState<
+    'individual' | 'organization' | null
+  >(null);
+  const [activeOrgId, setActiveOrgId] = useState<string | null>(null);
   // Track wallets that are known to be unregistered to avoid login loops
   const [unregisteredWallets, setUnregisteredWallets] = useState<string[]>([]);
   const router = useRouter();
   const account = useActiveAccount();
+
+  // Compute admin status
+  const isAdmin =
+    user?.userType === 'admin' ||
+    (user?.walletAddress &&
+      user.walletAddress.toLowerCase() ===
+        (
+          process.env.NEXT_PUBLIC_ADMIN_WALLET_ADDRESS ||
+          '0x4Ca717EAAC6Ec3917Cb6E23557e1CEa7267E2A1c'
+        ).toLowerCase());
 
   // Clear any error
   const clearError = () => setError(null);
@@ -389,6 +411,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     clearError,
   ]);
 
+  // Function to set active context
+  const setActiveContext = useCallback(
+    (context: 'individual' | 'organization', orgId?: string) => {
+      setActiveContextState(context);
+      if (context === 'organization' && orgId) {
+        setActiveOrgId(orgId);
+      } else {
+        setActiveOrgId(null);
+      }
+    },
+    []
+  );
+
+  // Set initial active context based on user type
+  useEffect(() => {
+    if (user) {
+      setActiveContextState(user.userType as 'individual' | 'organization');
+      if (user.userType === 'organization') {
+        setActiveOrgId(user.uid);
+      }
+    } else {
+      setActiveContextState(null);
+      setActiveOrgId(null);
+    }
+  }, [user]);
+
   // Provide the auth context
   return (
     <AuthContext.Provider
@@ -401,6 +449,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         logout,
         clearError,
         isInitializing,
+        activeContext,
+        setActiveContext,
+        isAdmin,
       }}
     >
       {isInitializing || loading ? (

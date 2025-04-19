@@ -7,6 +7,11 @@ export class Document {
     public status: string,
     public documentType: string,
     public verifier: string,
-    public documentName: string = ''
+    public documentName: string = '',
+    public transactionHash?: string,
+    public blockNumber?: number,
+    public tokenId?: number,
+    public createdAt?: string,
+    public updatedAt?: string
   ) {}
 }

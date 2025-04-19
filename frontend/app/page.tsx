@@ -20,6 +20,8 @@ import {
 // Utils
 import { client } from './client';
 import { useAuth } from './contexts/AuthContext';
+import { useOrganization } from './contexts/OrganizationContext';
+import { redirectToDashboard } from '../lib/redirect-utils';
 
 // Wallet Configuration
 const wallets = [
@@ -41,7 +43,8 @@ const NeubrutalistLanding = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<ToastMessage | null>(null);
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, activeContext } = useAuth();
+  const { userOrganizations } = useOrganization();
 
   // Handlers
   const toogleShow = () => {
@@ -52,13 +55,16 @@ const NeubrutalistLanding = () => {
   useEffect(() => {
     // If user is authenticated, redirect to dashboard
     if (user) {
-      if (user.userType === 'individual') {
-        router.push('/individual-dashboard');
-      } else {
-        router.push('/organization-dashboard');
-      }
+      // Get active org ID if in organization context
+      const activeOrgId =
+        activeContext === 'organization' && userOrganizations.length > 0
+          ? userOrganizations[0].orgId
+          : null;
+
+      // Use the redirect utility to determine the best dashboard
+      redirectToDashboard(router, user, activeContext, activeOrgId);
     }
-  }, [user, router]);
+  }, [user, router, activeContext, userOrganizations]);
 
   return (
     <div className="min-h-screen bg-ivory text-deep-moss flex flex-col relative overflow-x-hidden">
@@ -97,7 +103,12 @@ const NeubrutalistLanding = () => {
         {/* Notifications */}
         <AnimatePresence>
           {toastMessage && (
-            <Toast type={toastMessage.type} message={toastMessage.message} />
+            <Toast
+              type={toastMessage.type}
+              message={toastMessage.message}
+              onClose={() => setToastMessage(null)}
+              duration={5000}
+            />
           )}
         </AnimatePresence>
       </main>

@@ -20,15 +20,28 @@ export const getAuthToken = async () => {
         // Store it in localStorage for future use
         localStorage.setItem('authToken', token);
 
+        // Check if we need to update the token with wallet address
+        const walletAddress = localStorage.getItem('walletAddress');
+        if (walletAddress && !currentUser.customClaims?.wallet_address) {
+          try {
+            // This will be handled by the backend endpoint we created
+            console.log('Wallet address found, updating token claims');
+          } catch (claimError) {
+            console.error('Error updating token claims:', claimError);
+          }
+        }
+
         return token;
       } catch (e) {
         // Silent error - token will be null
+        console.error('Error getting ID token:', e);
       }
     }
 
     // If we still don't have a token, return null
     return null;
   } catch (e) {
+    console.error('Error in getAuthToken:', e);
     return null;
   }
 };

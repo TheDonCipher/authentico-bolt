@@ -114,13 +114,40 @@ const OrganizationStatus: React.FC<OrganizationStatusProps> = ({ userId }) => {
     }
   };
 
+  // Sanitize input to prevent XSS attacks
+  const sanitizeInput = (value: string): string => {
+    // Basic sanitization - remove HTML tags and trim
+    return value.replace(/<[^>]*>?/gm, '').trim();
+  };
+
+  // Validate URL format
+  const isValidUrl = (url: string): boolean => {
+    try {
+      const urlObj = new URL(url);
+      return urlObj.protocol === 'http:' || urlObj.protocol === 'https:';
+    } catch {
+      return false;
+    }
+  };
+
   const handleChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
     >
   ) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+
+    // Special handling for website URL
+    if (name === 'website') {
+      // Only update if it's a valid URL or empty (to allow user to type)
+      if (value === '' || isValidUrl(value)) {
+        setFormData((prev) => ({ ...prev, [name]: value }));
+      }
+    } else {
+      // For other fields, sanitize the input
+      const sanitizedValue = sanitizeInput(value);
+      setFormData((prev) => ({ ...prev, [name]: sanitizedValue }));
+    }
   };
 
   const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -140,6 +167,34 @@ const OrganizationStatus: React.FC<OrganizationStatusProps> = ({ userId }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Validate form data
+    if (!formData.orgName || !formData.contactEmail || !formData.website) {
+      setToastMessage({
+        type: 'error',
+        message: 'Please fill in all required fields',
+      });
+      return;
+    }
+
+    // Validate website URL
+    if (!isValidUrl(formData.website)) {
+      setToastMessage({
+        type: 'error',
+        message: 'Please enter a valid website URL (e.g., https://example.com)',
+      });
+      return;
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.contactEmail)) {
+      setToastMessage({
+        type: 'error',
+        message: 'Please enter a valid email address',
+      });
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -149,13 +204,29 @@ const OrganizationStatus: React.FC<OrganizationStatusProps> = ({ userId }) => {
         throw new Error('Not authenticated');
       }
 
+      // Final sanitization of all form data
+      const sanitizedFormData = {
+        ...formData,
+        orgName: sanitizeInput(formData.orgName),
+        contactEmail: sanitizeInput(formData.contactEmail),
+        website: formData.website, // Already validated as URL
+        description: sanitizeInput(formData.description),
+        address: sanitizeInput(formData.address),
+        phoneNumber: sanitizeInput(formData.phoneNumber),
+        registrationNumber: sanitizeInput(formData.registrationNumber),
+      };
+
       // Submit application to backend
-      const response = await axios.post('/api/organizations/apply', formData, {
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${idToken}`,
-        },
-      });
+      const response = await axios.post(
+        '/api/organizations/apply',
+        sanitizedFormData,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${idToken}`,
+          },
+        }
+      );
 
       setToastMessage({
         type: 'success',
@@ -222,36 +293,61 @@ const OrganizationStatus: React.FC<OrganizationStatusProps> = ({ userId }) => {
   if (isVerified) {
     return (
       <div className="bg-[#E8EDE1] border-4 border-[#556B2F] p-6 shadow-brutal">
-        <div className="flex items-center mb-4">
-          <div className="bg-[#698B69] text-white p-2 border-2 border-[#556B2F] mr-3">
-            <Check className="text-white" size={24} />
+        <div className="flex flex-col md:flex-row items-start md:items-center mb-6">
+          <div className="bg-[#698B69] text-white p-3 border-3 border-[#556B2F] mr-4 mb-4 md:mb-0 transform -rotate-3 shadow-brutal">
+            <div className="flex items-center">
+              <Check className="text-white mr-2" size={28} />
+              <span className="font-black text-lg">VERIFIED</span>
+            </div>
           </div>
           <div>
-            <h2 className="text-xl font-bold text-[#2F4F4F]">
+            <h2 className="text-2xl font-bold text-[#2F4F4F]">
               Verified Organization
             </h2>
-            <div className="flex items-center mt-1">
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-400">
-                <Check className="mr-1" size={12} />
-                Verified
-              </span>
-            </div>
+            <p className="text-[#2F4F4F] mt-1">
+              Your organization has been verified and can now verify documents
+              on the Authentico platform.
+            </p>
           </div>
         </div>
 
-        <div className="bg-green-50 border-2 border-green-200 p-4 mb-6">
-          <p className="text-green-800 mb-2">
-            Your organization has been verified. You can now verify documents
-            submitted by users.
-          </p>
-          <div className="flex flex-wrap gap-2 mt-3">
-            <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-[#D2E3C8] text-[#2F4F4F] border border-[#556B2F]">
+        <div className="bg-green-50 border-2 border-green-200 p-5 mb-6 rounded-sm">
+          <h3 className="font-bold text-green-800 mb-3 text-lg flex items-center">
+            <Check className="mr-2" size={20} />
+            Verification Benefits
+          </h3>
+          <ul className="space-y-2 text-green-800">
+            <li className="flex items-start">
+              <Check className="mr-2 mt-1 flex-shrink-0" size={16} />
+              <span>Verify documents submitted by users</span>
+            </li>
+            <li className="flex items-start">
+              <Check className="mr-2 mt-1 flex-shrink-0" size={16} />
+              <span>
+                Appear in the verified organizations list for document uploads
+              </span>
+            </li>
+            <li className="flex items-start">
+              <Check className="mr-2 mt-1 flex-shrink-0" size={16} />
+              <span>Display verification badge on your profile</span>
+            </li>
+            <li className="flex items-start">
+              <Check className="mr-2 mt-1 flex-shrink-0" size={16} />
+              <span>Anchor verifications on the blockchain</span>
+            </li>
+          </ul>
+          <div className="flex flex-wrap gap-2 mt-4 pt-3 border-t border-green-200">
+            <span className="inline-flex items-center px-3 py-1 rounded-md text-xs font-medium bg-[#D2E3C8] text-[#2F4F4F] border border-[#556B2F]">
               <Check className="mr-1" size={12} />
               Trusted Verifier
             </span>
-            <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-[#D2E3C8] text-[#2F4F4F] border border-[#556B2F]">
+            <span className="inline-flex items-center px-3 py-1 rounded-md text-xs font-medium bg-[#D2E3C8] text-[#2F4F4F] border border-[#556B2F]">
               <Check className="mr-1" size={12} />
               Blockchain Enabled
+            </span>
+            <span className="inline-flex items-center px-3 py-1 rounded-md text-xs font-medium bg-[#D2E3C8] text-[#2F4F4F] border border-[#556B2F]">
+              <Check className="mr-1" size={12} />
+              Official Verification Partner
             </span>
           </div>
         </div>
@@ -259,7 +355,7 @@ const OrganizationStatus: React.FC<OrganizationStatusProps> = ({ userId }) => {
         <div className="flex justify-end">
           <button
             onClick={() => (window.location.href = '#verification-queue')}
-            className="bg-[#698B69] text-white px-4 py-2 font-bold border-2 border-[#556B2F] hover:shadow-[2px_2px_0px_0px_rgba(85,107,47,1)] transition-all"
+            className="bg-[#698B69] text-white px-5 py-3 font-bold border-2 border-[#556B2F] hover:shadow-[2px_2px_0px_0px_rgba(85,107,47,1)] transition-all"
           >
             View Verification Queue
           </button>
@@ -438,7 +534,8 @@ const OrganizationStatus: React.FC<OrganizationStatusProps> = ({ userId }) => {
                   value={formData.orgName}
                   onChange={handleChange}
                   required
-                  className="w-full p-3 border-2 border-[#556B2F] focus:border-[#698B69] focus:outline-none"
+                  className="w-full p-3 border-2 border-[#556B2F] focus:border-[#698B69] focus:outline-none bg-white text-[#2F4F4F]"
+                  placeholder="Enter your organization name"
                 />
               </div>
 
@@ -457,7 +554,8 @@ const OrganizationStatus: React.FC<OrganizationStatusProps> = ({ userId }) => {
                     value={formData.contactEmail}
                     onChange={handleChange}
                     required
-                    className="w-full p-3 border-2 border-[#556B2F] focus:border-[#698B69] focus:outline-none"
+                    className="w-full p-3 border-2 border-[#556B2F] focus:border-[#698B69] focus:outline-none bg-white text-[#2F4F4F]"
+                    placeholder="email@example.com"
                   />
                 </div>
 
@@ -474,7 +572,8 @@ const OrganizationStatus: React.FC<OrganizationStatusProps> = ({ userId }) => {
                     name="phoneNumber"
                     value={formData.phoneNumber}
                     onChange={handleChange}
-                    className="w-full p-3 border-2 border-[#556B2F] focus:border-[#698B69] focus:outline-none"
+                    className="w-full p-3 border-2 border-[#556B2F] focus:border-[#698B69] focus:outline-none bg-white text-[#2F4F4F]"
+                    placeholder="+1 (123) 456-7890"
                   />
                 </div>
               </div>
@@ -484,7 +583,10 @@ const OrganizationStatus: React.FC<OrganizationStatusProps> = ({ userId }) => {
                   htmlFor="website"
                   className="block font-bold mb-1 text-[#2F4F4F]"
                 >
-                  Website *
+                  Website *{' '}
+                  <span className="text-xs font-normal">
+                    (must include http:// or https://)
+                  </span>
                 </label>
                 <input
                   type="url"
@@ -493,9 +595,15 @@ const OrganizationStatus: React.FC<OrganizationStatusProps> = ({ userId }) => {
                   value={formData.website}
                   onChange={handleChange}
                   required
-                  className="w-full p-3 border-2 border-[#556B2F] focus:border-[#698B69] focus:outline-none"
+                  className="w-full p-3 border-2 border-[#556B2F] focus:border-[#698B69] focus:outline-none bg-white text-[#2F4F4F]"
                   placeholder="https://example.com"
+                  pattern="https?://.*"
                 />
+                {formData.website && !isValidUrl(formData.website) && (
+                  <p className="text-red-500 text-sm mt-1">
+                    Please enter a valid URL including http:// or https://
+                  </p>
+                )}
               </div>
             </div>
           </div>
@@ -518,7 +626,7 @@ const OrganizationStatus: React.FC<OrganizationStatusProps> = ({ userId }) => {
                     name="industry"
                     value={formData.industry}
                     onChange={handleChange}
-                    className="w-full p-3 border-2 border-[#556B2F] focus:border-[#698B69] focus:outline-none"
+                    className="w-full p-3 border-2 border-[#556B2F] focus:border-[#698B69] focus:outline-none bg-white text-[#2F4F4F]"
                   >
                     <option value="">Select Industry</option>
                     <option value="education">Education</option>
@@ -546,7 +654,8 @@ const OrganizationStatus: React.FC<OrganizationStatusProps> = ({ userId }) => {
                     onChange={handleChange}
                     min="1800"
                     max={new Date().getFullYear()}
-                    className="w-full p-3 border-2 border-[#556B2F] focus:border-[#698B69] focus:outline-none"
+                    className="w-full p-3 border-2 border-[#556B2F] focus:border-[#698B69] focus:outline-none bg-white text-[#2F4F4F]"
+                    placeholder="Enter founding year"
                   />
                 </div>
               </div>
@@ -564,7 +673,8 @@ const OrganizationStatus: React.FC<OrganizationStatusProps> = ({ userId }) => {
                   name="registrationNumber"
                   value={formData.registrationNumber}
                   onChange={handleChange}
-                  className="w-full p-3 border-2 border-[#556B2F] focus:border-[#698B69] focus:outline-none"
+                  className="w-full p-3 border-2 border-[#556B2F] focus:border-[#698B69] focus:outline-none bg-white text-[#2F4F4F]"
+                  placeholder="Enter registration or license number"
                 />
               </div>
 
@@ -581,7 +691,8 @@ const OrganizationStatus: React.FC<OrganizationStatusProps> = ({ userId }) => {
                   name="address"
                   value={formData.address}
                   onChange={handleChange}
-                  className="w-full p-3 border-2 border-[#556B2F] focus:border-[#698B69] focus:outline-none"
+                  className="w-full p-3 border-2 border-[#556B2F] focus:border-[#698B69] focus:outline-none bg-white text-[#2F4F4F]"
+                  placeholder="Enter your organization's address"
                 />
               </div>
 
@@ -598,7 +709,7 @@ const OrganizationStatus: React.FC<OrganizationStatusProps> = ({ userId }) => {
                   value={formData.description}
                   onChange={handleChange}
                   rows={4}
-                  className="w-full p-3 border-2 border-[#556B2F] focus:border-[#698B69] focus:outline-none"
+                  className="w-full p-3 border-2 border-[#556B2F] focus:border-[#698B69] focus:outline-none bg-white text-[#2F4F4F]"
                   placeholder="Tell us about your organization and why you should be verified..."
                 />
               </div>
@@ -622,7 +733,7 @@ const OrganizationStatus: React.FC<OrganizationStatusProps> = ({ userId }) => {
                   value="identity"
                   checked={formData.documentTypes.includes('identity')}
                   onChange={handleCheckboxChange}
-                  className="mr-2 h-5 w-5 border-2 border-[#556B2F]"
+                  className="mr-2 h-5 w-5 border-2 border-[#556B2F] accent-[#556B2F] bg-white"
                 />
                 <label htmlFor="type-identity" className="text-[#2F4F4F]">
                   Identity Documents
@@ -637,7 +748,7 @@ const OrganizationStatus: React.FC<OrganizationStatusProps> = ({ userId }) => {
                   value="education"
                   checked={formData.documentTypes.includes('education')}
                   onChange={handleCheckboxChange}
-                  className="mr-2 h-5 w-5 border-2 border-[#556B2F]"
+                  className="mr-2 h-5 w-5 border-2 border-[#556B2F] accent-[#556B2F] bg-white"
                 />
                 <label htmlFor="type-education" className="text-[#2F4F4F]">
                   Educational Certificates
@@ -652,7 +763,7 @@ const OrganizationStatus: React.FC<OrganizationStatusProps> = ({ userId }) => {
                   value="employment"
                   checked={formData.documentTypes.includes('employment')}
                   onChange={handleCheckboxChange}
-                  className="mr-2 h-5 w-5 border-2 border-[#556B2F]"
+                  className="mr-2 h-5 w-5 border-2 border-[#556B2F] accent-[#556B2F] bg-white"
                 />
                 <label htmlFor="type-employment" className="text-[#2F4F4F]">
                   Employment Documents
@@ -667,7 +778,7 @@ const OrganizationStatus: React.FC<OrganizationStatusProps> = ({ userId }) => {
                   value="financial"
                   checked={formData.documentTypes.includes('financial')}
                   onChange={handleCheckboxChange}
-                  className="mr-2 h-5 w-5 border-2 border-[#556B2F]"
+                  className="mr-2 h-5 w-5 border-2 border-[#556B2F] accent-[#556B2F] bg-white"
                 />
                 <label htmlFor="type-financial" className="text-[#2F4F4F]">
                   Financial Documents
@@ -682,7 +793,7 @@ const OrganizationStatus: React.FC<OrganizationStatusProps> = ({ userId }) => {
                   value="legal"
                   checked={formData.documentTypes.includes('legal')}
                   onChange={handleCheckboxChange}
-                  className="mr-2 h-5 w-5 border-2 border-[#556B2F]"
+                  className="mr-2 h-5 w-5 border-2 border-[#556B2F] accent-[#556B2F] bg-white"
                 />
                 <label htmlFor="type-legal" className="text-[#2F4F4F]">
                   Legal Documents
@@ -697,7 +808,7 @@ const OrganizationStatus: React.FC<OrganizationStatusProps> = ({ userId }) => {
                   value="other"
                   checked={formData.documentTypes.includes('other')}
                   onChange={handleCheckboxChange}
-                  className="mr-2 h-5 w-5 border-2 border-[#556B2F]"
+                  className="mr-2 h-5 w-5 border-2 border-[#556B2F] accent-[#556B2F] bg-white"
                 />
                 <label htmlFor="type-other" className="text-[#2F4F4F]">
                   Other Documents
@@ -752,7 +863,12 @@ const OrganizationStatus: React.FC<OrganizationStatusProps> = ({ userId }) => {
       {/* Toast Notifications */}
       {toastMessage && (
         <div className="fixed bottom-4 right-4 z-50">
-          <Toast type={toastMessage.type} message={toastMessage.message} />
+          <Toast
+            type={toastMessage.type}
+            message={toastMessage.message}
+            onClose={() => setToastMessage(null)}
+            duration={5000}
+          />
         </div>
       )}
     </div>

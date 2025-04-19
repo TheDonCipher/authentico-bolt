@@ -50,6 +50,38 @@ const AdminDashboard = () => {
         // Check if address matches admin address
         if (address.toLowerCase() === ADMIN_WALLET_ADDRESS.toLowerCase()) {
           setIsAuthorized(true);
+
+          // Store wallet address in localStorage for token claims
+          localStorage.setItem('walletAddress', address);
+
+          // Check if user is logged in with Firebase
+          if (auth.currentUser) {
+            try {
+              // Get the current user's ID token
+              const idToken = await auth.currentUser.getIdToken(true);
+
+              // Set custom claims for the admin user
+              await axios.post(
+                '/api/auth/set-admin-claims',
+                {
+                  wallet_address: address,
+                },
+                {
+                  headers: {
+                    Authorization: `Bearer ${idToken}`,
+                  },
+                }
+              );
+
+              console.log('Admin claims set successfully');
+
+              // Force token refresh to get the updated claims
+              await auth.currentUser.getIdToken(true);
+            } catch (error) {
+              console.error('Error setting admin claims:', error);
+              // Continue anyway since we're checking by wallet address
+            }
+          }
         } else {
           setIsAuthorized(false);
           setToastMessage({

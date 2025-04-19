@@ -72,6 +72,20 @@ router.post('/apply', verifyToken, async (req, res) => {
       submittedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
 
+    // Notify admins about the new application
+    try {
+      await NotificationService.notifyAdminsNewApplication(
+        orgName,
+        applicationRef.id
+      );
+    } catch (notificationError) {
+      console.error(
+        'Error notifying admins about new application:',
+        notificationError
+      );
+      // Continue with the process even if notification fails
+    }
+
     res.status(201).json({
       applicationId: applicationRef.id,
       status: 'pending',
@@ -276,10 +290,31 @@ router.get('/verified', verifyToken, async (req, res) => {
  */
 router.get('/applications', verifyToken, async (req, res) => {
   try {
-    // Check if user is an admin
-    const userSnapshot = await usersCollection.doc(req.user.uid).get();
+    // Get admin wallet address from environment variable
+    const ADMIN_WALLET_ADDRESS =
+      process.env.ADMIN_WALLET_ADDRESS ||
+      '0x4Ca717EAAC6Ec3917Cb6E23557e1CEa7267E2A1c';
 
-    if (!userSnapshot.exists || userSnapshot.data().userType !== 'admin') {
+    // Check if user is an admin by wallet address or userType
+    let isAdmin = false;
+
+    // Check if wallet address is in the token claims
+    if (
+      req.user.wallet_address &&
+      req.user.wallet_address.toLowerCase() ===
+        ADMIN_WALLET_ADDRESS.toLowerCase()
+    ) {
+      isAdmin = true;
+    } else {
+      // Check if user is an admin in Firestore
+      const userSnapshot = await usersCollection.doc(req.user.uid).get();
+      if (userSnapshot.exists && userSnapshot.data().userType === 'admin') {
+        isAdmin = true;
+      }
+    }
+
+    if (!isAdmin) {
+      console.log('Unauthorized access attempt:', req.user.uid);
       return res.status(403).json({ error: 'Unauthorized access' });
     }
 
@@ -325,10 +360,31 @@ router.put('/applications/:applicationId', verifyToken, async (req, res) => {
       return res.status(400).json({ error: 'Invalid status' });
     }
 
-    // Check if user is an admin
-    const userSnapshot = await usersCollection.doc(req.user.uid).get();
+    // Get admin wallet address from environment variable
+    const ADMIN_WALLET_ADDRESS =
+      process.env.ADMIN_WALLET_ADDRESS ||
+      '0x4Ca717EAAC6Ec3917Cb6E23557e1CEa7267E2A1c';
 
-    if (!userSnapshot.exists || userSnapshot.data().userType !== 'admin') {
+    // Check if user is an admin by wallet address or userType
+    let isAdmin = false;
+
+    // Check if wallet address is in the token claims
+    if (
+      req.user.wallet_address &&
+      req.user.wallet_address.toLowerCase() ===
+        ADMIN_WALLET_ADDRESS.toLowerCase()
+    ) {
+      isAdmin = true;
+    } else {
+      // Check if user is an admin in Firestore
+      const userSnapshot = await usersCollection.doc(req.user.uid).get();
+      if (userSnapshot.exists && userSnapshot.data().userType === 'admin') {
+        isAdmin = true;
+      }
+    }
+
+    if (!isAdmin) {
+      console.log('Unauthorized access attempt:', req.user.uid);
       return res.status(403).json({ error: 'Unauthorized access' });
     }
 
@@ -358,66 +414,14 @@ router.put('/applications/:applicationId', verifyToken, async (req, res) => {
       if (userSnapshot.exists) {
         const userData = userSnapshot.data();
 
-        // Send notification
-        const title = `Organization Verification ${
-          status.charAt(0).toUpperCase() + status.slice(1)
-        }`;
-        const message =
-          status === 'approved'
-            ? 'Your organization has been verified! You can now verify documents.'
-            : `Your organization verification was rejected. Reason: ${
-                notes || 'No reason provided'
-              }`;
-
-        await NotificationService.sendInAppNotification(
+        // Use the enhanced notification service
+        await NotificationService.notifyOrganizationVerificationStatus(
           appData.submittedBy,
-          title,
-          message,
-          { status, applicationId }
+          userData.email || appData.contactEmail,
+          appData.orgName,
+          status,
+          notes
         );
-
-        // Send email notification if email is available
-        if (userData.email) {
-          const emailSubject = `Organization Verification ${
-            status.charAt(0).toUpperCase() + status.slice(1)
-          }`;
-          const emailText =
-            status === 'approved'
-              ? `Your organization ${appData.orgName} has been verified! You can now verify documents submitted by users.`
-              : `Your organization ${
-                  appData.orgName
-                } verification was rejected. Reason: ${
-                  notes || 'No reason provided'
-                }`;
-
-          const emailHtml =
-            status === 'approved'
-              ? `
-              <h2>Organization Verification Approved</h2>
-              <p>Congratulations! Your organization <strong>${
-                appData.orgName
-              }</strong> has been verified.</p>
-              <p>You can now verify documents submitted by users through the Authentico platform.</p>
-              <p>Visit your <a href="${
-                process.env.FRONTEND_URL || 'http://localhost:3000'
-              }/organization-dashboard">Organization Dashboard</a> to get started.</p>
-            `
-              : `
-              <h2>Organization Verification Rejected</h2>
-              <p>We regret to inform you that your organization <strong>${
-                appData.orgName
-              }</strong> verification request has been rejected.</p>
-              <p><strong>Reason:</strong> ${notes || 'No reason provided'}</p>
-              <p>You may submit a new application with the required corrections.</p>
-            `;
-
-          await NotificationService.sendEmailNotification(
-            userData.email,
-            emailSubject,
-            emailText,
-            emailHtml
-          );
-        }
       }
     } catch (notificationError) {
       console.error('Error sending notification:', notificationError);

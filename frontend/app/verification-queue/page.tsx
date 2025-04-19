@@ -1,54 +1,80 @@
 'use client';
-import React from 'react';
-import SidebarNavigation from '../organization-dashboard/components/SidebarNavigation';
-import VerificationTable from './components/VerificationTable';
 
-const VerificationQueue = () => {
-  const mockVerifications = [
-    {
-      id: 1,
-      documentName: "Driver's License - John Smith",
-      submittedBy: 'John Smith',
-      submittedAt: '2024-01-15 09:30 AM',
-      documentType: 'Identity Document',
-    },
-    {
-      id: 2,
-      documentName: 'Passport - Sarah Johnson',
-      submittedBy: 'Sarah Johnson',
-      submittedAt: '2024-01-15 10:15 AM',
-      documentType: 'Travel Document',
-    },
-    {
-      id: 3,
-      documentName: 'Birth Certificate - Michael Brown',
-      submittedBy: 'Michael Brown',
-      submittedAt: '2024-01-15 11:45 AM',
-      documentType: 'Legal Document',
-    },
-  ];
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import SidebarNavigation from '../organization-dashboard/components/SidebarNavigation';
+import { AuthGuard } from '../components/auth/AuthGuard';
+import { useAuth } from '../contexts/AuthContext';
+import { Loader } from '../components/ui/Loader';
+import { Toast } from '../components/ui/Toast';
+import { NotificationBell } from '../components/dashboard/NotificationBell';
+import { ProfileCard } from '../components/dashboard/ProfileCard';
+import { ContextSwitcher } from '../components/dashboard/ContextSwitcher';
+import VerificationQueue from '../organization-dashboard/components/VerificationQueue';
+
+interface ToastMessage {
+  type: 'success' | 'error' | 'info';
+  message: string;
+}
+
+export default function VerificationQueuePage() {
+  const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
+  const [isLoading, setIsLoading] = useState(true);
+  const [toastMessage, setToastMessage] = useState<ToastMessage | null>(null);
+  const [notifications, setNotifications] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (!authLoading && user) {
+      setIsLoading(false);
+    }
+  }, [authLoading, user]);
+
+  if (authLoading || isLoading) {
+    return (
+      <div className="min-h-screen bg-ivory flex items-center justify-center">
+        <Loader fullScreen text="Loading verification queue..." size="large" />
+      </div>
+    );
+  }
 
   return (
-    <div className="relative flex min-h-screen bg-[#F5F5F0]">
-      <SidebarNavigation />
-      <main className="flex-1 p-8">
-        <div className="max-w-7xl mx-auto">
-          <h1 className="text-5xl font-black mb-8 border-b-4 border-[#4A5043] pb-4 text-[#2C3639]">
-            Verification Queue
-          </h1>
-
-          <section className="bg-[#E6E5DD] border-4 border-[#4A5043] p-6 shadow-brutal">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-3xl font-black text-[#2C3639]">
-                Pending Verifications
-              </h2>
+    <AuthGuard allowedUserTypes={['organization']}>
+      <div className="relative flex flex-col md:flex-row min-h-screen bg-ivory">
+        <SidebarNavigation />
+        <main className="flex-1 p-4 md:p-8 pb-20 md:pb-8">
+          <div className="max-w-7xl mx-auto">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b-4 border-deep-moss pb-4 mb-6 md:mb-8 gap-4">
+              <div className="flex items-center">
+                <h1 className="text-3xl md:text-4xl lg:text-5xl font-black text-deep-moss mr-4">
+                  Verification Queue
+                </h1>
+                <ContextSwitcher />
+              </div>
+              <div className="flex items-center gap-4">
+                <NotificationBell
+                  count={notifications.length}
+                  onClick={() => {
+                    // Handle notifications
+                  }}
+                />
+                <ProfileCard />
+              </div>
             </div>
-            <VerificationTable verifications={mockVerifications} />
-          </section>
-        </div>
-      </main>
-    </div>
-  );
-};
 
-export default VerificationQueue;
+            <VerificationQueue />
+          </div>
+        </main>
+
+        {toastMessage && (
+          <Toast
+            type={toastMessage.type}
+            message={toastMessage.message}
+            onClose={() => setToastMessage(null)}
+            duration={5000}
+          />
+        )}
+      </div>
+    </AuthGuard>
+  );
+}

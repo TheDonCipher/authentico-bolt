@@ -11,7 +11,10 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Plus, Check, X, Bell } from 'lucide-react';
 import { useActiveAccount, useActiveWallet } from 'thirdweb/react';
+// No longer need ethers
 import { AuthGuard } from '../components/auth/AuthGuard';
+import { useOrganization } from '../contexts/OrganizationContext';
+import { ContextSwitcher } from '../components/dashboard/ContextSwitcher';
 import { useAuth } from '../contexts/AuthContext';
 import { SignOutButton } from '../components/auth/SignOutButton';
 import { Toast } from '../components/ui/Toast';
@@ -43,7 +46,8 @@ interface Activity {
     [key: string]: any;
   };
 }
-import { DocumentCard } from '../components/dashboard/DocumentCard';
+// Using EnhancedDocumentCard instead of DocumentCard
+import { EnhancedDocumentCard } from '../components/dashboard/EnhancedDocumentCard';
 import { DocumentTable } from './components/DocumentTable';
 import { NotificationBell } from '../components/dashboard/NotificationBell';
 import { ProfileCard } from '../components/dashboard/ProfileCard';
@@ -72,7 +76,8 @@ const IndividualDashboard = () => {
   const [docName, setDocName] = useState('');
   const [documentType, setDocumentType] = useState('identity');
   const [account, setAccount] = useState(null);
-  const { user } = useAuth();
+  const { user, activeContext, setActiveContext } = useAuth();
+  const { userOrganizations } = useOrganization();
   const [toastMessage, setToastMessage] = useState<{
     type: 'success' | 'error' | 'warning';
     message: string;
@@ -170,7 +175,16 @@ const IndividualDashboard = () => {
                     mapStatusToCode(data.status), // Convert status string to code
                     data.documentType || 'Document',
                     data.verifyingOrgId || '',
-                    data.documentName || ''
+                    data.documentName || '',
+                    data.transactionHash || undefined,
+                    data.blockNumber || undefined,
+                    data.tokenId || undefined,
+                    data.createdAt instanceof Timestamp
+                      ? data.createdAt.toDate().toISOString()
+                      : undefined,
+                    data.updatedAt instanceof Timestamp
+                      ? data.updatedAt.toDate().toISOString()
+                      : undefined
                   )
                 );
               });
@@ -586,7 +600,13 @@ const IndividualDashboard = () => {
           'example-hash', // Mock hash
           '1', // Status (Pending)
           documentType, // Document type
-          verifyingOrgId // Verifying org ID
+          verifyingOrgId, // Verifying org ID
+          docName || 'Example Document', // Document name
+          '0x' + Math.random().toString(16).substring(2, 42), // Mock transaction hash
+          Math.floor(Math.random() * 1000000), // Mock block number
+          Math.floor(Math.random() * 100), // Mock token ID
+          new Date().toISOString(), // Created at
+          new Date().toISOString() // Updated at
         );
 
         // Add the mock document to the list
@@ -638,6 +658,13 @@ const IndividualDashboard = () => {
       router.push('/');
     }
   }, [wallet, user, router]);
+
+  // Set active context to individual when viewing this dashboard
+  useEffect(() => {
+    if (user && activeContext !== 'individual') {
+      setActiveContext('individual');
+    }
+  }, [user, activeContext, setActiveContext]);
 
   // Set up notifications listener
   useEffect(() => {
@@ -744,7 +771,7 @@ const IndividualDashboard = () => {
                   '0x4ca717eaac6ec3917cb6e23557e1cea7267e2a1c'.toLowerCase() && (
                   <li className="w-full">
                     <Link
-                      href="/admin"
+                      href="/admin-dashboard"
                       className={`w-full text-center md:text-left p-2 md:p-3 border-2 md:border-4 border-deep-moss font-bold text-sm md:text-base bg-sunflower-yellow bg-opacity-20 hover:bg-sunflower-yellow hover:shadow-[2px_2px_0px_0px_rgba(27,67,50,0.8)] md:hover:shadow-[4px_4px_0px_0px_rgba(27,67,50,0.8)] block`}
                     >
                       <span className="hidden md:inline">Admin Dashboard</span>
@@ -769,6 +796,7 @@ const IndividualDashboard = () => {
                 <h2 className="text-xl font-bold text-deep-moss mr-4">
                   Individual Dashboard
                 </h2>
+                {userOrganizations.length > 0 && <ContextSwitcher />}
               </div>
               <div className="flex items-center gap-4 md:gap-6">
                 <NotificationBell
@@ -849,7 +877,7 @@ const IndividualDashboard = () => {
                         manage the platform.
                       </p>
                       <Link
-                        href="/admin"
+                        href="/admin-dashboard"
                         className="inline-block bg-forest-green text-ivory px-4 py-2 font-bold border-2 border-deep-moss hover:shadow-[2px_2px_0px_0px_rgba(27,67,50,0.8)] transition-all"
                       >
                         Admin Dashboard
@@ -909,38 +937,22 @@ const IndividualDashboard = () => {
                   ) : viewMode === 'grid' ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                       {documents.map((doc) => (
-                        <DocumentCard
+                        <EnhancedDocumentCard
                           key={doc.documentId}
                           doc={doc}
                           documentName={doc.documentName}
                           verifyingOrgName={orgNames[doc.verifier]}
+                          transactionHash={doc.transactionHash}
+                          blockNumber={doc.blockNumber}
+                          tokenId={doc.tokenId}
+                          createdAt={doc.createdAt}
+                          updatedAt={doc.updatedAt}
                           onShare={(document) => {
-                            // Get document details from Firestore
-                            const docRef = firestoreDoc(
-                              db,
-                              'documents',
-                              document.documentId.toString()
-                            );
-                            const unsubscribe = onSnapshot(
-                              docRef,
-                              (snapshot: DocumentSnapshot) => {
-                                if (snapshot.exists()) {
-                                  const data = snapshot.data();
-                                  setSharingDocument({
-                                    id: document.documentId,
-                                    name: data.documentName || 'Document',
-                                  });
-                                  setIsShareDialogOpen(true);
-                                } else {
-                                  setToastMessage({
-                                    type: 'error',
-                                    message: 'Document not found',
-                                  });
-                                }
-                                // Unsubscribe after getting the data
-                                unsubscribe();
-                              }
-                            );
+                            setSharingDocument({
+                              id: document.documentId,
+                              name: doc.documentName || 'Document',
+                            });
+                            setIsShareDialogOpen(true);
                           }}
                           onAction={(doc) => {
                             if (doc.status === '1') {

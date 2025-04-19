@@ -2,6 +2,11 @@ import { auth } from './firebase';
 import { signInWithCustomToken, signOut } from 'firebase/auth';
 import { db } from './firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
+import {
+  setAuthCookie,
+  setUserDataCookie,
+  clearAuthCookies,
+} from './auth-cookies';
 
 /**
  * Attempts to login with a wallet address
@@ -42,8 +47,24 @@ const loginWithWallet = async (walletAddress) => {
         const idToken = await userCredential.user.getIdToken();
         console.log('Successfully obtained ID token for API calls');
 
-        // Store the ID token in localStorage for API calls
+        // Store the ID token and user data in localStorage for client-side access
         localStorage.setItem('authToken', idToken);
+        localStorage.setItem('userData', JSON.stringify(data.user));
+
+        // Set cookies for server-side access
+        try {
+          await fetch('/api/auth/set-cookies', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              token: idToken,
+              userData: data.user,
+            }),
+          });
+        } catch (cookieError) {
+          console.error('Error setting auth cookies:', cookieError);
+          // Continue even if cookie setting fails
+        }
 
         return {
           success: true,
@@ -167,8 +188,24 @@ const registerUser = async (walletAddress, userType, userData) => {
       const idToken = await userCredential.user.getIdToken();
       console.log('Successfully obtained ID token after registration');
 
-      // Store the ID token in localStorage for API calls
+      // Store the ID token and user data in localStorage for client-side access
       localStorage.setItem('authToken', idToken);
+      localStorage.setItem('userData', JSON.stringify(loginData.user));
+
+      // Set cookies for server-side access
+      try {
+        await fetch('/api/auth/set-cookies', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            token: idToken,
+            userData: loginData.user,
+          }),
+        });
+      } catch (cookieError) {
+        console.error('Error setting auth cookies:', cookieError);
+        // Continue even if cookie setting fails
+      }
 
       return {
         success: true,
@@ -207,6 +244,27 @@ const getUserData = async () => {
       // Store the fresh token in localStorage
       localStorage.setItem('authToken', token);
 
+      // Set cookies for server-side access
+      try {
+        const userData = await fetch('/api/auth/me', {
+          headers: { Authorization: `Bearer ${token}` },
+        }).then((res) => res.json());
+
+        if (userData) {
+          await fetch('/api/auth/set-cookies', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              token,
+              userData,
+            }),
+          });
+        }
+      } catch (cookieError) {
+        console.error('Error setting auth cookies:', cookieError);
+        // Continue even if cookie setting fails
+      }
+
       const response = await fetch('/api/auth/me', {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -221,6 +279,9 @@ const getUserData = async () => {
         }
         throw new Error(data.error || 'Failed to fetch user data');
       }
+
+      // Store user data in localStorage for client-side access
+      localStorage.setItem('userData', JSON.stringify(data));
 
       return data;
     } catch (error) {
@@ -243,7 +304,22 @@ const getUserData = async () => {
  */
 const signOutUser = async () => {
   try {
+    // Clear Firebase auth state
     await signOut(auth);
+
+    // Clear localStorage
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('userData');
+
+    // Clear cookies
+    try {
+      await fetch('/api/auth/clear-cookies', {
+        method: 'POST',
+      });
+    } catch (cookieError) {
+      console.error('Error clearing auth cookies:', cookieError);
+      // Continue even if cookie clearing fails
+    }
   } catch (error) {
     console.error('Error signing out', error);
     throw error;

@@ -26,10 +26,15 @@ interface OrgApplication {
 
 const OrganizationApplications = () => {
   const [applications, setApplications] = useState<OrgApplication[]>([]);
+  const [filteredApplications, setFilteredApplications] = useState<
+    OrgApplication[]
+  >([]);
   const [loading, setLoading] = useState(true);
   const [selectedApp, setSelectedApp] = useState<string | null>(null);
   const [viewingApp, setViewingApp] = useState<OrgApplication | null>(null);
   const [notes, setNotes] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [searchTerm, setSearchTerm] = useState<string>('');
   const [toastMessage, setToastMessage] = useState<{
     type: 'success' | 'error';
     message: string;
@@ -38,6 +43,34 @@ const OrganizationApplications = () => {
   useEffect(() => {
     fetchApplications();
   }, []);
+
+  // Filter applications when status filter or search term changes
+  useEffect(() => {
+    if (!applications.length) {
+      setFilteredApplications([]);
+      return;
+    }
+
+    let filtered = [...applications];
+
+    // Apply status filter
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter((app) => app.status === statusFilter);
+    }
+
+    // Apply search filter
+    if (searchTerm.trim()) {
+      const search = searchTerm.toLowerCase();
+      filtered = filtered.filter(
+        (app) =>
+          app.orgName.toLowerCase().includes(search) ||
+          app.contactEmail.toLowerCase().includes(search) ||
+          (app.industry && app.industry.toLowerCase().includes(search))
+      );
+    }
+
+    setFilteredApplications(filtered);
+  }, [applications, statusFilter, searchTerm]);
 
   const fetchApplications = async () => {
     try {
@@ -63,6 +96,7 @@ const OrganizationApplications = () => {
       }));
 
       setApplications(formattedApps);
+      setFilteredApplications(formattedApps);
     } catch (error) {
       console.error('Error fetching applications:', error);
       setToastMessage({
@@ -178,9 +212,107 @@ const OrganizationApplications = () => {
 
   return (
     <div className="bg-[#E8EDE1] border-4 border-[#556B2F] p-6 shadow-brutal">
-      <h2 className="text-3xl font-black mb-6 text-[#2F4F4F]">
+      <h2 className="text-3xl font-black mb-4 text-[#2F4F4F]">
         Organization Applications
       </h2>
+
+      {/* Filter controls */}
+      <div className="mb-6 flex flex-col md:flex-row gap-4">
+        <div className="flex-1">
+          <div className="relative">
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search by name, email, or industry..."
+              className="w-full p-3 pl-10 border-2 border-[#556B2F] focus:border-[#698B69] focus:outline-none"
+            />
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="absolute left-3 top-3 text-gray-400"
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+          </div>
+        </div>
+        <div className="md:w-48">
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="w-full p-3 border-2 border-[#556B2F] focus:border-[#698B69] focus:outline-none"
+          >
+            <option value="all">All Applications</option>
+            <option value="pending">Pending</option>
+            <option value="approved">Approved</option>
+            <option value="rejected">Rejected</option>
+          </select>
+        </div>
+      </div>
+
+      {/* Status counts */}
+      <div className="grid grid-cols-4 gap-4 mb-6">
+        <div
+          className={`p-3 border-2 ${
+            statusFilter === 'all'
+              ? 'bg-[#D2E3C8] border-[#556B2F]'
+              : 'bg-white border-gray-200'
+          } cursor-pointer`}
+          onClick={() => setStatusFilter('all')}
+        >
+          <div className="text-sm font-medium text-gray-500">All</div>
+          <div className="text-2xl font-bold text-[#2F4F4F]">
+            {applications.length}
+          </div>
+        </div>
+        <div
+          className={`p-3 border-2 ${
+            statusFilter === 'pending'
+              ? 'bg-[#D2E3C8] border-[#556B2F]'
+              : 'bg-white border-gray-200'
+          } cursor-pointer`}
+          onClick={() => setStatusFilter('pending')}
+        >
+          <div className="text-sm font-medium text-yellow-600">Pending</div>
+          <div className="text-2xl font-bold text-[#2F4F4F]">
+            {applications.filter((app) => app.status === 'pending').length}
+          </div>
+        </div>
+        <div
+          className={`p-3 border-2 ${
+            statusFilter === 'approved'
+              ? 'bg-[#D2E3C8] border-[#556B2F]'
+              : 'bg-white border-gray-200'
+          } cursor-pointer`}
+          onClick={() => setStatusFilter('approved')}
+        >
+          <div className="text-sm font-medium text-green-600">Approved</div>
+          <div className="text-2xl font-bold text-[#2F4F4F]">
+            {applications.filter((app) => app.status === 'approved').length}
+          </div>
+        </div>
+        <div
+          className={`p-3 border-2 ${
+            statusFilter === 'rejected'
+              ? 'bg-[#D2E3C8] border-[#556B2F]'
+              : 'bg-white border-gray-200'
+          } cursor-pointer`}
+          onClick={() => setStatusFilter('rejected')}
+        >
+          <div className="text-sm font-medium text-red-600">Rejected</div>
+          <div className="text-2xl font-bold text-[#2F4F4F]">
+            {applications.filter((app) => app.status === 'rejected').length}
+          </div>
+        </div>
+      </div>
 
       {applications.length === 0 ? (
         <div className="bg-white p-6 border-2 border-[#556B2F] text-center">
@@ -190,6 +322,30 @@ const OrganizationApplications = () => {
           </p>
           <p className="text-[#2F4F4F]">
             When organizations apply for verification, they will appear here.
+          </p>
+        </div>
+      ) : filteredApplications.length === 0 ? (
+        <div className="bg-white p-6 border-2 border-[#556B2F] text-center">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="48"
+            height="48"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="mx-auto mb-4 text-[#556B2F]"
+          >
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <p className="text-lg font-bold text-[#2F4F4F]">
+            No matching applications
+          </p>
+          <p className="text-[#2F4F4F]">
+            Try adjusting your search or filter criteria.
           </p>
         </div>
       ) : (
@@ -219,7 +375,7 @@ const OrganizationApplications = () => {
                 </tr>
               </thead>
               <tbody>
-                {applications.map((app) => (
+                {filteredApplications.map((app) => (
                   <tr
                     key={app.id}
                     className="border-b border-[#556B2F] hover:bg-[#F5F7F2] cursor-pointer"

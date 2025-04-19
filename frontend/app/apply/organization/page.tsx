@@ -118,7 +118,7 @@ const OrganizationApplicationPage = () => {
           </Link>
           <nav>
             <Link
-              href="/individual-dashboard"
+              href="/organization-dashboard"
               className="font-bold hover:underline"
             >
               Back to Dashboard

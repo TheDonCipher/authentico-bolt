@@ -9,17 +9,17 @@ import { ProfileCard } from '../../components/dashboard/ProfileCard';
 import { NotificationBell } from '../../components/dashboard/NotificationBell';
 import { Loader } from '../../components/ui/Loader';
 import { Toast } from '../../components/ui/Toast';
-import { 
-  Home, 
-  Users, 
-  Building, 
-  FileText, 
-  Settings, 
+import {
+  Home,
+  Users,
+  Building,
+  FileText,
+  Settings,
   Shield,
   Menu,
   X,
   Save,
-  RefreshCw
+  RefreshCw,
 } from 'lucide-react';
 
 interface ToastMessage {
@@ -32,19 +32,21 @@ export default function SettingsPage() {
   const router = useRouter();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [toastMessage, setToastMessage] = useState<ToastMessage | null>(null);
-  
+
   // Settings state
-  const [adminWalletAddress, setAdminWalletAddress] = useState(process.env.NEXT_PUBLIC_ADMIN_WALLET_ADDRESS || '');
+  const [adminWalletAddress, setAdminWalletAddress] = useState(
+    process.env.NEXT_PUBLIC_ADMIN_WALLET_ADDRESS || ''
+  );
   const [isSaving, setIsSaving] = useState(false);
 
   const handleSaveSettings = async () => {
     try {
       setIsSaving(true);
-      
+
       // In a real implementation, you would save these settings to your backend
       // For now, we'll just simulate a successful save
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
       setToastMessage({
         type: 'success',
         message: 'Settings saved successfully',
@@ -67,25 +69,26 @@ export default function SettingsPage() {
   return (
     <AuthGuard allowedUserTypes={['admin']}>
       <div className="min-h-screen bg-ivory text-deep-moss flex flex-col md:flex-row font-archivo">
-        {/* Mobile sidebar toggle */}
+        {/* Mobile sidebar toggle button */}
         <button
-          className="md:hidden fixed top-4 right-4 z-50 bg-soft-sage p-2 border-2 border-deep-moss"
           onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+          className="md:hidden fixed bottom-4 right-4 z-50 p-3 bg-forest-green text-ivory rounded-full shadow-brutal hover:translate-y-[-2px] transition-all"
+          aria-label="Toggle sidebar"
         >
           {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
         </button>
-        
+
         {/* Sidebar */}
-        <aside 
+        <aside
           className={`${
-            isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
-          } fixed md:static top-0 left-0 h-screen w-64 bg-soft-sage border-r-4 border-deep-moss p-6 transition-transform duration-300 ease-in-out md:translate-x-0 z-40`}
+            isSidebarOpen ? 'fixed inset-0 z-40' : 'hidden'
+          } md:relative md:block md:w-64 bg-soft-sage border-r-4 border-deep-moss h-auto md:min-h-screen md:h-full md:sticky md:top-0 z-30 overflow-y-auto transition-all duration-300 ease-in-out`}
         >
           <div className="h-full flex flex-col">
             <h1 className="text-2xl font-black mb-8 text-deep-moss bg-soft-sage p-2 border-4 border-deep-moss inline-block">
               AUTHENTICO
             </h1>
-            
+
             <nav className="space-y-2 flex-1">
               <Link href="/admin-dashboard">
                 <div className="flex items-center gap-3 px-4 py-3 border-2 border-transparent hover:bg-ivory hover:border-deep-moss hover:shadow-brutal hover:-translate-y-0.5 transition-all">
@@ -93,28 +96,30 @@ export default function SettingsPage() {
                   <span className="font-bold text-deep-moss">Dashboard</span>
                 </div>
               </Link>
-              
+
               <Link href="/admin-dashboard/users">
                 <div className="flex items-center gap-3 px-4 py-3 border-2 border-transparent hover:bg-ivory hover:border-deep-moss hover:shadow-brutal hover:-translate-y-0.5 transition-all">
                   <Users size={20} className="text-deep-moss" />
                   <span className="font-bold text-deep-moss">Users</span>
                 </div>
               </Link>
-              
+
               <Link href="/admin-dashboard/organizations">
                 <div className="flex items-center gap-3 px-4 py-3 border-2 border-transparent hover:bg-ivory hover:border-deep-moss hover:shadow-brutal hover:-translate-y-0.5 transition-all">
                   <Building size={20} className="text-deep-moss" />
-                  <span className="font-bold text-deep-moss">Organizations</span>
+                  <span className="font-bold text-deep-moss">
+                    Organizations
+                  </span>
                 </div>
               </Link>
-              
+
               <Link href="/admin-dashboard/documents">
                 <div className="flex items-center gap-3 px-4 py-3 border-2 border-transparent hover:bg-ivory hover:border-deep-moss hover:shadow-brutal hover:-translate-y-0.5 transition-all">
                   <FileText size={20} className="text-deep-moss" />
                   <span className="font-bold text-deep-moss">Documents</span>
                 </div>
               </Link>
-              
+
               <Link href="/admin-dashboard/settings">
                 <div className="flex items-center gap-3 px-4 py-3 bg-forest-green text-ivory border-2 border-deep-moss shadow-brutal">
                   <Settings size={20} className="text-ivory" />
@@ -122,7 +127,7 @@ export default function SettingsPage() {
                 </div>
               </Link>
             </nav>
-            
+
             <div className="mt-auto pt-6">
               <Link href="/">
                 <div className="flex items-center gap-3 px-4 py-3 border-2 border-deep-moss bg-ivory hover:bg-soft-sage hover:shadow-brutal hover:-translate-y-0.5 transition-all">
@@ -132,9 +137,9 @@ export default function SettingsPage() {
             </div>
           </div>
         </aside>
-        
+
         {/* Main content */}
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col overflow-y-auto pb-20 md:pb-0">
           <header className="bg-soft-sage p-4 border-b-4 border-deep-moss sticky top-0 z-20">
             <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <div className="flex items-center">
@@ -152,8 +157,8 @@ export default function SettingsPage() {
               </div>
             </div>
           </header>
-          
-          <main className="flex-1 p-4 md:p-8">
+
+          <main className="flex-1 p-4 md:p-8 pb-20 md:pb-8">
             <div className="max-w-7xl mx-auto">
               <section className="bg-soft-sage border-2 md:border-4 border-deep-moss p-4 md:p-6 shadow-brutal">
                 <h3 className="text-2xl font-bold mb-4 text-deep-moss">
@@ -162,12 +167,12 @@ export default function SettingsPage() {
                 <p className="text-deep-moss mb-6">
                   Configure system-wide settings for the Authentico platform.
                 </p>
-                
+
                 <div className="bg-white p-6 border-2 border-deep-moss mb-6">
                   <h4 className="text-xl font-bold mb-4 text-deep-moss">
                     Admin Configuration
                   </h4>
-                  
+
                   <div className="mb-4">
                     <label className="block text-deep-moss font-bold mb-2">
                       Admin Wallet Address
@@ -180,13 +185,18 @@ export default function SettingsPage() {
                       placeholder="0x..."
                     />
                     <p className="text-sm text-gray-500 mt-1">
-                      This wallet address will have admin privileges in the system.
+                      This wallet address will have admin privileges in the
+                      system.
                     </p>
                   </div>
-                  
+
                   <div className="flex justify-end space-x-3 mt-6">
                     <button
-                      onClick={() => setAdminWalletAddress(process.env.NEXT_PUBLIC_ADMIN_WALLET_ADDRESS || '')}
+                      onClick={() =>
+                        setAdminWalletAddress(
+                          process.env.NEXT_PUBLIC_ADMIN_WALLET_ADDRESS || ''
+                        )
+                      }
                       className="bg-soft-sage text-deep-moss px-4 py-2 font-bold border-2 border-deep-moss hover:shadow-[2px_2px_0px_0px_rgba(27,67,50,0.8)] transition-all flex items-center"
                       disabled={isSaving}
                     >
@@ -212,28 +222,36 @@ export default function SettingsPage() {
                     </button>
                   </div>
                 </div>
-                
+
                 <div className="bg-white p-6 border-2 border-deep-moss">
                   <h4 className="text-xl font-bold mb-4 text-deep-moss">
                     System Information
                   </h4>
-                  
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <p className="text-sm font-bold text-gray-500">Version</p>
                       <p className="text-deep-moss">1.0.0</p>
                     </div>
                     <div>
-                      <p className="text-sm font-bold text-gray-500">Environment</p>
+                      <p className="text-sm font-bold text-gray-500">
+                        Environment
+                      </p>
                       <p className="text-deep-moss">{process.env.NODE_ENV}</p>
                     </div>
                     <div>
-                      <p className="text-sm font-bold text-gray-500">Blockchain Network</p>
+                      <p className="text-sm font-bold text-gray-500">
+                        Blockchain Network
+                      </p>
                       <p className="text-deep-moss">Sepolia Testnet</p>
                     </div>
                     <div>
-                      <p className="text-sm font-bold text-gray-500">IPFS Gateway</p>
-                      <p className="text-deep-moss">fuchsia-fantastic-python-686.mypinata.cloud</p>
+                      <p className="text-sm font-bold text-gray-500">
+                        IPFS Gateway
+                      </p>
+                      <p className="text-deep-moss">
+                        fuchsia-fantastic-python-686.mypinata.cloud
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -242,7 +260,7 @@ export default function SettingsPage() {
           </main>
         </div>
       </div>
-      
+
       {/* Toast notification */}
       {toastMessage && (
         <Toast

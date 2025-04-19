@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../contexts/AuthContext';
+import { useOrganization } from '../../contexts/OrganizationContext';
 import { auth } from '../../../lib/firebase';
 import { Toast } from '../../components/ui/Toast';
 import Link from 'next/link';
@@ -29,6 +30,7 @@ const OrganizationApplicationPage = () => {
   } | null>(null);
   const router = useRouter();
   const { user } = useAuth();
+  const { activeOrgId } = useOrganization();
 
   const handleChange = (
     e: React.ChangeEvent<
@@ -74,7 +76,7 @@ const OrganizationApplicationPage = () => {
       }
 
       // Submit application to backend
-      const response = await axios.post('/api/organizations/apply', formData, {
+      await axios.post('/api/organizations/apply', formData, {
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${idToken}`,
@@ -89,7 +91,15 @@ const OrganizationApplicationPage = () => {
 
       // Redirect to dashboard after a delay
       setTimeout(() => {
-        router.push('/organization-dashboard');
+        // After submitting an organization application, always redirect to an organization dashboard
+        // Use the user's ID as the organization ID if no active organization ID is available
+        const targetOrgId = activeOrgId || user?.uid;
+        if (targetOrgId) {
+          router.push(`/org/${targetOrgId}/dashboard`);
+        } else {
+          // Fallback to organization dashboard demo page if no organization ID is available
+          router.push('/organization-dashboard');
+        }
       }, 3000);
     } catch (error) {
       console.error('Error submitting application:', error);
@@ -118,7 +128,15 @@ const OrganizationApplicationPage = () => {
           </Link>
           <nav>
             <Link
-              href="/organization-dashboard"
+              href={
+                // Always go to an organization dashboard
+                // Use the user's ID as the organization ID if no active organization ID is available
+                activeOrgId
+                  ? `/org/${activeOrgId}/dashboard`
+                  : user?.uid
+                  ? `/org/${user.uid}/dashboard`
+                  : '/organization-dashboard' // Fallback to demo page
+              }
               className="font-bold hover:underline"
             >
               Back to Dashboard
@@ -136,7 +154,7 @@ const OrganizationApplicationPage = () => {
 
           <p className="mb-6 text-[#2F4F4F]">
             Complete this form to apply as a verified organization on
-            Authentico. Once approved, you'll be able to verify documents
+            Authentico. Once approved, you&apos;ll be able to verify documents
             submitted by users.
           </p>
 

@@ -1,4 +1,13 @@
 /**
+ * Organization verification status
+ */
+export type OrganizationVerificationStatus =
+  | 'not_verified'
+  | 'pending'
+  | 'verified'
+  | 'rejected';
+
+/**
  * User interface representing an authenticated user
  */
 export interface User {
@@ -8,6 +17,10 @@ export interface User {
   name: string;
   organizationName?: string;
   isVerified?: boolean;
+  verificationStatus?: OrganizationVerificationStatus;
+  verificationRejectionReason?: string;
+  verificationUpdatedAt?: string;
+  verificationUpdatedBy?: string;
   email?: string;
 }
 

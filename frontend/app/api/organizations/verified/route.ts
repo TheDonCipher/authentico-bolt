@@ -23,13 +23,37 @@ export async function GET(request: NextRequest) {
 
       // Get organizations directly from Firestore
       const usersRef = db.collection('users');
-      const snapshot = await usersRef
+
+      // Query for organizations with either the new verificationStatus field or the old isVerified field
+      const verifiedWithStatusSnapshot = await usersRef
+        .where('userType', '==', 'organization')
+        .where('verificationStatus', '==', 'verified')
+        .get();
+
+      const verifiedWithLegacySnapshot = await usersRef
         .where('userType', '==', 'organization')
         .where('isVerified', '==', true)
         .get();
 
+      // Combine the results, ensuring no duplicates
+      const verifiedOrgIds = new Set();
+      const verifiedDocs = [];
+
+      // Add docs from the new status query
+      verifiedWithStatusSnapshot.forEach((doc) => {
+        verifiedOrgIds.add(doc.id);
+        verifiedDocs.push(doc);
+      });
+
+      // Add docs from the legacy query if not already included
+      verifiedWithLegacySnapshot.forEach((doc) => {
+        if (!verifiedOrgIds.has(doc.id)) {
+          verifiedDocs.push(doc);
+        }
+      });
+
       // Format results
-      const organizations = snapshot.docs.map((doc) => {
+      const organizations = verifiedDocs.map((doc) => {
         const data = doc.data();
         // Check if organization details are in the orgDetails field
         const orgDetails = data.orgDetails || {};

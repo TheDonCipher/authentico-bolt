@@ -1,42 +1,39 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Check, X, ExternalLink, Clock } from 'lucide-react';
+import {
+  Check,
+  X,
+  ExternalLink,
+  Clock,
+  Shield,
+  AlertTriangle,
+} from 'lucide-react';
 import axios from 'axios';
 import { getAuthToken } from '../../../lib/token-util';
 import { Toast } from '../../components/ui/Toast';
+import { OrganizationApplication } from '../../types/organization';
+import { OrganizationVerificationStatus } from '../../types/user';
 
-interface OrgApplication {
-  id: string;
-  orgName: string;
-  contactEmail: string;
-  website: string;
-  phoneNumber?: string;
-  industry?: string;
-  registrationNumber?: string;
-  foundedYear?: string;
-  documentTypes?: string[];
-  description?: string;
-  address?: string;
-  status: string;
-  submittedAt: Date;
-  updatedAt: Date | null;
-  notes?: string;
-}
+// Using OrganizationApplication from types
 
 const OrganizationApplications = () => {
-  const [applications, setApplications] = useState<OrgApplication[]>([]);
+  const [applications, setApplications] = useState<OrganizationApplication[]>(
+    []
+  );
   const [filteredApplications, setFilteredApplications] = useState<
-    OrgApplication[]
+    OrganizationApplication[]
   >([]);
   const [loading, setLoading] = useState(true);
   const [selectedApp, setSelectedApp] = useState<string | null>(null);
-  const [viewingApp, setViewingApp] = useState<OrgApplication | null>(null);
+  const [viewingApp, setViewingApp] = useState<OrganizationApplication | null>(
+    null
+  );
   const [notes, setNotes] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [toastMessage, setToastMessage] = useState<{
-    type: 'success' | 'error';
+    type: 'success' | 'error' | 'info' | 'warning';
     message: string;
   } | null>(null);
 
@@ -110,7 +107,7 @@ const OrganizationApplications = () => {
 
   const updateApplicationStatus = async (
     applicationId: string,
-    status: 'approved' | 'rejected'
+    status: OrganizationVerificationStatus
   ) => {
     try {
       // Get Firebase ID token using the token utility
@@ -119,10 +116,24 @@ const OrganizationApplications = () => {
         throw new Error('Not authenticated');
       }
 
-      await axios.put(
+      console.log(`Updating application ${applicationId} to ${status}`);
+
+      // Map the internal status to the API status
+      // The API expects 'approved' or 'rejected', not 'verified'
+      const apiStatus =
+        status === 'verified'
+          ? 'approved'
+          : status === 'rejected'
+          ? 'rejected'
+          : status;
+
+      console.log(`Mapped status from ${status} to API status: ${apiStatus}`);
+
+      // Now proceed with the actual update
+      const response = await axios.put(
         `/api/organizations/applications/${applicationId}`,
         {
-          status,
+          status: apiStatus,
           notes: notes,
         },
         {
@@ -131,6 +142,22 @@ const OrganizationApplications = () => {
           },
         }
       );
+
+      console.log('API response:', response.data);
+
+      // Check if there's a warning in the response
+      if (response.data.warning) {
+        console.warn('API warning:', response.data.warning);
+        setToastMessage({
+          type: 'info',
+          message: `Application ${status} with warning: ${response.data.warning}`,
+        });
+      } else {
+        setToastMessage({
+          type: 'success',
+          message: `Organization application ${status} successfully`,
+        });
+      }
 
       // Update local state
       setApplications(
@@ -142,21 +169,50 @@ const OrganizationApplications = () => {
       setSelectedApp(null);
       setNotes('');
 
-      setToastMessage({
-        type: 'success',
-        message: `Organization application ${status} successfully`,
-      });
-
-      // Refresh applications after a short delay
-      setTimeout(() => {
-        fetchApplications();
-      }, 2000);
+      // Refresh applications immediately
+      fetchApplications();
     } catch (error) {
       console.error('Error updating application status:', error);
+
+      // Extract detailed error information
+      const errorResponse = error.response || {};
+      const errorData = errorResponse.data || {};
+      const errorStatus = errorResponse.status;
+      const errorMessage =
+        errorData.error || `Failed to ${status} organization application`;
+
+      console.error('Error details:', {
+        message: errorMessage,
+        status: errorStatus,
+        data: errorData,
+        response: errorResponse,
+      });
+
+      // Show a more detailed error message to the user
+      let userMessage = errorMessage;
+      if (errorStatus === 403) {
+        userMessage =
+          'You do not have permission to approve/reject applications. Admin access required.';
+      } else if (errorStatus === 401) {
+        userMessage =
+          'Authentication failed. Please try signing out and back in.';
+      }
+
       setToastMessage({
         type: 'error',
-        message: `Failed to ${status} organization application`,
+        message: userMessage,
       });
+
+      // If it's an authentication issue, suggest refreshing the token
+      if (errorStatus === 401 || errorStatus === 403) {
+        // Force a token refresh
+        try {
+          await getAuthToken();
+          console.log('Auth token refreshed after error');
+        } catch (refreshError) {
+          console.error('Failed to refresh auth token:', refreshError);
+        }
+      }
     }
   };
 
@@ -172,11 +228,11 @@ const OrganizationApplications = () => {
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'approved':
+      case 'verified':
         return (
           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-300">
-            <Check className="inline-block mr-1" size={12} />
-            Approved
+            <Shield className="inline-block mr-1" size={12} />
+            Verified
           </span>
         );
       case 'rejected':
@@ -187,11 +243,18 @@ const OrganizationApplications = () => {
           </span>
         );
       case 'pending':
-      default:
         return (
           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 border border-yellow-300">
             <Clock className="inline-block mr-1" size={12} />
             Pending
+          </span>
+        );
+      case 'not_verified':
+      default:
+        return (
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 border border-gray-300">
+            <AlertTriangle className="inline-block mr-1" size={12} />
+            Not Verified
           </span>
         );
     }
@@ -252,7 +315,7 @@ const OrganizationApplications = () => {
           >
             <option value="all">All Applications</option>
             <option value="pending">Pending</option>
-            <option value="approved">Approved</option>
+            <option value="verified">Verified</option>
             <option value="rejected">Rejected</option>
           </select>
         </div>
@@ -288,15 +351,15 @@ const OrganizationApplications = () => {
         </div>
         <div
           className={`p-3 border-2 ${
-            statusFilter === 'approved'
+            statusFilter === 'verified'
               ? 'bg-soft-sage border-deep-moss'
               : 'bg-ivory border-gray-200'
           } cursor-pointer hover:shadow-brutal transition-all`}
-          onClick={() => setStatusFilter('approved')}
+          onClick={() => setStatusFilter('verified')}
         >
-          <div className="text-sm font-medium text-green-600">Approved</div>
+          <div className="text-sm font-medium text-green-600">Verified</div>
           <div className="text-2xl font-bold text-deep-moss">
-            {applications.filter((app) => app.status === 'approved').length}
+            {applications.filter((app) => app.status === 'verified').length}
           </div>
         </div>
         <div
@@ -417,16 +480,22 @@ const OrganizationApplications = () => {
                         {app.status === 'pending' && (
                           <>
                             <button
-                              onClick={() =>
-                                updateApplicationStatus(app.id, 'approved')
-                              }
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                updateApplicationStatus(app.id, 'verified');
+                              }}
                               className="bg-forest-green text-white p-2 border border-deep-moss hover:shadow-[1px_1px_0px_0px_rgba(27,67,50,0.8)] transition-all"
                               title="Approve Application"
                             >
                               <Check size={16} />
                             </button>
                             <button
-                              onClick={() => setSelectedApp(app.id)}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setSelectedApp(app.id);
+                              }}
                               className="bg-burnt-sienna bg-opacity-20 text-deep-moss p-2 border border-deep-moss hover:shadow-[1px_1px_0px_0px_rgba(27,67,50,0.8)] transition-all"
                               title="Reject Application"
                             >
@@ -574,7 +643,7 @@ const OrganizationApplications = () => {
                   <div className="flex justify-end space-x-3 mt-6">
                     <button
                       onClick={() => {
-                        updateApplicationStatus(viewingApp.id, 'approved');
+                        updateApplicationStatus(viewingApp.id, 'verified');
                         setViewingApp(null);
                       }}
                       className="bg-forest-green text-white px-4 py-2 font-bold border-2 border-deep-moss hover:shadow-[2px_2px_0px_0px_rgba(27,67,50,0.8)] transition-all"

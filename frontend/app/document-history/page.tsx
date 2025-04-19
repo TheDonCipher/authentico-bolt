@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import SidebarNavigation from '../organization-dashboard/components/SidebarNavigation';
 import { AuthGuard } from '../components/auth/AuthGuard';
+import { OrganizationVerificationCheck } from '../components/auth/OrganizationVerificationCheck';
 import { useAuth } from '../contexts/AuthContext';
 import { Loader } from '../components/ui/Loader';
 import { Toast } from '../components/ui/Toast';
@@ -96,67 +97,69 @@ export default function DocumentHistoryPage() {
 
   return (
     <AuthGuard allowedUserTypes={['organization']}>
-      <div className="relative flex flex-col md:flex-row min-h-screen bg-ivory">
-        <SidebarNavigation />
-        <main className="flex-1 p-4 md:p-8 pb-20 md:pb-8">
-          <div className="max-w-7xl mx-auto">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b-4 border-deep-moss pb-4 mb-6 md:mb-8 gap-4">
-              <div className="flex items-center">
-                <h1 className="text-3xl md:text-4xl lg:text-5xl font-black text-deep-moss mr-4">
-                  Document History
-                </h1>
-                <ContextSwitcher />
-              </div>
-              <div className="flex items-center gap-4">
-                <NotificationBell
-                  count={notifications.length}
-                  onClick={() => {
-                    // Handle notifications
-                  }}
-                />
-                <ProfileCard />
-              </div>
-            </div>
-
-            <section className="bg-soft-sage border-2 md:border-4 border-deep-moss p-4 md:p-6 shadow-brutal">
-              <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-                <h2 className="text-2xl md:text-3xl font-black text-deep-moss">
-                  All Documents
-                </h2>
-                <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto">
-                  <input
-                    type="text"
-                    placeholder="Search documents..."
-                    className="px-4 py-2 border-2 border-deep-moss bg-ivory focus:outline-none"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
+      <OrganizationVerificationCheck>
+        <div className="relative flex flex-col md:flex-row min-h-screen bg-ivory">
+          <SidebarNavigation />
+          <main className="flex-1 p-4 md:p-8 pb-20 md:pb-8">
+            <div className="max-w-7xl mx-auto">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b-4 border-deep-moss pb-4 mb-6 md:mb-8 gap-4">
+                <div className="flex items-center">
+                  <h1 className="text-3xl md:text-4xl lg:text-5xl font-black text-deep-moss mr-4">
+                    Document History
+                  </h1>
+                  <ContextSwitcher />
+                </div>
+                <div className="flex items-center gap-4">
+                  <NotificationBell
+                    count={notifications.length}
+                    onClick={() => {
+                      // Handle notifications
+                    }}
                   />
-                  <select
-                    className="px-4 py-2 border-2 border-deep-moss bg-ivory text-deep-moss focus:outline-none"
-                    value={statusFilter}
-                    onChange={(e) => setStatusFilter(e.target.value)}
-                  >
-                    <option value="all">All Status</option>
-                    <option value="verified">Verified</option>
-                    <option value="pending">Pending</option>
-                    <option value="rejected">Rejected</option>
-                  </select>
+                  <ProfileCard />
                 </div>
               </div>
-              <DocumentsList documents={filteredDocuments} />
-            </section>
-          </div>
-        </main>
 
-        {toastMessage && (
-          <Toast
-            type={toastMessage.type}
-            message={toastMessage.message}
-            onClose={() => setToastMessage(null)}
-            duration={5000}
-          />
-        )}
-      </div>
+              <section className="bg-soft-sage border-2 md:border-4 border-deep-moss p-4 md:p-6 shadow-brutal">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                  <h2 className="text-2xl md:text-3xl font-black text-deep-moss">
+                    All Documents
+                  </h2>
+                  <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto">
+                    <input
+                      type="text"
+                      placeholder="Search documents..."
+                      className="px-4 py-2 border-2 border-deep-moss bg-ivory focus:outline-none"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                    <select
+                      className="px-4 py-2 border-2 border-deep-moss bg-ivory text-deep-moss focus:outline-none"
+                      value={statusFilter}
+                      onChange={(e) => setStatusFilter(e.target.value)}
+                    >
+                      <option value="all">All Status</option>
+                      <option value="verified">Verified</option>
+                      <option value="pending">Pending</option>
+                      <option value="rejected">Rejected</option>
+                    </select>
+                  </div>
+                </div>
+                <DocumentsList documents={filteredDocuments} />
+              </section>
+            </div>
+          </main>
+
+          {toastMessage && (
+            <Toast
+              type={toastMessage.type}
+              message={toastMessage.message}
+              onClose={() => setToastMessage(null)}
+              duration={5000}
+            />
+          )}
+        </div>
+      </OrganizationVerificationCheck>
     </AuthGuard>
   );
 }

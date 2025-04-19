@@ -424,18 +424,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     []
   );
 
-  // Set initial active context based on user type
+  // Navigate to the appropriate dashboard based on context
+  const navigateToDashboard = useCallback(() => {
+    if (user) {
+      if (activeContext === 'individual') {
+        router.push(`/user/${user.uid}/dashboard`);
+      } else if (activeContext === 'organization' && activeOrgId) {
+        router.push(`/org/${activeOrgId}/dashboard`);
+      }
+    }
+  }, [user, activeContext, activeOrgId, router]);
+
+  // Set initial active context based on user type and navigate to dashboard
   useEffect(() => {
     if (user) {
+      console.log('User authenticated in AuthContext:', user);
       setActiveContextState(user.userType as 'individual' | 'organization');
       if (user.userType === 'organization') {
+        console.log('Setting active org ID to:', user.uid);
         setActiveOrgId(user.uid);
       }
+
+      // Navigate to the appropriate dashboard
+      if (user.userType === 'individual') {
+        console.log('Navigating to individual dashboard');
+        router.push(`/user/${user.uid}/dashboard`);
+      } else if (user.userType === 'organization') {
+        console.log('Navigating to organization dashboard');
+        router.push(`/org/${user.uid}/dashboard`);
+      }
     } else {
+      console.log('No user authenticated, clearing context');
       setActiveContextState(null);
       setActiveOrgId(null);
     }
-  }, [user]);
+  }, [user, router]);
 
   // Provide the auth context
   return (

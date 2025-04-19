@@ -221,6 +221,9 @@ export const getVerifiedOrganizations = async () => {
       return [];
     }
 
+    // Log the number of verified organizations found
+    console.log(`Found ${response.data.length} verified organizations`);
+
     // Validate and sanitize each organization object
     const validatedOrgs = response.data
       .map((org) => {

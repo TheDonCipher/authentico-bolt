@@ -11,9 +11,11 @@ import { Loader } from '../../../components/ui/Loader';
 import { Toast } from '../../../components/ui/Toast';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../../../../lib/firebase';
+import DocumentReception from '../../../organization-dashboard/components/DocumentReception';
+import DocumentVerification from '../../../organization-dashboard/components/DocumentVerification';
 
 interface ToastMessage {
-  type: 'success' | 'error' | 'info';
+  type: 'success' | 'error' | 'warning';
   message: string;
 }
 
@@ -47,7 +49,7 @@ export default function OrganizationDashboardPage() {
       } catch (error) {
         console.error('Error fetching organization data:', error);
         setToastMessage({
-          type: 'error',
+          type: 'error' as const,
           message: 'Failed to load organization data',
         });
       } finally {
@@ -84,11 +86,12 @@ export default function OrganizationDashboardPage() {
     fetchDocuments();
   }, [orgId]);
 
-  // Fetch verification requests
-  useEffect(() => {
-    const fetchVerificationRequests = async () => {
-      if (!orgId) return;
+  // Function to fetch verification requests
+  const fetchVerificationRequests = async () => {
+    if (!orgId) return;
 
+    try {
+      // First check if the verificationRequests collection exists and is accessible
       try {
         const requestsQuery = query(
           collection(db, 'verificationRequests'),
@@ -103,11 +106,34 @@ export default function OrganizationDashboardPage() {
         }));
 
         setVerificationRequests(requests);
-      } catch (error) {
-        console.error('Error fetching verification requests:', error);
-      }
-    };
+      } catch (firestoreError) {
+        console.error(
+          'Error accessing verificationRequests collection:',
+          firestoreError
+        );
+        // Set empty array if there's a permissions error
+        setVerificationRequests([]);
 
+        // If this is a permissions error, we'll just show 0 pending requests
+        // The user will still be able to use the dashboard
+        if (firestoreError.toString().includes('permission')) {
+          console.log(
+            'Permission error accessing verificationRequests. Using empty array instead.'
+          );
+        } else {
+          // Re-throw if it's not a permissions error
+          throw firestoreError;
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching verification requests:', error);
+      // Set empty array as fallback
+      setVerificationRequests([]);
+    }
+  };
+
+  // Fetch verification requests on component mount
+  useEffect(() => {
     fetchVerificationRequests();
   }, [orgId]);
 
@@ -135,6 +161,7 @@ export default function OrganizationDashboardPage() {
 
   // Organization data display
   const orgName =
+    orgData?.organizationName ||
     orgData?.name ||
     userOrganizations.find((org) => org.orgId === orgId)?.orgName ||
     'Organization';
@@ -143,7 +170,7 @@ export default function OrganizationDashboardPage() {
     orgData?.contactEmail || orgData?.email || 'No email provided';
 
   return (
-    <div className="min-h-screen bg-ivory">
+    <div className="min-h-screen bg-ivory w-full">
       <header className="bg-soft-sage p-4 border-b-4 border-deep-moss sticky top-0 z-20">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div className="flex items-center">
@@ -159,7 +186,7 @@ export default function OrganizationDashboardPage() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto p-4 md:p-8">
+      <main className="max-w-7xl mx-auto p-4 md:p-8 pb-20 md:pb-8">
         {/* Organization Info Card */}
         <div className="bg-soft-sage border-2 md:border-4 border-deep-moss p-4 md:p-6 shadow-brutal mb-8">
           <div className="flex flex-col md:flex-row justify-between gap-4">
@@ -185,7 +212,7 @@ export default function OrganizationDashboardPage() {
                 </div>
               </div>
             </div>
-            <div className="flex items-center">
+            <div className="flex items-center mt-4 md:mt-0">
               <div className="bg-ivory p-4 border-2 border-deep-moss rounded-md">
                 <p className="text-sm font-bold text-deep-moss mb-1">
                   Organization ID
@@ -227,7 +254,7 @@ export default function OrganizationDashboardPage() {
                   <p className="text-deep-moss">
                     Your organization has been verified and can now verify
                     documents on the Authentico platform. When users select your
-                    organization during document upload, you'll receive a
+                    organization during document upload, you&apos;ll receive a
                     verification request.
                   </p>
                 </div>
@@ -273,8 +300,8 @@ export default function OrganizationDashboardPage() {
                 </h3>
               </div>
               <p className="text-yellow-800 mb-2">
-                Your application is currently being reviewed by our team. We'll
-                notify you once a decision has been made.
+                Your application is currently being reviewed by our team.
+                We&apos;ll notify you once a decision has been made.
               </p>
               <p className="text-sm text-yellow-700">
                 Submitted on:{' '}
@@ -352,7 +379,7 @@ export default function OrganizationDashboardPage() {
             <h2 className="text-3xl md:text-4xl font-black text-deep-moss">
               Organization Dashboard
             </h2>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <button
                 onClick={() => setActiveTab('dashboard')}
                 className={`px-4 py-2 font-bold transition-all ${
@@ -373,6 +400,16 @@ export default function OrganizationDashboardPage() {
               >
                 Verification Queue
               </button>
+              <button
+                onClick={() => setActiveTab('documents')}
+                className={`px-4 py-2 font-bold transition-all ${
+                  activeTab === 'documents'
+                    ? 'bg-forest-green text-ivory border-2 border-deep-moss shadow-[4px_4px_0px_0px_rgba(27,67,50,0.8)]'
+                    : 'hover:bg-soft-sage hover:border-2 hover:border-deep-moss hover:shadow-[2px_2px_0px_0px_rgba(27,67,50,0.8)]'
+                }`}
+              >
+                Document Reception
+              </button>
             </div>
           </div>
         </div>
@@ -383,13 +420,17 @@ export default function OrganizationDashboardPage() {
               Recent Documents
             </h3>
             {documents.length > 0 ? (
-              <div className="overflow-x-auto">
-                <table className="w-full border-collapse">
+              <div className="overflow-x-auto -mx-4 md:mx-0 px-4 md:px-0">
+                <table className="w-full border-collapse text-sm md:text-base">
                   <thead>
                     <tr className="bg-deep-moss text-ivory">
                       <th className="p-2 text-left">Document Name</th>
-                      <th className="p-2 text-left">Type</th>
-                      <th className="p-2 text-left">Submitted By</th>
+                      <th className="p-2 text-left hidden sm:table-cell">
+                        Type
+                      </th>
+                      <th className="p-2 text-left hidden md:table-cell">
+                        Submitted By
+                      </th>
                       <th className="p-2 text-left">Status</th>
                       <th className="p-2 text-left">Actions</th>
                     </tr>
@@ -397,12 +438,16 @@ export default function OrganizationDashboardPage() {
                   <tbody>
                     {documents.map((doc) => (
                       <tr key={doc.id} className="border-b border-deep-moss">
-                        <td className="p-2">
+                        <td className="p-2 whitespace-nowrap">
                           {doc.name || 'Unnamed Document'}
                         </td>
-                        <td className="p-2">{doc.documentType || 'Unknown'}</td>
-                        <td className="p-2">{doc.ownerName || doc.ownerUid}</td>
-                        <td className="p-2">
+                        <td className="p-2 whitespace-nowrap hidden sm:table-cell">
+                          {doc.documentType || 'Unknown'}
+                        </td>
+                        <td className="p-2 whitespace-nowrap hidden md:table-cell">
+                          {doc.ownerName || doc.ownerUid}
+                        </td>
+                        <td className="p-2 whitespace-nowrap">
                           <span
                             className={`px-2 py-1 rounded-full text-xs font-medium ${
                               doc.status === 'verified'
@@ -415,7 +460,7 @@ export default function OrganizationDashboardPage() {
                             {doc.status || 'pending'}
                           </span>
                         </td>
-                        <td className="p-2">
+                        <td className="p-2 whitespace-nowrap">
                           <button className="text-forest-green hover:text-deep-moss">
                             View
                           </button>
@@ -429,19 +474,23 @@ export default function OrganizationDashboardPage() {
               <p className="text-gray-500 italic">No documents found</p>
             )}
           </section>
-        ) : (
+        ) : activeTab === 'verification' ? (
           <section className="bg-soft-sage border-2 md:border-4 border-deep-moss p-4 md:p-6 shadow-brutal">
             <h3 className="text-2xl font-bold mb-4 text-deep-moss">
               Verification Requests
             </h3>
             {verificationRequests.length > 0 ? (
-              <div className="overflow-x-auto">
-                <table className="w-full border-collapse">
+              <div className="overflow-x-auto -mx-4 md:mx-0 px-4 md:px-0">
+                <table className="w-full border-collapse text-sm md:text-base">
                   <thead>
                     <tr className="bg-deep-moss text-ivory">
                       <th className="p-2 text-left">Document</th>
-                      <th className="p-2 text-left">Requested By</th>
-                      <th className="p-2 text-left">Date</th>
+                      <th className="p-2 text-left hidden sm:table-cell">
+                        Requested By
+                      </th>
+                      <th className="p-2 text-left hidden md:table-cell">
+                        Date
+                      </th>
                       <th className="p-2 text-left">Actions</th>
                     </tr>
                   </thead>
@@ -451,29 +500,31 @@ export default function OrganizationDashboardPage() {
                         key={request.id}
                         className="border-b border-deep-moss"
                       >
-                        <td className="p-2">
+                        <td className="p-2 whitespace-nowrap">
                           {request.documentName || 'Unnamed Document'}
                         </td>
-                        <td className="p-2">
+                        <td className="p-2 whitespace-nowrap hidden sm:table-cell">
                           {request.requesterName || request.requesterId}
                         </td>
-                        <td className="p-2">
+                        <td className="p-2 whitespace-nowrap hidden md:table-cell">
                           {request.createdAt
                             ? new Date(request.createdAt).toLocaleDateString()
                             : 'Unknown'}
                         </td>
-                        <td className="p-2">
-                          <div className="flex gap-2">
-                            <button className="bg-soft-sage px-2 py-1 text-xs border border-deep-moss hover:shadow-[1px_1px_0px_0px_rgba(27,67,50,0.8)] transition-all">
-                              View
-                            </button>
-                            <button className="bg-forest-green text-ivory px-2 py-1 text-xs border border-deep-moss hover:shadow-[1px_1px_0px_0px_rgba(27,67,50,0.8)] transition-all">
-                              Verify
-                            </button>
-                            <button className="bg-burnt-sienna bg-opacity-20 px-2 py-1 text-xs border border-deep-moss hover:shadow-[1px_1px_0px_0px_rgba(27,67,50,0.8)] transition-all">
-                              Reject
-                            </button>
-                          </div>
+                        <td className="p-2 whitespace-nowrap">
+                          <DocumentVerification
+                            request={request}
+                            onVerificationComplete={() => {
+                              // Refresh verification requests
+                              fetchVerificationRequests();
+                              // Show success toast
+                              setToastMessage({
+                                type: 'success',
+                                message:
+                                  'Document verification status updated successfully',
+                              });
+                            }}
+                          />
                         </td>
                       </tr>
                     ))}
@@ -486,6 +537,8 @@ export default function OrganizationDashboardPage() {
               </p>
             )}
           </section>
+        ) : (
+          <DocumentReception />
         )}
       </main>
 

@@ -53,9 +53,20 @@ export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({
   // Function to check if user has access to a specific organization
   const hasOrgAccess = useCallback(
     (orgId: string) => {
-      return userOrganizations.some((org) => org.orgId === orgId);
+      console.log(`Checking access to org ${orgId}`);
+      console.log('Available organizations:', userOrganizations);
+
+      // If user is an organization owner, they always have access to their own org
+      if (user?.userType === 'organization' && user.uid === orgId) {
+        console.log('User is the organization owner - access granted');
+        return true;
+      }
+
+      const hasAccess = userOrganizations.some((org) => org.orgId === orgId);
+      console.log(`Access to org ${orgId}: ${hasAccess}`);
+      return hasAccess;
     },
-    [userOrganizations]
+    [userOrganizations, user]
   );
 
   // Function to get user's role in an organization
@@ -70,79 +81,91 @@ export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({
   // Function to switch to individual context
   const switchToIndividualContext = useCallback(() => {
     setActiveOrgId(null);
-    router.push('/individual-dashboard');
-  }, [router]);
+    if (user) {
+      router.push(`/user/${user.uid}/dashboard`);
+    } else {
+      router.push('/individual-dashboard'); // Fallback to demo page if no user
+    }
+  }, [router, user]);
 
   // Function to switch to organization context
   const switchToOrganizationContext = useCallback(
     (orgId: string) => {
+      console.log(`Attempting to switch to organization context: ${orgId}`);
+
+      // Special case for organization owners
+      if (user?.userType === 'organization' && user.uid === orgId) {
+        console.log('User is the organization owner - switching context');
+        setActiveOrgId(orgId);
+        router.push(`/org/${orgId}/dashboard`);
+        return;
+      }
+
       if (hasOrgAccess(orgId)) {
+        console.log(
+          `User has access to organization ${orgId} - switching context`
+        );
         setActiveOrgId(orgId);
         router.push(`/org/${orgId}/dashboard`);
       } else {
         console.error(`User does not have access to organization ${orgId}`);
+        // Redirect to unauthorized page
+        router.push('/unauthorized');
       }
     },
-    [hasOrgAccess, router]
+    [hasOrgAccess, router, user]
   );
 
   // Function to fetch user's organizations
   const fetchUserOrganizations = useCallback(async () => {
+    console.log('Fetching user organizations');
     if (!user) {
+      console.log('No user, clearing organizations');
       setUserOrganizations([]);
       setIsLoadingOrgs(false);
       return;
     }
 
+    console.log(
+      `Fetching organizations for user: ${user.uid}, type: ${user.userType}`
+    );
+
     try {
       setIsLoadingOrgs(true);
-
-      // Query for organization memberships
-      const membershipsQuery = query(
-        collection(db, 'organizationMembers'),
-        where('userId', '==', user.uid)
-      );
-
-      const membershipsSnapshot = await getDocs(membershipsQuery);
       const memberships: OrganizationMembership[] = [];
 
-      // Process each membership
-      for (const doc of membershipsSnapshot.docs) {
-        const membershipData = doc.data();
-        
-        // Get organization details
-        const orgDoc = await getDocs(
-          query(
-            collection(db, 'users'),
-            where('userType', '==', 'organization'),
-            where('__name__', '==', membershipData.orgId)
-          )
-        );
-
-        if (!orgDoc.empty) {
-          const orgData = orgDoc.docs[0].data();
-          memberships.push({
-            orgId: membershipData.orgId,
-            orgName: orgData.name || 'Unknown Organization',
-            role: membershipData.role || 'member',
-            permissions: membershipData.permissions || [],
-          });
-        }
-      }
-
-      // If user is an organization, add their own organization
+      // Skip Firestore queries for now due to permissions issues
+      // Instead, if user is an organization, just add their own organization
       if (user.userType === 'organization') {
+        console.log(
+          `User is an organization, adding self-membership: ${user.uid}`
+        );
         memberships.push({
           orgId: user.uid,
-          orgName: user.name,
+          orgName: user.organizationName || user.name,
           role: 'owner',
           permissions: ['all'],
         });
       }
 
+      console.log('Setting user organizations:', memberships);
       setUserOrganizations(memberships);
     } catch (error) {
       console.error('Error fetching user organizations:', error);
+      // Even if there's an error, ensure we add the organization's own membership
+      if (user.userType === 'organization') {
+        console.log(
+          `Fallback: Adding organization's own membership: ${user.uid}`
+        );
+        setUserOrganizations([
+          {
+            orgId: user.uid,
+            orgName: user.organizationName || user.name,
+            role: 'owner',
+            permissions: ['all'],
+          },
+        ]);
+      }
     } finally {
       setIsLoadingOrgs(false);
     }
@@ -189,7 +212,9 @@ export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({
 export const useOrganization = () => {
   const context = useContext(OrganizationContext);
   if (context === undefined) {
-    throw new Error('useOrganization must be used within an OrganizationProvider');
+    throw new Error(
+      'useOrganization must be used within an OrganizationProvider'
+    );
   }
   return context;
 };

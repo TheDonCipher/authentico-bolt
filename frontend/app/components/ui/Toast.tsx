@@ -1,9 +1,9 @@
 import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { CheckCircle, AlertCircle, AlertTriangle, X } from 'lucide-react';
+import { CheckCircle, AlertCircle, AlertTriangle, Info, X } from 'lucide-react';
 
 export const Toast: React.FC<{
-  type: 'success' | 'error' | 'warning';
+  type: 'success' | 'error' | 'warning' | 'info';
   message: string;
   onClose?: () => void;
   duration?: number; // Duration in milliseconds
@@ -31,6 +31,8 @@ export const Toast: React.FC<{
           ? 'bg-soft-sage'
           : type === 'warning'
           ? 'bg-sunflower-yellow bg-opacity-20'
+          : type === 'info'
+          ? 'bg-blue-100'
           : 'bg-burnt-sienna bg-opacity-20'
       }
       text-deep-moss p-3 md:p-4 border-2 md:border-4 border-deep-moss font-bold
@@ -49,6 +51,8 @@ export const Toast: React.FC<{
             className="mr-2 text-sunflower-yellow flex-shrink-0"
             size={16}
           />
+        ) : type === 'info' ? (
+          <Info className="mr-2 text-blue-600 flex-shrink-0" size={16} />
         ) : (
           <AlertCircle
             className="mr-2 text-burnt-sienna flex-shrink-0"

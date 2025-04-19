@@ -1,39 +1,38 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Check, X, Clock, AlertTriangle, ExternalLink } from 'lucide-react';
+import {
+  Check,
+  X,
+  Clock,
+  AlertTriangle,
+  ExternalLink,
+  Shield,
+} from 'lucide-react';
 import axios from 'axios';
 import { getAuthToken } from '../../../lib/token-util';
 import { Toast } from '../../components/ui/Toast';
 import Link from 'next/link';
+import { OrganizationVerificationStatus } from '../../types/user';
+import {
+  OrganizationApplication,
+  DOCUMENT_TYPES,
+} from '../../types/organization';
 
 interface OrganizationStatusProps {
   userId: string;
 }
 
-interface ApplicationData {
-  id: string;
-  orgName: string;
-  contactEmail: string;
-  website: string;
-  phoneNumber?: string;
-  industry?: string;
-  registrationNumber?: string;
-  foundedYear?: string;
-  documentTypes?: string[];
-  description?: string;
-  address?: string;
-  status: 'pending' | 'approved' | 'rejected';
-  submittedAt: Date;
-  updatedAt: Date | null;
-  notes?: string;
-}
+// Using the OrganizationApplication interface from types
 
 const OrganizationStatus: React.FC<OrganizationStatusProps> = ({ userId }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [application, setApplication] = useState<ApplicationData | null>(null);
-  const [isVerified, setIsVerified] = useState(false);
+  const [application, setApplication] =
+    useState<OrganizationApplication | null>(null);
+  const [verificationStatus, setVerificationStatus] =
+    useState<OrganizationVerificationStatus>('not_verified');
+  const [rejectionReason, setRejectionReason] = useState<string | null>(null);
   const [showApplicationForm, setShowApplicationForm] = useState(false);
   const [formData, setFormData] = useState({
     orgName: '',
@@ -67,7 +66,7 @@ const OrganizationStatus: React.FC<OrganizationStatusProps> = ({ userId }) => {
         throw new Error('Not authenticated');
       }
 
-      // First, check if the user is already verified
+      // Get user data to check verification status
       const userResponse = await axios.get('/api/auth/me', {
         headers: {
           Authorization: `Bearer ${idToken}`,
@@ -75,10 +74,24 @@ const OrganizationStatus: React.FC<OrganizationStatusProps> = ({ userId }) => {
       });
 
       const userData = userResponse.data;
-      setIsVerified(userData.isVerified || false);
 
-      // If not verified, check if there's a pending application
-      if (!userData.isVerified) {
+      // Set verification status from user data
+      if (userData.verificationStatus) {
+        setVerificationStatus(userData.verificationStatus);
+      } else if (userData.isVerified) {
+        // For backward compatibility
+        setVerificationStatus('verified');
+      } else {
+        setVerificationStatus('not_verified');
+      }
+
+      // Set rejection reason if available
+      if (userData.verificationRejectionReason) {
+        setRejectionReason(userData.verificationRejectionReason);
+      }
+
+      // If not verified or rejected, check if there's a pending application
+      if (verificationStatus !== 'verified') {
         try {
           // Try to fetch existing applications
           const applicationsResponse = await axios.get(
@@ -290,13 +303,13 @@ const OrganizationStatus: React.FC<OrganizationStatusProps> = ({ userId }) => {
     );
   }
 
-  if (isVerified) {
+  if (verificationStatus === 'verified') {
     return (
       <div className="bg-[#E8EDE1] border-4 border-[#556B2F] p-6 shadow-brutal">
         <div className="flex flex-col md:flex-row items-start md:items-center mb-6">
           <div className="bg-[#698B69] text-white p-3 border-3 border-[#556B2F] mr-4 mb-4 md:mb-0 transform -rotate-3 shadow-brutal">
             <div className="flex items-center">
-              <Check className="text-white mr-2" size={28} />
+              <Shield className="text-white mr-2" size={28} />
               <span className="font-black text-lg">VERIFIED</span>
             </div>
           </div>
@@ -364,6 +377,7 @@ const OrganizationStatus: React.FC<OrganizationStatusProps> = ({ userId }) => {
     );
   }
 
+  // Show application status if there's a pending or rejected application
   if (application) {
     return (
       <div className="bg-[#E8EDE1] border-4 border-[#556B2F] p-6 shadow-brutal">
@@ -725,95 +739,22 @@ const OrganizationStatus: React.FC<OrganizationStatusProps> = ({ userId }) => {
             </p>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  id="type-identity"
-                  name="documentTypes"
-                  value="identity"
-                  checked={formData.documentTypes.includes('identity')}
-                  onChange={handleCheckboxChange}
-                  className="mr-2 h-5 w-5 border-2 border-[#556B2F] accent-[#556B2F] bg-white"
-                />
-                <label htmlFor="type-identity" className="text-[#2F4F4F]">
-                  Identity Documents
-                </label>
-              </div>
-
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  id="type-education"
-                  name="documentTypes"
-                  value="education"
-                  checked={formData.documentTypes.includes('education')}
-                  onChange={handleCheckboxChange}
-                  className="mr-2 h-5 w-5 border-2 border-[#556B2F] accent-[#556B2F] bg-white"
-                />
-                <label htmlFor="type-education" className="text-[#2F4F4F]">
-                  Educational Certificates
-                </label>
-              </div>
-
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  id="type-employment"
-                  name="documentTypes"
-                  value="employment"
-                  checked={formData.documentTypes.includes('employment')}
-                  onChange={handleCheckboxChange}
-                  className="mr-2 h-5 w-5 border-2 border-[#556B2F] accent-[#556B2F] bg-white"
-                />
-                <label htmlFor="type-employment" className="text-[#2F4F4F]">
-                  Employment Documents
-                </label>
-              </div>
-
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  id="type-financial"
-                  name="documentTypes"
-                  value="financial"
-                  checked={formData.documentTypes.includes('financial')}
-                  onChange={handleCheckboxChange}
-                  className="mr-2 h-5 w-5 border-2 border-[#556B2F] accent-[#556B2F] bg-white"
-                />
-                <label htmlFor="type-financial" className="text-[#2F4F4F]">
-                  Financial Documents
-                </label>
-              </div>
-
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  id="type-legal"
-                  name="documentTypes"
-                  value="legal"
-                  checked={formData.documentTypes.includes('legal')}
-                  onChange={handleCheckboxChange}
-                  className="mr-2 h-5 w-5 border-2 border-[#556B2F] accent-[#556B2F] bg-white"
-                />
-                <label htmlFor="type-legal" className="text-[#2F4F4F]">
-                  Legal Documents
-                </label>
-              </div>
-
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  id="type-other"
-                  name="documentTypes"
-                  value="other"
-                  checked={formData.documentTypes.includes('other')}
-                  onChange={handleCheckboxChange}
-                  className="mr-2 h-5 w-5 border-2 border-[#556B2F] accent-[#556B2F] bg-white"
-                />
-                <label htmlFor="type-other" className="text-[#2F4F4F]">
-                  Other Documents
-                </label>
-              </div>
+              {DOCUMENT_TYPES.map((type) => (
+                <div key={type} className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id={`type-${type}`}
+                    name="documentTypes"
+                    value={type}
+                    checked={formData.documentTypes.includes(type)}
+                    onChange={handleCheckboxChange}
+                    className="mr-2 h-5 w-5 border-2 border-[#556B2F] accent-[#556B2F] bg-white"
+                  />
+                  <label htmlFor={`type-${type}`} className="text-[#2F4F4F]">
+                    {type.charAt(0).toUpperCase() + type.slice(1)} Documents
+                  </label>
+                </div>
+              ))}
             </div>
           </div>
 
@@ -840,25 +781,50 @@ const OrganizationStatus: React.FC<OrganizationStatusProps> = ({ userId }) => {
     );
   }
 
+  // Default state - not verified and no application
   return (
     <div className="bg-[#E8EDE1] border-4 border-[#556B2F] p-6 shadow-brutal">
       <h2 className="text-xl font-bold mb-4 text-[#2F4F4F]">
         Organization Verification
       </h2>
 
-      <div className="bg-blue-50 border-2 border-blue-200 p-4 mb-6">
-        <p className="text-blue-800 mb-4">
-          Your organization is not verified yet. Verified organizations can
-          verify documents submitted by users. Apply for verification to unlock
-          this feature.
-        </p>
-        <button
-          onClick={() => setShowApplicationForm(true)}
-          className="bg-[#698B69] text-white px-4 py-2 font-bold border-2 border-[#556B2F] hover:shadow-[2px_2px_0px_0px_rgba(85,107,47,1)] transition-all"
-        >
-          Apply for Verification
-        </button>
-      </div>
+      {verificationStatus === 'rejected' ? (
+        <div className="bg-red-50 border-2 border-red-200 p-4 mb-6">
+          <div className="flex items-center mb-2">
+            <X className="mr-2 text-red-600" size={20} />
+            <h3 className="font-bold text-red-800">Verification Rejected</h3>
+          </div>
+          <p className="text-red-800 mb-2">
+            Your organization verification has been rejected.
+          </p>
+          {rejectionReason && (
+            <div className="mb-2">
+              <h4 className="font-bold text-red-800">Reason:</h4>
+              <p className="text-red-800">{rejectionReason}</p>
+            </div>
+          )}
+          <button
+            onClick={() => setShowApplicationForm(true)}
+            className="mt-4 bg-[#698B69] text-white px-4 py-2 font-bold border-2 border-[#556B2F] hover:shadow-[2px_2px_0px_0px_rgba(85,107,47,1)] transition-all"
+          >
+            Submit New Application
+          </button>
+        </div>
+      ) : (
+        <div className="bg-blue-50 border-2 border-blue-200 p-4 mb-6">
+          <p className="text-blue-800 mb-4">
+            Your organization is not verified yet. Verified organizations can
+            verify documents submitted by users. Apply for verification to
+            unlock this feature.
+          </p>
+          <button
+            onClick={() => setShowApplicationForm(true)}
+            className="bg-[#698B69] text-white px-4 py-2 font-bold border-2 border-[#556B2F] hover:shadow-[2px_2px_0px_0px_rgba(85,107,47,1)] transition-all"
+          >
+            Apply for Verification
+          </button>
+        </div>
+      )}
 
       {/* Toast Notifications */}
       {toastMessage && (

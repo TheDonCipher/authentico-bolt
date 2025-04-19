@@ -328,10 +328,13 @@ export const DocumentUploadDialog = ({
               )}
               {verifyingOrgs.map((org) => (
                 <option key={org.id} value={org.id}>
-                  {org.name}
+                  {org.name} {org.verificationBadge ? '✓' : ''}
                 </option>
               ))}
             </select>
+            <p className="text-sm text-deep-moss mt-1">
+              Only verified organizations (✓) can verify your documents.
+            </p>
           </div>
 
           <div>

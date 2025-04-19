@@ -20,7 +20,11 @@ export const ContextSwitcher: React.FC = () => {
 
   const switchToIndividual = () => {
     setActiveContext('individual');
-    router.push('/individual-dashboard');
+    if (user) {
+      router.push(`/user/${user.uid}/dashboard`);
+    } else {
+      router.push('/individual-dashboard'); // Fallback to demo page
+    }
     setIsOpen(false);
   };
 
@@ -35,9 +39,7 @@ export const ContextSwitcher: React.FC = () => {
     if (activeContext === 'individual') {
       return 'Individual Account';
     } else if (activeContext === 'organization') {
-      const org = userOrganizations.find(
-        (org) => org.orgId === user.uid
-      );
+      const org = userOrganizations.find((org) => org.orgId === user.uid);
       return org ? org.orgName : 'Organization Account';
     }
     return 'Select Account';
@@ -54,7 +56,9 @@ export const ContextSwitcher: React.FC = () => {
         ) : (
           <Building2 size={18} className="text-deep-moss" />
         )}
-        <span className="font-bold text-deep-moss">{getCurrentContextName()}</span>
+        <span className="font-bold text-deep-moss">
+          {getCurrentContextName()}
+        </span>
         <ChevronDown size={16} className="text-deep-moss" />
       </button>
 
@@ -69,7 +73,9 @@ export const ContextSwitcher: React.FC = () => {
               }`}
             >
               <User size={18} className="text-deep-moss" />
-              <span className="font-medium text-deep-moss">Individual Account</span>
+              <span className="font-medium text-deep-moss">
+                Individual Account
+              </span>
               {activeContext === 'individual' && (
                 <Check size={16} className="ml-auto text-forest-green" />
               )}
@@ -102,9 +108,13 @@ export const ContextSwitcher: React.FC = () => {
                         {org.role}
                       </span>
                     </div>
-                    {activeContext === 'organization' && user.uid === org.orgId && (
-                      <Check size={16} className="ml-auto text-forest-green" />
-                    )}
+                    {activeContext === 'organization' &&
+                      user.uid === org.orgId && (
+                        <Check
+                          size={16}
+                          className="ml-auto text-forest-green"
+                        />
+                      )}
                   </button>
                 ))}
               </>

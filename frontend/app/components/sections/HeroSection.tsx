@@ -26,14 +26,26 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ toogleShow }) => (
         offers the highest level of accuracy and efficiency in verifying the
         authenticity of your documents to others.
       </p>
-      {/* <div className="flex flex-wrap justify-center gap-4 mt-6">
+      <div className="flex flex-wrap justify-center gap-4 mt-6">
         <button
           onClick={toogleShow}
           className="border-black border-2 p-3 bg-[#fef29f] font-bold hover:bg-[#79F7FF] hover:shadow-[2px_2px_0px_rgba(0,0,0,1)] active:bg-[#00E1EF] rounded-md"
         >
           Get Started 🚀
         </button>
-      </div> */}
+        <Link
+          href="/individual-dashboard"
+          className="border-black border-2 p-3 bg-[#E5DCC3] font-bold hover:bg-[#79F7FF] hover:shadow-[2px_2px_0px_rgba(0,0,0,1)] active:bg-[#00E1EF] rounded-md"
+        >
+          Individual Demo
+        </Link>
+        <Link
+          href="/organization-dashboard"
+          className="border-black border-2 p-3 bg-[#E5DCC3] font-bold hover:bg-[#79F7FF] hover:shadow-[2px_2px_0px_rgba(0,0,0,1)] active:bg-[#00E1EF] rounded-md"
+        >
+          Organization Demo
+        </Link>
+      </div>
       <div className="flex justify-between w-full mt-10 hidden sm:flex">
         <Image width={323} height={323} src={reviewng} alt="users" />
         <Image width={323} height={323} src={sittingreading} alt="users" />

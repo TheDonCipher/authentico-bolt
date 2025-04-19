@@ -12,6 +12,7 @@ import { NotificationBell } from '../components/dashboard/NotificationBell';
 import { Loader } from '../components/ui/Loader';
 import { Toast } from '../components/ui/Toast';
 import { SignOutButton } from '../components/auth/SignOutButton';
+import { VerificationAuditLog } from './components/VerificationAuditLog';
 
 import {
   Home,
@@ -26,6 +27,7 @@ import {
   ExternalLink,
   Check,
   Eye,
+  History,
 } from 'lucide-react';
 
 interface ToastMessage {
@@ -213,9 +215,9 @@ export default function AdminDashboardPage() {
         <aside
           className={`${
             sidebarOpen ? 'fixed inset-0 z-40' : 'hidden'
-          } md:relative md:block md:w-64 bg-soft-sage border-r-4 border-deep-moss md:h-screen overflow-y-auto transition-all duration-300 ease-in-out flex flex-col sticky top-0`}
+          } md:relative md:block md:w-64 bg-soft-sage border-r-4 border-deep-moss h-auto md:min-h-screen md:h-full md:sticky md:top-0 z-30 overflow-y-auto transition-all duration-300 ease-in-out`}
         >
-          <div className="p-4 flex flex-col flex-grow">
+          <div className="p-4 flex flex-col min-h-full">
             {/* Close button - only visible on mobile when sidebar is open */}
             <button
               onClick={toggleSidebar}
@@ -282,14 +284,32 @@ export default function AdminDashboardPage() {
             </nav>
 
             {/* Sign Out Button */}
-            <div className="mt-auto pt-6">
-              <SignOutButton className="block w-full bg-burnt-sienna bg-opacity-20 text-deep-moss p-3 font-bold border-4 border-deep-moss hover:shadow-[4px_4px_0px_0px_rgba(27,67,50,0.8)] transition-all" />
+            <div className="mt-4 pt-6">
+              <SignOutButton className="flex items-center gap-3 w-full px-4 py-3 border-2 border-deep-moss bg-burnt-sienna bg-opacity-20 text-deep-moss hover:shadow-brutal hover:-translate-y-0.5 transition-all">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="text-deep-moss"
+                >
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                  <polyline points="16 17 21 12 16 7"></polyline>
+                  <line x1="21" y1="12" x2="9" y2="12"></line>
+                </svg>
+                <span className="font-bold text-deep-moss">Sign Out</span>
+              </SignOutButton>
             </div>
           </div>
         </aside>
 
         {/* Main content */}
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col overflow-y-auto pb-20 md:pb-0">
           <header className="bg-soft-sage p-4 border-b-4 border-deep-moss sticky top-0 z-20">
             <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <div className="flex items-center">
@@ -300,6 +320,55 @@ export default function AdminDashboardPage() {
                   <Shield size={16} className="inline-block mr-1" />
                   Admin
                 </div>
+                <button
+                  onClick={async () => {
+                    try {
+                      const token = await getAuthToken();
+                      if (!token) {
+                        throw new Error('Not authenticated');
+                      }
+
+                      const response = await fetch(
+                        '/api/auth/set-admin-claims',
+                        {
+                          method: 'POST',
+                          headers: {
+                            Authorization: `Bearer ${token}`,
+                            'Content-Type': 'application/json',
+                          },
+                          body: JSON.stringify({}),
+                        }
+                      );
+
+                      if (!response.ok) {
+                        throw new Error(
+                          `Failed to set admin claims: ${response.status} ${response.statusText}`
+                        );
+                      }
+
+                      const data = await response.json();
+                      console.log('Admin claims set:', data);
+
+                      setToastMessage({
+                        type: 'success',
+                        message:
+                          'Admin claims set successfully. You may need to refresh the page.',
+                      });
+                    } catch (error) {
+                      console.error('Error setting admin claims:', error);
+                      setToastMessage({
+                        type: 'error',
+                        message:
+                          error instanceof Error
+                            ? error.message
+                            : 'Failed to set admin claims',
+                      });
+                    }
+                  }}
+                  className="ml-4 bg-forest-green text-white px-3 py-1 text-sm font-medium border-2 border-deep-moss hover:shadow-[2px_2px_0px_0px_rgba(27,67,50,0.8)] transition-all"
+                >
+                  Set Admin Claims
+                </button>
               </div>
               <div className="flex items-center gap-4">
                 <NotificationBell count={0} onClick={() => {}} />
@@ -308,7 +377,7 @@ export default function AdminDashboardPage() {
             </div>
           </header>
 
-          <main className="max-w-7xl mx-auto p-4 md:p-8 overflow-x-hidden">
+          <main className="max-w-7xl mx-auto p-4 md:p-8 overflow-x-hidden pb-20 md:pb-8">
             <div className="mb-6">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b-4 border-deep-moss pb-4 mb-6 md:mb-8 gap-4">
                 <h2 className="text-3xl md:text-4xl font-black text-deep-moss">
@@ -335,6 +404,17 @@ export default function AdminDashboardPage() {
                   >
                     Org Applications
                   </button>
+                  <button
+                    onClick={() => setActiveTab('audit')}
+                    className={`px-4 py-2 font-bold transition-all flex-1 sm:flex-none text-center ${
+                      activeTab === 'audit'
+                        ? 'bg-forest-green text-ivory border-2 border-deep-moss shadow-[4px_4px_0px_0px_rgba(27,67,50,0.8)]'
+                        : 'hover:bg-soft-sage hover:border-2 hover:border-deep-moss hover:shadow-[2px_2px_0px_0px_rgba(27,67,50,0.8)]'
+                    }`}
+                  >
+                    <History size={16} className="inline-block mr-1" />
+                    Audit Log
+                  </button>
                 </div>
               </div>
             </div>
@@ -342,84 +422,141 @@ export default function AdminDashboardPage() {
             {activeTab === 'dashboard' ? (
               <>
                 <section className="bg-soft-sage border-2 md:border-4 border-deep-moss p-4 md:p-6 shadow-brutal mb-8">
-                  <h3 className="text-2xl font-bold mb-4 text-deep-moss">
-                    Platform Statistics
-                  </h3>
-                  {stats.loading ? (
-                    <div className="bg-ivory p-6 border-2 border-deep-moss text-center">
-                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-deep-moss mx-auto mb-4"></div>
-                      <p className="text-deep-moss">Loading statistics...</p>
-                    </div>
-                  ) : stats.error ? (
-                    <div className="bg-ivory p-6 border-2 border-deep-moss text-center">
-                      <AlertCircle
-                        size={48}
-                        className="mx-auto mb-4 text-red-600"
-                      />
-                      <p className="text-lg font-bold text-deep-moss">
-                        Failed to load statistics
-                      </p>
-                      <p className="text-deep-moss">
-                        Please try refreshing the page
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 gap-4">
-                      <div className="bg-ivory p-4 border-2 border-deep-moss hover:shadow-brutal hover:-translate-y-0.5 transition-all">
-                        <h4 className="font-bold text-deep-moss text-sm sm:text-base">
-                          Total Users
-                        </h4>
-                        <p className="text-2xl sm:text-3xl font-black text-forest-green">
-                          {stats.users}
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-2xl font-bold text-deep-moss">
+                      Admin Controls
+                    </h3>
+                    <button
+                      onClick={async () => {
+                        try {
+                          const token = await getAuthToken();
+                          if (!token) {
+                            throw new Error('Not authenticated');
+                          }
+
+                          const response = await fetch(
+                            '/api/auth/set-admin-claims',
+                            {
+                              method: 'POST',
+                              headers: {
+                                Authorization: `Bearer ${token}`,
+                                'Content-Type': 'application/json',
+                              },
+                              body: JSON.stringify({}),
+                            }
+                          );
+
+                          if (!response.ok) {
+                            throw new Error(
+                              `Failed to set admin claims: ${response.status} ${response.statusText}`
+                            );
+                          }
+
+                          const data = await response.json();
+                          console.log('Admin claims set:', data);
+
+                          setToastMessage({
+                            type: 'success',
+                            message:
+                              'Admin claims set successfully. You may need to refresh the page.',
+                          });
+                        } catch (error) {
+                          console.error('Error setting admin claims:', error);
+                          setToastMessage({
+                            type: 'error',
+                            message:
+                              error instanceof Error
+                                ? error.message
+                                : 'Failed to set admin claims',
+                          });
+                        }
+                      }}
+                      className="bg-forest-green text-white px-4 py-2 font-bold border-2 border-deep-moss hover:shadow-[2px_2px_0px_0px_rgba(27,67,50,0.8)] transition-all"
+                    >
+                      Set Admin Claims
+                    </button>
+                  </div>
+
+                  <div className="bg-soft-sage border-2 md:border-4 border-deep-moss p-4 md:p-6 shadow-brutal mb-8">
+                    <h3 className="text-2xl font-bold mb-4 text-deep-moss">
+                      Platform Statistics
+                    </h3>
+                    {stats.loading ? (
+                      <div className="bg-ivory p-6 border-2 border-deep-moss text-center">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-deep-moss mx-auto mb-4"></div>
+                        <p className="text-deep-moss">Loading statistics...</p>
+                      </div>
+                    ) : stats.error ? (
+                      <div className="bg-ivory p-6 border-2 border-deep-moss text-center">
+                        <AlertCircle
+                          size={48}
+                          className="mx-auto mb-4 text-red-600"
+                        />
+                        <p className="text-lg font-bold text-deep-moss">
+                          Failed to load statistics
+                        </p>
+                        <p className="text-deep-moss">
+                          Please try refreshing the page
                         </p>
                       </div>
-                      <Link
-                        href="/admin-dashboard/organizations"
-                        className="block"
-                      >
+                    ) : (
+                      <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 gap-4">
                         <div className="bg-ivory p-4 border-2 border-deep-moss hover:shadow-brutal hover:-translate-y-0.5 transition-all">
                           <h4 className="font-bold text-deep-moss text-sm sm:text-base">
-                            Organizations
+                            Total Users
                           </h4>
                           <p className="text-2xl sm:text-3xl font-black text-forest-green">
-                            {stats.organizations}
+                            {stats.users}
                           </p>
                         </div>
-                      </Link>
-                      <div className="bg-ivory p-4 border-2 border-deep-moss hover:shadow-brutal hover:-translate-y-0.5 transition-all">
-                        <h4 className="font-bold text-deep-moss text-sm sm:text-base">
-                          Documents
-                        </h4>
-                        <p className="text-2xl sm:text-3xl font-black text-forest-green">
-                          {stats.documents}
-                        </p>
+                        <Link
+                          href="/admin-dashboard/organizations"
+                          className="block"
+                        >
+                          <div className="bg-ivory p-4 border-2 border-deep-moss hover:shadow-brutal hover:-translate-y-0.5 transition-all">
+                            <h4 className="font-bold text-deep-moss text-sm sm:text-base">
+                              Organizations
+                            </h4>
+                            <p className="text-2xl sm:text-3xl font-black text-forest-green">
+                              {stats.organizations}
+                            </p>
+                          </div>
+                        </Link>
+                        <div className="bg-ivory p-4 border-2 border-deep-moss hover:shadow-brutal hover:-translate-y-0.5 transition-all">
+                          <h4 className="font-bold text-deep-moss text-sm sm:text-base">
+                            Documents
+                          </h4>
+                          <p className="text-2xl sm:text-3xl font-black text-forest-green">
+                            {stats.documents}
+                          </p>
+                        </div>
+                        <div className="bg-ivory p-4 border-2 border-deep-moss hover:shadow-brutal hover:-translate-y-0.5 transition-all">
+                          <h4 className="font-bold text-deep-moss text-sm sm:text-base">
+                            Pending Orgs
+                          </h4>
+                          <p className="text-2xl sm:text-3xl font-black text-amber-500">
+                            {stats.pendingOrganizations}
+                          </p>
+                        </div>
+                        <div className="bg-ivory p-4 border-2 border-deep-moss hover:shadow-brutal hover:-translate-y-0.5 transition-all">
+                          <h4 className="font-bold text-deep-moss text-sm sm:text-base">
+                            Verified Docs
+                          </h4>
+                          <p className="text-2xl sm:text-3xl font-black text-forest-green">
+                            {stats.verifiedDocuments || 0}
+                          </p>
+                        </div>
+                        <div className="bg-ivory p-4 border-2 border-deep-moss hover:shadow-brutal hover:-translate-y-0.5 transition-all">
+                          <h4 className="font-bold text-deep-moss text-sm sm:text-base">
+                            Rejected Docs
+                          </h4>
+                          <p className="text-2xl sm:text-3xl font-black text-red-600">
+                            {stats.rejectedDocuments || 0}
+                          </p>
+                        </div>
                       </div>
-                      <div className="bg-ivory p-4 border-2 border-deep-moss hover:shadow-brutal hover:-translate-y-0.5 transition-all">
-                        <h4 className="font-bold text-deep-moss text-sm sm:text-base">
-                          Pending Orgs
-                        </h4>
-                        <p className="text-2xl sm:text-3xl font-black text-amber-500">
-                          {stats.pendingOrganizations}
-                        </p>
-                      </div>
-                      <div className="bg-ivory p-4 border-2 border-deep-moss hover:shadow-brutal hover:-translate-y-0.5 transition-all">
-                        <h4 className="font-bold text-deep-moss text-sm sm:text-base">
-                          Verified Docs
-                        </h4>
-                        <p className="text-2xl sm:text-3xl font-black text-forest-green">
-                          {stats.verifiedDocuments || 0}
-                        </p>
-                      </div>
-                      <div className="bg-ivory p-4 border-2 border-deep-moss hover:shadow-brutal hover:-translate-y-0.5 transition-all">
-                        <h4 className="font-bold text-deep-moss text-sm sm:text-base">
-                          Rejected Docs
-                        </h4>
-                        <p className="text-2xl sm:text-3xl font-black text-red-600">
-                          {stats.rejectedDocuments || 0}
-                        </p>
-                      </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </section>
 
                 <section className="bg-soft-sage border-2 md:border-4 border-deep-moss p-4 md:p-6 shadow-brutal">
@@ -506,6 +643,8 @@ export default function AdminDashboardPage() {
                   )}
                 </section>
               </>
+            ) : activeTab === 'audit' ? (
+              <VerificationAuditLog />
             ) : (
               <section className="bg-soft-sage border-2 md:border-4 border-deep-moss p-4 md:p-6 shadow-brutal">
                 <h3 className="text-2xl font-bold mb-4 text-deep-moss">

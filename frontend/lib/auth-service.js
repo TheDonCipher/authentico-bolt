@@ -53,7 +53,8 @@ const loginWithWallet = async (walletAddress) => {
 
         // Set cookies for server-side access
         try {
-          await fetch('/api/auth/set-cookies', {
+          console.log('Setting auth cookies with token and user data');
+          const cookieResponse = await fetch('/api/auth/set-cookies', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -61,6 +62,13 @@ const loginWithWallet = async (walletAddress) => {
               userData: data.user,
             }),
           });
+
+          if (!cookieResponse.ok) {
+            const errorData = await cookieResponse.json();
+            console.error('Error setting auth cookies:', errorData);
+          } else {
+            console.log('Auth cookies set successfully');
+          }
         } catch (cookieError) {
           console.error('Error setting auth cookies:', cookieError);
           // Continue even if cookie setting fails
@@ -194,7 +202,8 @@ const registerUser = async (walletAddress, userType, userData) => {
 
       // Set cookies for server-side access
       try {
-        await fetch('/api/auth/set-cookies', {
+        console.log('Setting auth cookies after registration');
+        const cookieResponse = await fetch('/api/auth/set-cookies', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -202,8 +211,21 @@ const registerUser = async (walletAddress, userType, userData) => {
             userData: loginData.user,
           }),
         });
+
+        if (!cookieResponse.ok) {
+          const errorData = await cookieResponse.json();
+          console.error(
+            'Error setting auth cookies after registration:',
+            errorData
+          );
+        } else {
+          console.log('Auth cookies set successfully after registration');
+        }
       } catch (cookieError) {
-        console.error('Error setting auth cookies:', cookieError);
+        console.error(
+          'Error setting auth cookies after registration:',
+          cookieError
+        );
         // Continue even if cookie setting fails
       }
 
@@ -246,22 +268,47 @@ const getUserData = async () => {
 
       // Set cookies for server-side access
       try {
-        const userData = await fetch('/api/auth/me', {
+        console.log('Fetching user data for cookie update');
+        const userDataResponse = await fetch('/api/auth/me', {
           headers: { Authorization: `Bearer ${token}` },
-        }).then((res) => res.json());
+        });
 
-        if (userData) {
-          await fetch('/api/auth/set-cookies', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              token,
-              userData,
-            }),
-          });
+        if (!userDataResponse.ok) {
+          console.error(
+            'Error fetching user data for cookies:',
+            userDataResponse.status
+          );
+        } else {
+          const userData = await userDataResponse.json();
+          console.log('User data fetched successfully for cookie update');
+
+          if (userData) {
+            console.log('Setting auth cookies in getUserData');
+            const cookieResponse = await fetch('/api/auth/set-cookies', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                token,
+                userData,
+              }),
+            });
+
+            if (!cookieResponse.ok) {
+              const errorData = await cookieResponse.json();
+              console.error(
+                'Error setting auth cookies in getUserData:',
+                errorData
+              );
+            } else {
+              console.log('Auth cookies set successfully in getUserData');
+            }
+          }
         }
       } catch (cookieError) {
-        console.error('Error setting auth cookies:', cookieError);
+        console.error(
+          'Error setting auth cookies in getUserData:',
+          cookieError
+        );
         // Continue even if cookie setting fails
       }
 

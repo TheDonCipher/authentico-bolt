@@ -11,6 +11,7 @@ const EncryptionService = require('../services/EncryptionService');
 const StorageService = require('../services/StorageService');
 const BlockchainService = require('../services/BlockchainService');
 const NotificationService = require('../services/NotificationService');
+const VerificationRequestService = require('../services/VerificationRequestService');
 const {
   isValidDocumentType,
   getDocumentTypeName,
@@ -364,6 +365,17 @@ router.post('/upload', verifyToken, parseMultipartForm, async (req, res) => {
           updatedAt: admin.firestore.FieldValue.serverTimestamp(),
         });
 
+        // Get the updated document data
+        const updatedDocSnapshot = await docRef.get();
+        const updatedDocData = updatedDocSnapshot.data();
+
+        // Create a verification request
+        const verificationRequestId =
+          await VerificationRequestService.createVerificationRequest(
+            docRef.id,
+            updatedDocData
+          );
+
         // Notify organization about pending verification
         await NotificationService.notifyPendingVerification(
           verifyingOrgId,
@@ -627,18 +639,14 @@ router.post('/:documentId/verify', verifyToken, async (req, res) => {
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       });
 
-      // Notify document owner
-      const ownerSnapshot = await usersCollection.doc(docData.ownerUid).get();
-      if (ownerSnapshot.exists) {
-        const ownerData = ownerSnapshot.data();
-        await NotificationService.notifyDocumentStatusChange(
-          docData.ownerUid,
-          ownerData.email,
-          documentId,
-          docData.documentName,
-          status
-        );
-      }
+      // Update verification request status
+      await VerificationRequestService.updateVerificationRequestStatus(
+        documentId,
+        status,
+        status === 'Rejected' ? rejectionReason : null
+      );
+
+      // Notify document owner (now handled by VerificationRequestService)
 
       res.json({
         documentId,

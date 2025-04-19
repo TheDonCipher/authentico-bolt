@@ -168,7 +168,6 @@ const AdminDashboard = () => {
             >
               AUTHENTICO
             </Link>
-            <h1 className="text-xl font-bold">Admin Dashboard</h1>
           </div>
           <div className="flex items-center">
             <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full border border-green-300 text-sm font-medium">

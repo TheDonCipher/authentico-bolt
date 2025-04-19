@@ -20,14 +20,25 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({
   const router = useRouter();
 
   useEffect(() => {
+    console.log('AuthGuard effect running');
+    console.log(
+      `Loading: ${loading}, User exists: ${!!user}, isLoadingOrgs: ${isLoadingOrgs}`
+    );
+    console.log(`Allowed user types: ${allowedUserTypes?.join(', ') || 'any'}`);
+    console.log(`Required org ID: ${requiredOrgId || 'none'}`);
+
     if (!loading && !user) {
       // User is not authenticated, redirect to login
+      console.log('User not authenticated, redirecting to home page');
       router.push('/');
       return;
     }
 
     // If still loading organizations, wait
-    if (loading || isLoadingOrgs) return;
+    if (loading || isLoadingOrgs) {
+      console.log('Still loading, waiting before making access decisions');
+      return;
+    }
 
     // Check user type permissions
     if (
@@ -36,12 +47,16 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({
       !allowedUserTypes.includes(user.userType) &&
       !isAdmin // Admins can access any page
     ) {
+      console.log(`User type ${user.userType} not allowed to access this page`);
       // User is authenticated but not allowed to access this page
       if (user.userType === 'individual') {
-        router.push('/individual-dashboard');
+        console.log('Redirecting to individual dashboard');
+        router.push(`/user/${user.uid}/dashboard`);
       } else if (user.userType === 'organization') {
-        router.push('/organization-dashboard');
+        console.log('Redirecting to organization dashboard');
+        router.push(`/org/${user.uid}/dashboard`);
       } else {
+        console.log('Redirecting to unauthorized page');
         router.push('/unauthorized');
       }
       return;
@@ -49,9 +64,15 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({
 
     // Check organization access if required
     if (user && requiredOrgId && !isAdmin) {
+      console.log(`Checking organization access for org ID: ${requiredOrgId}`);
       if (!hasOrgAccess(requiredOrgId)) {
+        console.log(
+          'User does not have access to this organization, redirecting to unauthorized page'
+        );
         router.push('/unauthorized');
         return;
+      } else {
+        console.log('User has access to this organization');
       }
     }
   }, [
@@ -66,6 +87,7 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({
   ]);
 
   if (loading || isLoadingOrgs) {
+    console.log('AuthGuard rendering loading state');
     return (
       <div className="flex items-center justify-center min-h-screen">
         <LoadingSpinner size={40} />
@@ -75,6 +97,7 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({
   }
 
   if (!user) {
+    console.log('AuthGuard rendering null - no user');
     return null; // Will redirect in the useEffect
   }
 
@@ -83,13 +106,17 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({
     !allowedUserTypes.includes(user.userType) &&
     !isAdmin
   ) {
+    console.log('AuthGuard rendering null - user type not allowed');
     return null; // Will redirect in the useEffect
   }
 
   // Check organization access if required
   if (requiredOrgId && !hasOrgAccess(requiredOrgId) && !isAdmin) {
+    console.log('AuthGuard rendering null - no org access');
     return null; // Will redirect in the useEffect
   }
+
+  console.log('AuthGuard rendering children - access granted');
 
   return <>{children}</>;
 };

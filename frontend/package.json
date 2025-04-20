@@ -5,13 +5,17 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "build:netlify": "npm install postcss-import postcss-nesting && next build",
+    "build:netlify": "npm install postcss-import postcss-nesting tailwindcss-animate && next build",
+    "build:vercel": "npm install postcss-import postcss-nesting tailwindcss-animate && next build",
     "start": "next start",
     "lint": "next lint",
     "test": "jest --passWithNoTests",
     "test:watch": "jest --watch",
     "cypress:open": "cypress open",
-    "cypress:run": "cypress run"
+    "cypress:run": "cypress run",
+    "prepare:deploy": "npm install postcss-import postcss-nesting tailwindcss-animate",
+    "install:postcss-deps": "node scripts/install-postcss-deps.js",
+    "verify:deployment": "node scripts/verify-deployment.js"
   },
   "dependencies": {
     "@radix-ui/react-tabs": "^1.1.4",

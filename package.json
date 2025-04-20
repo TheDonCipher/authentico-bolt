@@ -37,7 +37,10 @@
     "deploy:vercel": "powershell -File scripts/deploy.ps1 -Environment prod -Target vercel -Build -Deploy",
     "deploy:render": "powershell -File scripts/deploy.ps1 -Environment prod -Target render -Build",
     "deploy:docker": "powershell -File scripts/deploy.ps1 -Environment prod -Target docker -Build -Deploy",
-    "deploy:build": "powershell -File scripts/deploy.ps1 -Environment prod -Build"
+    "deploy:build": "powershell -File scripts/deploy.ps1 -Environment prod -Build",
+    "install:postcss-deps": "node scripts/install-postcss-deps.js",
+    "verify:deployment": "node scripts/verify-deployment.js",
+    "prepare:deploy": "npm run validate:env:prod && npm run install:postcss-deps && npm run verify:deployment && npm run build"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.6.2",

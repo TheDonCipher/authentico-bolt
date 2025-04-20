@@ -60,6 +60,7 @@ npm run deploy:vercel
 3. Click "New Project" and import your repository.
 
 4. Configure the project:
+
    - Framework Preset: "Next.js"
    - Root Directory: "frontend"
    - Build Command: "npm run build"
@@ -104,6 +105,7 @@ npm run deploy:docker
 #### Manual Deployment
 
 1. Ensure your environment files are set up:
+
    ```bash
    cp frontend/.env.production frontend/.env
    cp backend/.env.production backend/.env
@@ -112,11 +114,13 @@ npm run deploy:docker
 2. Edit the `.env` files with your actual production values.
 
 3. Build the Docker images:
+
    ```bash
    docker-compose build
    ```
 
 4. Start the services:
+
    ```bash
    docker-compose up -d
    ```
@@ -134,6 +138,9 @@ The project includes deployment scripts to simplify the deployment process:
 - `npm run deploy:render` - Prepare backend for Render deployment
 - `npm run deploy:docker` - Deploy using Docker
 - `npm run deploy:build` - Build the application for production
+- `npm run install:postcss-deps` - Install required PostCSS dependencies
+- `npm run verify:deployment` - Verify deployment configuration
+- `npm run prepare:deploy` - Prepare for deployment (validates env, installs deps, verifies config)
 
 For Windows users, these scripts use PowerShell. For Linux/Mac users, use the bash script:
 
@@ -161,6 +168,16 @@ After deploying, verify that:
 - Check the Vercel deployment logs for errors
 - Verify that the `NEXT_PUBLIC_API_URL` is correct and accessible
 - Check browser console for JavaScript errors
+- If you encounter PostCSS-related errors during build, run:
+  ```bash
+  # From the project root
+  npm run install:postcss-deps
+  ```
+- For Next.js build errors, ensure all required dependencies are installed:
+  ```bash
+  cd frontend
+  npm install postcss-import postcss-nesting tailwindcss-animate
+  ```
 
 ### Backend Issues
 
@@ -176,5 +193,6 @@ After deploying, verify that:
 - Check that the environment variables are correctly set in the `.env` files
 
 For more detailed information, refer to:
+
 - [DEPLOYMENT.md](DEPLOYMENT.md) - Detailed deployment guide
 - [DOCKER_DEPLOYMENT.md](DOCKER_DEPLOYMENT.md) - Docker-specific deployment guide

@@ -1,6 +1,7 @@
 [build]
   publish = ".next"
   command = "npm run build:netlify"
+  ignore_warnings = true
 
 [build.environment]
   NODE_VERSION = "18"

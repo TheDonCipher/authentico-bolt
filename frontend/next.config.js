@@ -13,38 +13,7 @@ const nextConfig = {
     // Fixes node polyfills
     config.resolve.fallback = { fs: false, net: false, tls: false };
 
-    // Fix for PostCSS plugins issue
-    const oneOfRule = config.module.rules.find(
-      (rule) => typeof rule.oneOf === 'object'
-    );
-    if (oneOfRule) {
-      const cssModuleRules = oneOfRule.oneOf.filter(
-        (rule) => rule.test && rule.test.toString().includes('css')
-      );
-      if (cssModuleRules.length > 0) {
-        cssModuleRules.forEach((rule) => {
-          if (rule.use && Array.isArray(rule.use)) {
-            const postcssLoader = rule.use.find(
-              (loader) =>
-                loader.loader && loader.loader.includes('postcss-loader')
-            );
-            if (
-              postcssLoader &&
-              postcssLoader.options &&
-              postcssLoader.options.postcssOptions
-            ) {
-              postcssLoader.options.postcssOptions.config = false;
-              postcssLoader.options.postcssOptions.plugins = [
-                require('postcss-import'),
-                require('tailwindcss/nesting'),
-                require('tailwindcss'),
-                require('autoprefixer'),
-              ];
-            }
-          }
-        });
-      }
-    }
+    // We'll use postcss.config.js instead of inline configuration
 
     return config;
   },

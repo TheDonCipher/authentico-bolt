@@ -3,7 +3,13 @@ import { auth } from '../../../../../lib/firebase-admin-server';
 import axios from 'axios';
 
 // Get the API URL from environment variables
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
+// Remove '/api' from the end if it exists to avoid duplication
+let API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
+if (API_URL.endsWith('/api')) {
+  API_URL = API_URL;
+} else {
+  API_URL = `${API_URL}/api`;
+}
 console.log('Using API URL for document secure-details:', API_URL);
 
 export async function GET(
@@ -66,19 +72,16 @@ export async function GET(
 
       // Forward the request to the backend
       try {
-        console.log(
-          `Making request to backend: ${API_URL}/documents/${id}/secure-details`
-        );
+        // Construct the backend URL correctly
+        const backendUrl = `${API_URL}/documents/${id}/secure-details`;
+        console.log(`Making request to backend: ${backendUrl}`);
 
-        const response = await axios.get(
-          `${API_URL}/documents/${id}/secure-details`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-            timeout: 10000, // 10 second timeout
-          }
-        );
+        const response = await axios.get(backendUrl, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          timeout: 15000, // 15 second timeout
+        });
 
         console.log('Backend secure document details response received');
         console.log('Response status:', response.status);
@@ -119,14 +122,16 @@ export async function GET(
       // Try the backend as a fallback
       try {
         console.log('Falling back to direct backend request');
-        const response = await axios.get(
-          `${API_URL}/documents/${id}/secure-details`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+        // Construct the backend URL correctly
+        const backendUrl = `${API_URL}/documents/${id}/secure-details`;
+        console.log(`Making fallback request to backend: ${backendUrl}`);
+
+        const response = await axios.get(backendUrl, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          timeout: 15000, // 15 second timeout
+        });
 
         return NextResponse.json(response.data);
       } catch (backendError: any) {

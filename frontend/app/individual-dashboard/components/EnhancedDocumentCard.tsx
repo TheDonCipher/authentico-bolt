@@ -102,50 +102,88 @@ export const EnhancedDocumentCard = ({
 
       console.log(`Fetching document details for ID: ${docId}`);
 
-      // Add timeout to the request to prevent hanging
-      const response = await axios.get(
-        `/api/documents/${docId}/secure-details`,
-        {
-          headers: {
-            Authorization: `Bearer ${idToken}`,
-          },
-          timeout: 15000, // 15 second timeout
-        }
-      );
+      try {
+        // Add timeout to the request to prevent hanging
+        const response = await axios.get(
+          `/api/documents/${docId}/secure-details`,
+          {
+            headers: {
+              Authorization: `Bearer ${idToken}`,
+            },
+            timeout: 15000, // 15 second timeout
+          }
+        );
 
-      console.log('Document details response:', response.status, response.data);
+        console.log(
+          'Document details response:',
+          response.status,
+          response.data
+        );
 
-      if (response.data && response.data.decryptedFile) {
-        // Use document name from response if available, otherwise fallback to local data
-        const docName =
-          response.data.documentName ||
-          documentName ||
-          getDocumentTypeName(doc.documentType);
-        const mimeType = response.data.mimeType || 'application/octet-stream';
+        if (response.data && response.data.decryptedFile) {
+          // Use document name from response if available, otherwise fallback to local data
+          const docName =
+            response.data.documentName ||
+            documentName ||
+            getDocumentTypeName(doc.documentType);
+          const mimeType = response.data.mimeType || 'application/octet-stream';
 
-        if (downloadOnly) {
-          // Create a download link and trigger it
-          const link = document.createElement('a');
-          link.href = `data:${mimeType};base64,${response.data.decryptedFile}`;
-          link.download = `${docName}.${mimeType.split('/')[1] || 'file'}`;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
+          if (downloadOnly) {
+            // Create a download link and trigger it
+            const link = document.createElement('a');
+            link.href = `data:${mimeType};base64,${response.data.decryptedFile}`;
+            link.download = `${docName}.${mimeType.split('/')[1] || 'file'}`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
 
-          setToastMessage({
-            type: 'success',
-            message: 'Document download started',
-          });
+            setToastMessage({
+              type: 'success',
+              message: 'Document download started',
+            });
+          } else {
+            setDocumentData({
+              data: response.data.decryptedFile,
+              mimeType: mimeType,
+              name: docName,
+            });
+            setShowDocument(true);
+          }
         } else {
-          setDocumentData({
-            data: response.data.decryptedFile,
-            mimeType: mimeType,
-            name: docName,
-          });
-          setShowDocument(true);
+          throw new Error('Invalid document data received from server');
         }
-      } else {
-        throw new Error('Invalid document data received from server');
+      } catch (apiError) {
+        console.error('Error with primary API, trying fallback:', apiError);
+
+        // Try the fallback API
+        try {
+          const fallbackResponse = await axios.get(
+            `/api/documents/${docId}/fallback-view`,
+            {
+              headers: {
+                Authorization: `Bearer ${idToken}`,
+              },
+              timeout: 15000,
+            }
+          );
+
+          if (fallbackResponse.data && fallbackResponse.data.fallback) {
+            // This is a fallback response without document content
+            setToastMessage({
+              type: 'warning',
+              message:
+                'Document content unavailable. Please try again later or contact support.',
+            });
+            return;
+          }
+        } catch (fallbackError) {
+          console.error('Fallback API also failed:', fallbackError);
+          // Continue to the main error handler
+          throw apiError;
+        }
+
+        // If we get here, both APIs failed
+        throw apiError;
       }
     } catch (error: any) {
       console.error('Error viewing document:', error);

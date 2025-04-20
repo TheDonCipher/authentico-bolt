@@ -7,6 +7,25 @@
   },
   "rewrites": [
     {
+      "source": "/api/documents/:id/secure-details",
+      "destination": "$NEXT_PUBLIC_API_URL/documents/:id/secure-details"
+    },
+    {
+      "source": "/api/documents/:path*",
+      "destination": "$NEXT_PUBLIC_API_URL/documents/:path*"
+    },
+    {
+      "source": "/api/:path*",
+      "has": [
+        {
+          "type": "header",
+          "key": "x-skip-rewrite",
+          "value": "true"
+        }
+      ],
+      "destination": "/api/:path*"
+    },
+    {
       "source": "/api/:path*",
       "destination": "$NEXT_PUBLIC_API_URL/:path*"
     }

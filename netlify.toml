@@ -1,0 +1,25 @@
+[build]
+  base = "frontend"
+  publish = ".next"
+  command = "npm run build:netlify"
+
+[build.environment]
+  NODE_VERSION = "18"
+  NPM_VERSION = "9"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    X-Frame-Options = "DENY"
+    X-XSS-Protection = "1; mode=block"
+
+# Handle rewrites for API
+[[redirects]]
+  from = "/api/*"
+  to = ":NEXT_PUBLIC_API_URL/:splat"
+  status = 200
+  force = true

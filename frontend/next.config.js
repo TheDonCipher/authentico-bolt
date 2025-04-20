@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Enable font optimization
-  optimizeFonts: true,
+  // Netlify specific settings
+  swcMinify: true,
   transpilePackages: ['thirdweb', 'firebase'],
   webpack: (config) => {
     // Fixes wallet connect dependency issue
@@ -36,10 +36,10 @@ const nextConfig = {
             ) {
               postcssLoader.options.postcssOptions.config = false;
               postcssLoader.options.postcssOptions.plugins = [
-                'postcss-import',
-                'tailwindcss/nesting',
-                'tailwindcss',
-                'autoprefixer',
+                require('postcss-import'),
+                require('tailwindcss/nesting'),
+                require('tailwindcss'),
+                require('autoprefixer'),
               ];
             }
           }

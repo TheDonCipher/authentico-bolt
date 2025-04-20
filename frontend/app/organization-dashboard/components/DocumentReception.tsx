@@ -12,12 +12,16 @@ import {
   orderBy,
   Timestamp,
   getDocs,
+  getFirestore,
+  doc,
+  getDoc,
+  updateDoc,
 } from 'firebase/firestore';
 import axios from 'axios';
 import { getAuthToken } from '../../../lib/token-util';
 import { Toast } from '../../components/ui/Toast';
 import { useAuth } from '../../contexts/AuthContext';
-import { DocumentViewer } from '../../components/document/DocumentViewer';
+import DocumentViewerModal from './DocumentViewerModal';
 
 interface Document {
   id: string;
@@ -33,6 +37,7 @@ interface Document {
 const DocumentReception: React.FC = () => {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [viewingDocument, setViewingDocument] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<{
     type: 'success' | 'error';
@@ -51,6 +56,18 @@ const DocumentReception: React.FC = () => {
     }
 
     setLoading(true);
+
+    // Check if we have a document ID to view from localStorage
+    const viewDocId =
+      typeof window !== 'undefined'
+        ? localStorage.getItem('viewDocumentId')
+        : null;
+    if (viewDocId) {
+      // Clear it immediately to prevent it from being used again
+      localStorage.removeItem('viewDocumentId');
+      // Set the viewing document
+      setViewingDocument(viewDocId);
+    }
 
     // Query documents where this organization is the verifying organization
     const documentsRef = collection(db, 'documents');
@@ -83,20 +100,22 @@ const DocumentReception: React.FC = () => {
         console.error('Error fetching documents:', error);
         setToastMessage({
           type: 'error',
-          message: 'Failed to load documents',
+          message: 'Failed to load documents. Please refresh the page.',
         });
+        // Set empty documents array to avoid showing stale data
+        setDocuments([]);
         setLoading(false);
       }
     );
 
     // Set up notification listener for new verification requests
+    // Using a simpler query to avoid index requirements
     const notificationsRef = collection(db, 'notifications');
     const notificationQuery = query(
       notificationsRef,
       where('userId', '==', user.uid),
-      where('read', '==', false),
-      where('title', '==', 'New Verification Request'),
-      orderBy('createdAt', 'desc')
+      where('read', '==', false)
+      // Removed the title filter and orderBy to avoid index requirements
     );
 
     const notificationUnsubscribe = onSnapshot(
@@ -119,8 +138,66 @@ const DocumentReception: React.FC = () => {
     };
   }, [user]);
 
-  const handleVerifyDocument = async (documentId: string, action: 'Verified' | 'Rejected') => {
+  const handleDownloadDocument = async (documentId: string) => {
     try {
+      setIsLoading(true);
+      const idToken = await getAuthToken();
+      if (!idToken) {
+        throw new Error('Not authenticated');
+      }
+
+      // Fetch document details from API
+      const response = await axios.get(
+        `/api/documents/${documentId}/secure-details`,
+        {
+          headers: {
+            Authorization: `Bearer ${idToken}`,
+          },
+        }
+      );
+
+      if (response.data && response.data.decryptedFile) {
+        // Create a download link and trigger it
+        const link = document.createElement('a');
+        link.href = `data:${
+          response.data.mimeType || 'application/octet-stream'
+        };base64,${response.data.decryptedFile}`;
+        link.download = `${response.data.documentName || 'document'}.${
+          (response.data.mimeType || 'application/octet-stream').split(
+            '/'
+          )[1] || 'file'
+        }`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        setToastMessage({
+          type: 'success',
+          message: 'Document download started',
+        });
+      } else {
+        throw new Error('Invalid document data received from server');
+      }
+    } catch (error) {
+      console.error('Error downloading document:', error);
+      setToastMessage({
+        type: 'error',
+        message:
+          error instanceof Error
+            ? error.message
+            : 'Failed to download document',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleVerifyDocument = async (
+    documentId: string,
+    action: 'Verified' | 'Rejected'
+  ) => {
+    try {
+      setIsLoading(true);
       const idToken = await getAuthToken();
       if (!idToken) {
         throw new Error('Not authenticated');
@@ -129,7 +206,8 @@ const DocumentReception: React.FC = () => {
       // Get rejection reason if rejecting
       let rejectionReason = '';
       if (action === 'Rejected') {
-        rejectionReason = prompt('Please provide a reason for rejection:') || '';
+        rejectionReason =
+          prompt('Please provide a reason for rejection:') || '';
         if (!rejectionReason) {
           setToastMessage({
             type: 'error',
@@ -139,12 +217,40 @@ const DocumentReception: React.FC = () => {
         }
       }
 
-      // Call API to verify/reject document
+      // Get the document from Firestore first to ensure we have the latest data
+      const db = getFirestore();
+      const docRef = doc(db, 'documents', documentId);
+      const docSnap = await getDoc(docRef);
+
+      if (!docSnap.exists()) {
+        throw new Error('Document not found');
+      }
+
+      // Normalize status to lowercase for consistency
+      const normalizedStatus = action === 'Verified' ? 'verified' : 'rejected';
+
+      // Update the document status in Firestore directly
+      await updateDoc(docRef, {
+        status: normalizedStatus,
+        ...(normalizedStatus === 'verified'
+          ? {
+              verifiedAt: new Date(),
+              verifiedBy: user?.uid,
+            }
+          : {
+              rejectedAt: new Date(),
+              rejectedBy: user?.uid,
+              rejectionReason: rejectionReason,
+            }),
+      });
+
+      // Call API to verify/reject document (for blockchain anchoring)
       await axios.post(
         `/api/documents/${documentId}/verify`,
         {
-          status: action,
-          rejectionReason: action === 'Rejected' ? rejectionReason : '',
+          status: normalizedStatus,
+          rejectionReason:
+            normalizedStatus === 'rejected' ? rejectionReason : '',
         },
         {
           headers: {
@@ -155,7 +261,7 @@ const DocumentReception: React.FC = () => {
 
       setToastMessage({
         type: 'success',
-        message: `Document ${action === 'Verified' ? 'verified' : 'rejected'} successfully`,
+        message: `Document ${normalizedStatus} successfully`,
       });
     } catch (error) {
       console.error('Error verifying document:', error);
@@ -163,6 +269,8 @@ const DocumentReception: React.FC = () => {
         type: 'error',
         message: `Failed to ${action.toLowerCase()} document`,
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -177,22 +285,26 @@ const DocumentReception: React.FC = () => {
   };
 
   const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'Verified':
+    // Normalize status to lowercase for consistency
+    const normalizedStatus = status?.toLowerCase() || '';
+
+    switch (normalizedStatus) {
+      case 'verified':
         return (
           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-300">
             <Check className="inline-block mr-1" size={12} />
             Verified
           </span>
         );
-      case 'Rejected':
+      case 'rejected':
         return (
           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 border border-red-300">
             <X className="inline-block mr-1" size={12} />
             Rejected
           </span>
         );
-      case 'Pending Verification':
+      case 'pending':
+      case 'pending verification':
         return (
           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 border border-yellow-300">
             <Clock className="inline-block mr-1" size={12} />
@@ -203,7 +315,7 @@ const DocumentReception: React.FC = () => {
         return (
           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 border border-gray-300">
             <FileText className="inline-block mr-1" size={12} />
-            {status}
+            {status || 'Unknown'}
           </span>
         );
     }
@@ -232,8 +344,9 @@ const DocumentReception: React.FC = () => {
         </h2>
         <div className="bg-yellow-50 border-2 border-yellow-200 p-4 mb-6">
           <p className="text-yellow-800">
-            Your organization needs to be verified before you can receive documents for verification.
-            Please complete the verification process.
+            Your organization needs to be verified before you can receive
+            documents for verification. Please complete the verification
+            process.
           </p>
         </div>
       </div>
@@ -242,7 +355,10 @@ const DocumentReception: React.FC = () => {
 
   return (
     <div className="bg-[#E8EDE1] border-4 border-[#556B2F] p-6 shadow-brutal">
-      <h2 className="text-2xl font-bold mb-6 text-[#2F4F4F]" id="document-reception">
+      <h2
+        className="text-2xl font-bold mb-6 text-[#2F4F4F]"
+        id="document-reception"
+      >
         Document Reception
       </h2>
 
@@ -253,7 +369,8 @@ const DocumentReception: React.FC = () => {
             No documents received yet
           </p>
           <p className="text-[#2F4F4F]">
-            When users submit documents for your organization to verify, they will appear here.
+            When users submit documents for your organization to verify, they
+            will appear here.
           </p>
         </div>
       ) : (
@@ -305,23 +422,57 @@ const DocumentReception: React.FC = () => {
                       >
                         <Eye size={16} />
                       </button>
+                      <button
+                        onClick={() => handleDownloadDocument(doc.id)}
+                        disabled={isLoading}
+                        className="bg-[#D2E3C8] text-[#2F4F4F] p-2 border border-[#556B2F] hover:shadow-[1px_1px_0px_0px_rgba(85,107,47,0.8)] transition-all"
+                        title="Download Document"
+                      >
+                        <Download size={16} />
+                      </button>
                       {doc.status === 'Pending Verification' && (
                         <>
                           <button
-                            onClick={() => handleVerifyDocument(doc.id, 'Verified')}
+                            onClick={() =>
+                              handleVerifyDocument(doc.id, 'Verified')
+                            }
                             className="bg-[#698B69] text-white p-2 border border-[#556B2F] hover:shadow-[1px_1px_0px_0px_rgba(85,107,47,0.8)] transition-all"
                             title="Verify Document"
                           >
                             <Check size={16} />
                           </button>
                           <button
-                            onClick={() => handleVerifyDocument(doc.id, 'Rejected')}
+                            onClick={() =>
+                              handleVerifyDocument(doc.id, 'Rejected')
+                            }
                             className="bg-[#E6B8AF] text-[#2F4F4F] p-2 border border-[#556B2F] hover:shadow-[1px_1px_0px_0px_rgba(85,107,47,0.8)] transition-all"
                             title="Reject Document"
                           >
                             <X size={16} />
                           </button>
                         </>
+                      )}
+                      {doc.status === 'Verified' && (
+                        <button
+                          onClick={() =>
+                            handleVerifyDocument(doc.id, 'Rejected')
+                          }
+                          className="bg-[#E6B8AF] text-[#2F4F4F] p-2 border border-[#556B2F] hover:shadow-[1px_1px_0px_0px_rgba(85,107,47,0.8)] transition-all"
+                          title="Revoke Verification"
+                        >
+                          <X size={16} />
+                        </button>
+                      )}
+                      {doc.status === 'Rejected' && (
+                        <button
+                          onClick={() =>
+                            handleVerifyDocument(doc.id, 'Verified')
+                          }
+                          className="bg-[#698B69] text-white p-2 border border-[#556B2F] hover:shadow-[1px_1px_0px_0px_rgba(85,107,47,0.8)] transition-all"
+                          title="Approve Document"
+                        >
+                          <Check size={16} />
+                        </button>
                       )}
                     </div>
                   </td>
@@ -334,7 +485,7 @@ const DocumentReception: React.FC = () => {
 
       {/* Document Viewer Modal */}
       {viewingDocument && (
-        <DocumentViewer
+        <DocumentViewerModal
           documentId={viewingDocument}
           onClose={() => setViewingDocument(null)}
         />

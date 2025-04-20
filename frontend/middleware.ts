@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 // Define protected routes patterns
-const individualProtectedRoutes = ['/individual-dashboard']; // Now a demo page
-const organizationProtectedRoutes = ['/organization-dashboard']; // Now a demo page
+const individualProtectedRoutes = ['/individual-dashboard']; // Individual dashboard
+const organizationProtectedRoutes = ['/organization-dashboard']; // Organization dashboard
 const userSpecificRoutes = [
   '/user/:userId/dashboard',
   '/user/:userId/documents',
@@ -12,8 +12,12 @@ const orgSpecificRoutes = [
   '/org/:orgId/dashboard',
   '/org/:orgId/documents',
   '/org/:orgId/settings',
+  '/org/:orgId/verification',
 ];
-const adminProtectedRoutes = ['/admin-dashboard'];
+const adminProtectedRoutes = [
+  '/admin-dashboard',
+  '/admin-dashboard/organizations',
+];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -27,7 +31,11 @@ export async function middleware(request: NextRequest) {
   console.log(`User data cookie exists: ${!!userDataCookie}`);
 
   // Parse user data if available
-  let userData = null;
+  let userData: {
+    userType?: string;
+    uid?: string;
+    walletAddress?: string;
+  } | null = null;
   try {
     if (userDataCookie) {
       userData = JSON.parse(userDataCookie);
@@ -79,7 +87,7 @@ export async function middleware(request: NextRequest) {
   );
 
   // Extract orgId from path if it's an org-specific route
-  let orgId = null;
+  let orgId: string | null = null;
   if (isOrgSpecificRoute) {
     const pathParts = pathname.split('/');
     const orgIdIndex = pathParts.findIndex((part) => part === 'org') + 1;
@@ -89,7 +97,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // Extract userId from path if it's a user-specific route
-  let pathUserId = null;
+  let pathUserId: string | null = null;
   if (isUserSpecificRoute) {
     const pathParts = pathname.split('/');
     const userIdIndex = pathParts.findIndex((part) => part === 'user') + 1;
@@ -101,10 +109,16 @@ export async function middleware(request: NextRequest) {
   // Redirect logic
   if (!isAuthenticated) {
     // If not authenticated and trying to access protected route, redirect to login
-    if (isUserSpecificRoute || isOrgSpecificRoute || isAdminProtected) {
+    if (
+      isUserSpecificRoute ||
+      isOrgSpecificRoute ||
+      isAdminProtected ||
+      isIndividualProtected ||
+      isOrganizationProtected
+    ) {
+      console.log('Redirecting unauthenticated user to home page');
       return NextResponse.redirect(new URL('/', request.url));
     }
-    // Allow access to demo pages even when not authenticated
   } else {
     // User is authenticated, check for proper authorization
     const userType = userData?.userType;
@@ -122,6 +136,21 @@ export async function middleware(request: NextRequest) {
 
     if (isAdminProtected && !isAdmin) {
       // Redirect non-admins to 403 page
+      console.log('Redirecting non-admin user from admin dashboard');
+      return NextResponse.redirect(new URL('/unauthorized', request.url));
+    }
+
+    // For individual dashboard, check if user is individual or admin
+    if (isIndividualProtected && userType !== 'individual' && !isAdmin) {
+      console.log('Redirecting non-individual user from individual dashboard');
+      return NextResponse.redirect(new URL('/unauthorized', request.url));
+    }
+
+    // For organization dashboard, check if user is organization or admin
+    if (isOrganizationProtected && userType !== 'organization' && !isAdmin) {
+      console.log(
+        'Redirecting non-organization user from organization dashboard'
+      );
       return NextResponse.redirect(new URL('/unauthorized', request.url));
     }
 

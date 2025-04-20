@@ -25,6 +25,15 @@
   --sap-green: #66bb6a;
   --burnt-sienna: #d84315;
   --sky-blue: #81d4fa;
+
+  /* Extended Palette for UI Enhancements */
+  --deep-forest: #1b5e20;
+  --light-sage: #e8f5e9;
+  --warm-ivory: #fff8e1;
+  --deep-sienna: #bf360c;
+  --golden-yellow: #ffd600;
+  --mint-green: #b9f6ca;
+  --lavender-blue: #b39ddb;
 }
 
 @media (prefers-color-scheme: dark) {

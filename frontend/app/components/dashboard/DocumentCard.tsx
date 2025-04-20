@@ -129,7 +129,27 @@ export const DocumentCard = ({
   };
 
   return (
-    <div className="bg-ivory p-4 md:p-6 border-2 md:border-4 border-deep-moss hover:shadow-[4px_4px_0px_0px_rgba(27,67,50,0.8)] md:hover:shadow-[8px_8px_0px_0px_rgba(27,67,50,0.8)] transition-all flex flex-col h-full">
+    <div className="bg-ivory p-4 md:p-6 border-2 md:border-4 border-deep-moss hover:shadow-[4px_4px_0px_0px_rgba(27,67,50,0.8)] md:hover:shadow-[8px_8px_0px_0px_rgba(27,67,50,0.8)] transition-all flex flex-col h-full relative transform hover:-rotate-1">
+      {/* Document corner fold */}
+      <div className="absolute top-0 right-0 w-0 h-0 border-t-[20px] md:border-t-[30px] border-r-[20px] md:border-r-[30px] border-t-deep-moss border-r-deep-moss">
+        <div className="absolute top-[-20px] md:top-[-30px] right-[-20px] md:right-[-30px] w-0 h-0 border-b-[18px] md:border-b-[28px] border-l-[18px] md:border-l-[28px] border-b-soft-sage border-l-soft-sage"></div>
+      </div>
+
+      {/* Document stamp - only for verified documents */}
+      {doc.status === 'Verified' && (
+        <div className="absolute top-2 right-8 transform rotate-12 opacity-80">
+          <div className="w-16 h-16 md:w-20 md:h-20 rounded-full border-2 border-deep-moss bg-sap-green bg-opacity-20 flex items-center justify-center">
+            <div className="text-center transform -rotate-12">
+              <div className="text-xs md:text-sm font-bold text-deep-moss">
+                VERIFIED
+              </div>
+              <div className="text-[8px] md:text-[10px] text-deep-moss">
+                {new Date(doc.updatedAt || Date.now()).toLocaleDateString()}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Header with document name and status */}
       <div className="flex justify-between items-start mb-3">
         <div className="overflow-hidden">
@@ -355,9 +375,30 @@ export const DocumentCard = ({
       {/* Loading Indicator */}
       {isLoading && (
         <div className="fixed inset-0 z-50 bg-black bg-opacity-30 flex items-center justify-center">
-          <div className="bg-white p-4 rounded-md shadow-md">
-            <div className="animate-spin h-8 w-8 border-4 border-forest-green border-t-transparent rounded-full mx-auto"></div>
-            <p className="mt-2 text-center text-deep-moss">Loading...</p>
+          <div className="bg-ivory p-6 border-4 border-deep-moss shadow-[8px_8px_0px_0px_rgba(27,67,50,0.8)]">
+            <div className="flex flex-col items-center">
+              <div className="relative w-16 h-16">
+                {[0, 1, 2].map((index) => (
+                  <div
+                    key={index}
+                    className="absolute top-0 left-0 w-full h-full border-4 border-deep-moss animate-pulse"
+                    style={{
+                      rotate: `${index * 15}deg`,
+                      backgroundColor:
+                        index === 0
+                          ? 'var(--soft-sage)'
+                          : index === 1
+                          ? 'var(--ivory)'
+                          : 'var(--stone-gray)',
+                      animationDelay: `${index * 0.2}s`,
+                    }}
+                  />
+                ))}
+              </div>
+              <p className="mt-4 text-center font-bold text-deep-moss">
+                Loading Document...
+              </p>
+            </div>
           </div>
         </div>
       )}

@@ -57,7 +57,7 @@ export const DocumentUploadDialog = ({
       }
 
       // Ensure we have unique organizations by ID
-      const uniqueOrgs = [];
+      const uniqueOrgs: any[] = [];
       const orgIds = new Set();
 
       organizations.forEach((org) => {
@@ -191,7 +191,8 @@ export const DocumentUploadDialog = ({
       // Log form data for debugging in development
       if (process.env.NODE_ENV === 'development') {
         console.log('Form data entries:');
-        for (const pair of formData.entries()) {
+        // Convert entries to array first to avoid TypeScript iteration issues
+        Array.from(formData.entries()).forEach((pair) => {
           console.log(
             `- ${pair[0]}: ${
               pair[1] instanceof File
@@ -199,26 +200,36 @@ export const DocumentUploadDialog = ({
                 : pair[1]
             }`
           );
-        }
+        });
       }
 
       // Use the uploadDocument function from api-client.js which is specifically designed for file uploads
-      const response = await uploadDocument(formData, (percentCompleted) => {
-        setUploadProgress(percentCompleted);
-      });
+      try {
+        const response = await uploadDocument(formData, (percentCompleted) => {
+          setUploadProgress(percentCompleted);
+        });
 
-      // Ensure we maintain authentication state
-      const currentUser = user;
+        // Ensure we maintain authentication state
+        const currentUser = user;
 
-      // Call success callback and close dialog
-      onSuccess();
-      onClose();
+        // Call success callback and close dialog
+        onSuccess();
+        onClose();
 
-      // Verify authentication state is maintained
-      if (!user && currentUser) {
-        console.error('Authentication state lost after document upload');
-        // Attempt to restore session
-        window.location.reload();
+        // Verify authentication state is maintained
+        if (!user && currentUser) {
+          console.error('Authentication state lost after document upload');
+          // Attempt to restore session
+          window.location.reload();
+        }
+      } catch (uploadError) {
+        console.error('Error in document upload:', uploadError);
+        setError(
+          uploadError.response?.data?.message ||
+            uploadError.message ||
+            'Failed to upload document. Please try again.'
+        );
+        throw uploadError; // Re-throw to be caught by the outer catch block
       }
     } catch (error: any) {
       console.error('Document upload error in component:', error.message);
@@ -383,16 +394,55 @@ export const DocumentUploadDialog = ({
               <p className="text-deep-moss mb-1 font-bold">
                 Uploading: {uploadProgress}%
               </p>
-              <div className="w-full bg-soft-sage h-2 border border-deep-moss">
+              <div className="w-full bg-soft-sage h-4 border-2 border-deep-moss relative overflow-hidden">
                 <div
-                  className="bg-forest-green h-full"
+                  className="bg-forest-green h-full transition-all duration-300 ease-out flex items-center justify-center"
                   style={{ width: `${uploadProgress}%` }}
-                ></div>
+                >
+                  {uploadProgress > 30 && (
+                    <span className="text-xs text-ivory font-bold">
+                      {uploadProgress}%
+                    </span>
+                  )}
+                </div>
+                {/* Animated document icon */}
+                {uploadProgress < 100 && (
+                  <div
+                    className="absolute top-0 h-full aspect-square bg-forest-green border-r-2 border-deep-moss flex items-center justify-center animate-pulse"
+                    style={{
+                      left: `${Math.min(Math.max(uploadProgress - 5, 0), 95)}%`,
+                    }}
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="12"
+                      height="12"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="text-ivory"
+                    >
+                      <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
+                      <polyline points="14 2 14 8 20 8" />
+                    </svg>
+                  </div>
+                )}
               </div>
-              <p className="text-sm text-deep-moss mt-1">
-                {uploadProgress < 100
-                  ? 'Uploading document...'
-                  : 'Processing document...'}
+              <p className="text-sm text-deep-moss mt-2 font-medium">
+                {uploadProgress < 30
+                  ? 'Starting upload...'
+                  : uploadProgress < 90
+                  ? 'Uploading document to secure storage...'
+                  : uploadProgress < 100
+                  ? 'Almost there...'
+                  : 'Processing document and creating blockchain record...'}
+              </p>
+              <p className="text-xs text-deep-moss mt-1 italic">
+                {uploadProgress === 100 &&
+                  'This may take a moment as we securely anchor your document on the blockchain.'}
               </p>
             </div>
           )}

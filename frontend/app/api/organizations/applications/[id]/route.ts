@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth } from '../../../../../lib/auth-middleware';
-import { db } from '../../../../../lib/firebase-admin-server';
+import { db } from '../../../../../lib/firebase-admin-server.js';
 import { FieldValue } from 'firebase-admin/firestore';
 import { AuditLogService } from '../../../../../lib/services/AuditLogService';
 import { OrganizationVerificationStatus } from '../../../../types/user';
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await context.params;
   try {
     // Verify the authentication token
     const authResult = await verifyAuth(request);
@@ -89,7 +90,7 @@ export async function PUT(
     }
 
     // Get application ID from URL params
-    const applicationId = params.id;
+    const applicationId = id;
 
     // Get request body
     const { status, notes } = await request.json();
@@ -134,6 +135,10 @@ export async function PUT(
     // If approved, update the organization's status in the users collection
     if (status === 'approved' && organizationId) {
       try {
+        console.log(
+          `Updating organization ${organizationId} status to verified`
+        );
+
         // First check if the organization exists
         const orgDoc = await db.collection('users').doc(organizationId).get();
         if (!orgDoc.exists) {
@@ -150,35 +155,64 @@ export async function PUT(
           orgData.verificationStatus ||
           (orgData.isVerified ? 'verified' : 'not_verified');
 
+        console.log(`Current organization status: ${currentStatus}`);
+
         // Update the organization's status
-        await db.collection('users').doc(organizationId).update({
-          status: 'verified',
-          verificationStatus: 'verified',
-          isVerified: true,
-          verifiedAt: FieldValue.serverTimestamp(),
-          verificationUpdatedAt: FieldValue.serverTimestamp(),
-          verifiedBy: uid,
-          verificationUpdatedBy: uid,
-        });
+        try {
+          await db.collection('users').doc(organizationId).update({
+            verificationStatus: 'verified',
+            isVerified: true,
+            verifiedAt: FieldValue.serverTimestamp(),
+            verificationUpdatedAt: FieldValue.serverTimestamp(),
+            verifiedBy: uid,
+            verificationUpdatedBy: uid,
+          });
+          console.log(
+            `Successfully updated organization ${organizationId} status to verified`
+          );
+        } catch (updateError) {
+          console.error(
+            `Error updating organization document: ${updateError.message}`
+          );
+          throw updateError;
+        }
 
         // Create audit log entry
-        await AuditLogService.logVerificationStatusChange(
-          organizationId,
-          currentStatus,
-          'verified',
-          uid,
-          'Organization verification approved'
-        );
+        try {
+          await AuditLogService.logVerificationStatusChange(
+            organizationId,
+            currentStatus,
+            'verified',
+            uid,
+            'Organization verification approved'
+          );
+          console.log(
+            `Successfully created audit log for organization ${organizationId}`
+          );
+        } catch (auditError) {
+          console.error(`Error creating audit log: ${auditError.message}`);
+          // Continue even if audit log creation fails
+        }
 
         // Create a notification for the organization
-        await db.collection('notifications').add({
-          userId: organizationId,
-          type: 'organization_verification',
-          title: 'Organization Verified',
-          message: 'Your organization has been verified successfully.',
-          read: false,
-          createdAt: FieldValue.serverTimestamp(),
-        });
+        try {
+          await db.collection('notifications').add({
+            userId: organizationId,
+            type: 'organization_verification',
+            title: 'Organization Verified',
+            message: 'Your organization has been verified successfully.',
+            read: false,
+            createdAt: FieldValue.serverTimestamp(),
+          });
+          console.log(
+            `Successfully created notification for organization ${organizationId}`
+          );
+        } catch (notificationError) {
+          console.error(
+            `Error creating notification: ${notificationError.message}`
+          );
+          // Continue even if notification creation fails
+        }
       } catch (updateError) {
         console.error('Error updating organization status:', updateError);
 
@@ -202,6 +236,10 @@ export async function PUT(
       }
     } else if (status === 'rejected' && organizationId) {
       try {
+        console.log(
+          `Updating organization ${organizationId} status to rejected`
+        );
+
         // First check if the organization exists
         const orgDoc = await db.collection('users').doc(organizationId).get();
         if (!orgDoc.exists) {
@@ -218,41 +256,71 @@ export async function PUT(
           orgData.verificationStatus ||
           (orgData.isVerified ? 'verified' : 'not_verified');
 
+        console.log(`Current organization status: ${currentStatus}`);
+
         // Update the organization's status to rejected
-        await db
-          .collection('users')
-          .doc(organizationId)
-          .update({
-            status: 'rejected',
-            verificationStatus: 'rejected',
-            isVerified: false,
-            rejectedAt: FieldValue.serverTimestamp(),
-            verificationUpdatedAt: FieldValue.serverTimestamp(),
-            rejectedBy: uid,
-            verificationUpdatedBy: uid,
-            rejectionNotes: notes || null,
-            verificationRejectionReason: notes || null,
-          });
+        try {
+          await db
+            .collection('users')
+            .doc(organizationId)
+            .update({
+              verificationStatus: 'rejected',
+              isVerified: false,
+              rejectedAt: FieldValue.serverTimestamp(),
+              verificationUpdatedAt: FieldValue.serverTimestamp(),
+              rejectedBy: uid,
+              verificationUpdatedBy: uid,
+              rejectionNotes: notes || null,
+              verificationRejectionReason: notes || null,
+            });
+          console.log(
+            `Successfully updated organization ${organizationId} status to rejected`
+          );
+        } catch (updateError) {
+          console.error(
+            `Error updating organization document: ${updateError.message}`
+          );
+          throw updateError;
+        }
 
         // Create audit log entry
-        await AuditLogService.logVerificationStatusChange(
-          organizationId,
-          currentStatus,
-          'rejected',
-          uid,
-          notes || 'Organization verification rejected'
-        );
+        try {
+          await AuditLogService.logVerificationStatusChange(
+            organizationId,
+            currentStatus,
+            'rejected',
+            uid,
+            notes || 'Organization verification rejected'
+          );
+          console.log(
+            `Successfully created audit log for organization ${organizationId}`
+          );
+        } catch (auditError) {
+          console.error(`Error creating audit log: ${auditError.message}`);
+          // Continue even if audit log creation fails
+        }
 
         // Create a notification for the organization
-        await db.collection('notifications').add({
-          userId: organizationId,
-          type: 'organization_verification',
-          title: 'Organization Verification Rejected',
-          message: 'Your organization verification request has been rejected.',
-          notes: notes || null,
-          read: false,
-          createdAt: FieldValue.serverTimestamp(),
-        });
+        try {
+          await db.collection('notifications').add({
+            userId: organizationId,
+            type: 'organization_verification',
+            title: 'Organization Verification Rejected',
+            message:
+              'Your organization verification request has been rejected.',
+            notes: notes || null,
+            read: false,
+            createdAt: FieldValue.serverTimestamp(),
+          });
+          console.log(
+            `Successfully created notification for organization ${organizationId}`
+          );
+        } catch (notificationError) {
+          console.error(
+            `Error creating notification: ${notificationError.message}`
+          );
+          // Continue even if notification creation fails
+        }
       } catch (updateError) {
         console.error(
           'Error updating organization status to rejected:',
@@ -279,7 +347,12 @@ export async function PUT(
       }
     }
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({
+      success: true,
+      message: `Application ${status} successfully`,
+      applicationId: applicationId,
+      status: status,
+    });
   } catch (error: any) {
     console.error('Error updating organization application:', error);
     return NextResponse.json(

@@ -22,8 +22,16 @@ import {
   CheckCircle,
   XCircle,
   Search,
+  User,
 } from 'lucide-react';
-import { collection, query, getDocs, orderBy, where } from 'firebase/firestore';
+import {
+  collection,
+  query,
+  getDocs,
+  orderBy,
+  where,
+  Timestamp,
+} from 'firebase/firestore';
 import { db } from '../../../lib/firebase';
 import { getDocumentTypeName } from '../../constants/documentTypes';
 
@@ -32,7 +40,7 @@ interface ToastMessage {
   message: string;
 }
 
-interface Document {
+interface AdminDocument {
   id: string;
   documentId: string;
   documentType: string;
@@ -43,9 +51,11 @@ interface Document {
   publicAddress: string;
   verifyingOrgId?: string;
   verifyingOrgName?: string;
-  verifiedAt?: Date;
-  rejectedAt?: Date;
+  verifiedAt?: Date | null;
+  rejectedAt?: Date | null;
   rejectionReason?: string;
+  ownerUid?: string;
+  ownerName?: string;
 }
 
 export default function DocumentsPage() {
@@ -53,12 +63,14 @@ export default function DocumentsPage() {
   const router = useRouter();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [toastMessage, setToastMessage] = useState<ToastMessage | null>(null);
-  const [documents, setDocuments] = useState<Document[]>([]);
-  const [filteredDocuments, setFilteredDocuments] = useState<Document[]>([]);
+  const [documents, setDocuments] = useState<AdminDocument[]>([]);
+  const [filteredDocuments, setFilteredDocuments] = useState<AdminDocument[]>(
+    []
+  );
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState<string>('');
-  const [viewingDoc, setViewingDoc] = useState<Document | null>(null);
+  const [viewingDoc, setViewingDoc] = useState<AdminDocument | null>(null);
 
   useEffect(() => {
     if (user && isAdmin) {
@@ -108,23 +120,39 @@ export default function DocumentsPage() {
       const documentsSnapshot = await getDocs(documentsQuery);
       const documentsData = documentsSnapshot.docs.map((doc) => {
         const data = doc.data();
+        console.log('Document data from Firestore:', doc.id, data);
         return {
           id: doc.id,
-          documentId: data.documentId,
-          documentType: data.documentType,
-          documentName: data.documentName,
-          status: data.status,
-          createdAt: data.createdAt?.toDate(),
-          updatedAt: data.updatedAt?.toDate() || null,
-          publicAddress: data.publicAddress,
-          verifyingOrgId: data.verifyingOrgId,
-          verifyingOrgName: data.verifyingOrgName,
-          verifiedAt: data.verifiedAt?.toDate(),
-          rejectedAt: data.rejectedAt?.toDate(),
-          rejectionReason: data.rejectionReason,
+          documentId: data.documentId || doc.id,
+          documentType: data.documentType || 'Unknown',
+          documentName: data.documentName || data.name || 'Unnamed Document',
+          status: data.status || 'Pending Verification',
+          createdAt:
+            data.createdAt instanceof Timestamp
+              ? data.createdAt.toDate()
+              : new Date(),
+          updatedAt:
+            data.updatedAt instanceof Timestamp
+              ? data.updatedAt.toDate()
+              : null,
+          publicAddress: data.publicAddress || data.userWalletAddress || '',
+          verifyingOrgId: data.verifyingOrgId || '',
+          verifyingOrgName: data.verifyingOrgName || 'Unknown Organization',
+          verifiedAt:
+            data.verifiedAt instanceof Timestamp
+              ? data.verifiedAt.toDate()
+              : null,
+          rejectedAt:
+            data.rejectedAt instanceof Timestamp
+              ? data.rejectedAt.toDate()
+              : null,
+          rejectionReason: data.rejectionReason || '',
+          ownerUid: data.ownerUid || '',
+          ownerName: data.ownerName || 'Unknown User',
         };
       });
 
+      console.log('Processed documents data:', documentsData);
       setDocuments(documentsData);
       setFilteredDocuments(documentsData);
     } catch (error) {
@@ -242,6 +270,20 @@ export default function DocumentsPage() {
                 <div className="flex items-center gap-3 px-4 py-3 border-2 border-transparent hover:bg-ivory hover:border-deep-moss hover:shadow-brutal hover:-translate-y-0.5 transition-all">
                   <Settings size={20} className="text-deep-moss" />
                   <span className="font-bold text-deep-moss">Settings</span>
+                </div>
+              </Link>
+
+              {/* Individual dashboard link */}
+              <Link
+                href={
+                  user ? `/user/${user.uid}/dashboard` : '/individual-dashboard'
+                }
+              >
+                <div className="flex items-center gap-3 px-4 py-3 border-2 border-transparent hover:bg-ivory hover:border-deep-moss hover:shadow-brutal hover:-translate-y-0.5 transition-all">
+                  <Users size={20} className="text-deep-moss" />
+                  <span className="font-bold text-deep-moss">
+                    Individual Dashboard
+                  </span>
                 </div>
               </Link>
             </nav>
@@ -425,6 +467,9 @@ export default function DocumentsPage() {
                             Type
                           </th>
                           <th className="p-3 text-left font-bold text-deep-moss border-b-2 border-deep-moss">
+                            Owner
+                          </th>
+                          <th className="p-3 text-left font-bold text-deep-moss border-b-2 border-deep-moss">
                             Verifying Organization
                           </th>
                           <th className="p-3 text-left font-bold text-deep-moss border-b-2 border-deep-moss">
@@ -451,6 +496,9 @@ export default function DocumentsPage() {
                             </td>
                             <td className="p-3 text-deep-moss">
                               {getDocumentTypeName(doc.documentType)}
+                            </td>
+                            <td className="p-3 text-deep-moss">
+                              {doc.ownerName || 'Unknown User'}
                             </td>
                             <td className="p-3 text-deep-moss">
                               {doc.verifyingOrgName || 'Not specified'}
@@ -568,10 +616,16 @@ export default function DocumentsPage() {
                           <div className="space-y-2">
                             <div>
                               <p className="text-sm font-bold text-gray-500">
+                                Owner
+                              </p>
+                              <p>{viewingDoc.ownerName || 'Unknown User'}</p>
+                            </div>
+                            <div>
+                              <p className="text-sm font-bold text-gray-500">
                                 Owner Address
                               </p>
                               <p className="font-mono">
-                                {viewingDoc.publicAddress}
+                                {viewingDoc.publicAddress || 'Not specified'}
                               </p>
                             </div>
                             <div>

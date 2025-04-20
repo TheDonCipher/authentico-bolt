@@ -112,9 +112,31 @@ export const uploadDocument = async (formData, onProgress) => {
           `Processing file: ${fileName} (${value.size} bytes, ${fileType})`
         );
 
-        cleanFormData.append('document_file', value, fileName);
+        try {
+          cleanFormData.append('document_file', value, fileName);
+        } catch (fileError) {
+          console.error('Error appending file to FormData:', fileError);
+          throw new Error(`Failed to process file: ${fileError.message}`);
+        }
       } else {
-        cleanFormData.append(key, value);
+        try {
+          // Convert empty strings to default values for required fields
+          if (key === 'documentType' && (!value || value === '')) {
+            cleanFormData.append(key, 'identity');
+          } else if (key === 'documentName' && (!value || value === '')) {
+            cleanFormData.append(key, 'Unnamed Document');
+          } else {
+            cleanFormData.append(key, value);
+          }
+        } catch (fieldError) {
+          console.error(
+            `Error appending field ${key} to FormData:`,
+            fieldError
+          );
+          throw new Error(
+            `Failed to process field ${key}: ${fieldError.message}`
+          );
+        }
       }
     }
 

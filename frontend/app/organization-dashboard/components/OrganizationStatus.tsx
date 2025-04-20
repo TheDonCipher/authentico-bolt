@@ -305,9 +305,14 @@ const OrganizationStatus: React.FC<OrganizationStatusProps> = ({ userId }) => {
 
   if (verificationStatus === 'verified') {
     return (
-      <div className="bg-[#E8EDE1] border-4 border-[#556B2F] p-6 shadow-brutal">
-        <div className="flex flex-col md:flex-row items-start md:items-center mb-6">
-          <div className="bg-[#698B69] text-white p-3 border-3 border-[#556B2F] mr-4 mb-4 md:mb-0 transform -rotate-3 shadow-brutal">
+      <div className="bg-[#E8EDE1] border-4 border-[#556B2F] p-6 shadow-brutal relative overflow-hidden">
+        {/* Background pattern */}
+        <div className="absolute inset-0 opacity-5">
+          <div className="absolute inset-0 bg-[url('/images/pattern-stamp.svg')] bg-repeat"></div>
+        </div>
+
+        <div className="flex flex-col md:flex-row items-start md:items-center mb-6 relative">
+          <div className="bg-[#698B69] text-white p-3 border-4 border-[#556B2F] mr-4 mb-4 md:mb-0 transform -rotate-3 shadow-brutal">
             <div className="flex items-center">
               <Shield className="text-white mr-2" size={28} />
               <span className="font-black text-lg">VERIFIED</span>
@@ -321,6 +326,20 @@ const OrganizationStatus: React.FC<OrganizationStatusProps> = ({ userId }) => {
               Your organization has been verified and can now verify documents
               on the Authentico platform.
             </p>
+          </div>
+
+          {/* Large stamp in background */}
+          <div className="absolute right-0 top-0 transform translate-x-1/4 -translate-y-1/4 opacity-10">
+            <div className="w-40 h-40 rounded-full border-8 border-[#556B2F]">
+              <div className="w-full h-full flex items-center justify-center">
+                <div className="text-center">
+                  <div className="text-3xl font-black text-[#556B2F]">
+                    VERIFIED
+                  </div>
+                  <div className="text-sm text-[#556B2F]">AUTHENTICO</div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 

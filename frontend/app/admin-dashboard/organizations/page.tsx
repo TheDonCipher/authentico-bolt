@@ -19,6 +19,7 @@ import {
   Shield,
   Menu,
   X,
+  User,
 } from 'lucide-react';
 import OrganizationApplications from '../components/OrganizationApplications';
 
@@ -113,8 +114,13 @@ export default function OrganizationsPage() {
               </Link>
 
               {/* Individual dashboard link */}
-              <Link href="/individual-dashboard">
+              <Link
+                href={
+                  user ? `/user/${user.uid}/dashboard` : '/individual-dashboard'
+                }
+              >
                 <div className="flex items-center gap-3 px-4 py-3 border-2 border-transparent hover:bg-ivory hover:border-deep-moss hover:shadow-brutal hover:-translate-y-0.5 transition-all">
+                  <Users size={20} className="text-deep-moss" />
                   <span className="font-bold text-deep-moss">
                     Individual Dashboard
                   </span>
@@ -124,25 +130,7 @@ export default function OrganizationsPage() {
 
             {/* Sign Out Button */}
             <div className="mt-4 pt-6">
-              <SignOutButton className="flex items-center gap-3 w-full px-4 py-3 border-2 border-deep-moss bg-burnt-sienna bg-opacity-20 text-deep-moss hover:shadow-brutal hover:-translate-y-0.5 transition-all">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="text-deep-moss"
-                >
-                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                  <polyline points="16 17 21 12 16 7"></polyline>
-                  <line x1="21" y1="12" x2="9" y2="12"></line>
-                </svg>
-                <span className="font-bold text-deep-moss">Sign Out</span>
-              </SignOutButton>
+              <SignOutButton className="flex items-center gap-3 w-full px-4 py-3 border-2 border-deep-moss bg-burnt-sienna bg-opacity-20 text-deep-moss hover:shadow-brutal hover:-translate-y-0.5 transition-all" />
             </div>
           </div>
         </aside>

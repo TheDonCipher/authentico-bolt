@@ -24,16 +24,16 @@ import { getFirestore, doc as firestoreDoc, getDoc } from 'firebase/firestore';
 
 interface DocumentTableProps {
   documents: Document[];
-  orgNames: Record<string, string>;
+  orgNames?: Record<string, string>;
   onShare: (doc: Document) => void;
-  onAction: (doc: Document) => void;
+  onAction?: (doc: Document) => void;
 }
 
 export const DocumentTable = ({
   documents,
-  orgNames,
+  orgNames = {},
   onShare,
-  onAction,
+  onAction = () => {},
 }: DocumentTableProps) => {
   const [showDocument, setShowDocument] = useState(false);
   const [documentData, setDocumentData] = useState<{
@@ -67,8 +67,26 @@ export const DocumentTable = ({
   };
 
   // Function to fetch and view the document
-  const viewDocument = async (doc: Document) => {
+  const viewDocument = async (doc: Document, downloadOnly: boolean = false) => {
     try {
+      if (!doc || !doc.documentId) {
+        setToastMessage({
+          type: 'error',
+          message: 'Invalid document ID',
+        });
+        return;
+      }
+
+      // Validate document ID is a non-empty string
+      const docId = doc.documentId.toString();
+      if (!docId || docId.trim() === '') {
+        setToastMessage({
+          type: 'error',
+          message: 'Invalid document ID',
+        });
+        return;
+      }
+
       setIsLoading(true);
       const idToken = await getAuthToken();
 
@@ -76,25 +94,22 @@ export const DocumentTable = ({
         throw new Error('Not authenticated');
       }
 
-      console.log(`Fetching document details for ID: ${doc.documentId}`);
+      console.log(`Fetching document details for ID: ${docId}`);
 
-      // First, get the document details from Firestore to ensure we have the latest data
+      // First, get the document details from Firestore to ensure we have access
       const db = getFirestore();
-      const docRef = firestoreDoc(db, 'documents', doc.documentId.toString());
-
-      // Get the document from Firestore
+      const docRef = firestoreDoc(db, 'documents', docId);
       const docSnap = await getDoc(docRef);
 
       if (!docSnap.exists()) {
         throw new Error('Document not found in Firestore');
       }
 
-      const docData = docSnap.data();
-      console.log('Document data from Firestore:', docData);
+      console.log('Document data from Firestore:', docSnap.data());
 
       // Now fetch the secure details from the API
       const response = await axios.get(
-        `/api/documents/${doc.documentId}/secure-details`,
+        `/api/documents/${docId}/secure-details`,
         {
           headers: {
             Authorization: `Bearer ${idToken}`,
@@ -102,18 +117,38 @@ export const DocumentTable = ({
         }
       );
 
-      console.log('Document details response:', response.status);
+      console.log('Document details response:', response.status, response.data);
 
       if (response.data && response.data.decryptedFile) {
-        setDocumentData({
-          data: response.data.decryptedFile,
-          mimeType: response.data.mimeType || 'application/octet-stream',
-          name:
-            doc.documentName ||
-            docData.documentName ||
-            getDocumentTypeName(doc.documentType),
-        });
-        setShowDocument(true);
+        // Use document name from response if available, otherwise fallback to local data
+        const documentName =
+          response.data.documentName ||
+          doc.documentName ||
+          getDocumentTypeName(doc.documentType);
+        const mimeType = response.data.mimeType || 'application/octet-stream';
+
+        if (downloadOnly) {
+          // Create a download link and trigger it
+          const link = document.createElement('a');
+          link.href = `data:${mimeType};base64,${response.data.decryptedFile}`;
+          link.download = `${documentName}.${mimeType.split('/')[1] || 'file'}`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+
+          setToastMessage({
+            type: 'success',
+            message: 'Document download started',
+          });
+        } else {
+          // Show the document in the viewer
+          setDocumentData({
+            data: response.data.decryptedFile,
+            mimeType: mimeType,
+            name: documentName,
+          });
+          setShowDocument(true);
+        }
       } else {
         throw new Error('Invalid document data received from server');
       }
@@ -186,6 +221,9 @@ export const DocumentTable = ({
               Verifying Organization
             </th>
             <th className="px-4 py-3 text-left font-bold text-deep-moss border-b-2 border-deep-moss">
+              Upload Date
+            </th>
+            <th className="px-4 py-3 text-left font-bold text-deep-moss border-b-2 border-deep-moss">
               Actions
             </th>
           </tr>
@@ -198,31 +236,56 @@ export const DocumentTable = ({
             >
               <td className="px-4 py-3">
                 <div className="font-medium text-deep-moss">
-                  {doc.documentName || getDocumentTypeName(doc.documentType)}
+                  {doc.documentName ||
+                    (doc.documentType
+                      ? getDocumentTypeName(doc.documentType)
+                      : 'Unnamed Document')}
                 </div>
                 <div className="text-xs text-gray-600 mt-1 truncate max-w-[200px]">
                   {doc.metadataHash}
                 </div>
               </td>
               <td className="px-4 py-3 text-deep-moss">
-                {getDocumentTypeName(doc.documentType)}
+                {doc.documentType ? (
+                  <span className="font-medium">
+                    {getDocumentTypeName(doc.documentType)}
+                  </span>
+                ) : (
+                  <span className="text-gray-500 text-sm">Unknown</span>
+                )}
               </td>
               <td className="px-4 py-3">
                 <StatusBadge status={doc.status} />
               </td>
               <td className="px-4 py-3 text-deep-moss">
-                {orgNames[doc.verifier] ? (
-                  <span className="font-medium">{orgNames[doc.verifier]}</span>
+                {doc.verifyingOrgId ? (
+                  orgNames[doc.verifyingOrgId] ? (
+                    <span className="font-medium">
+                      {orgNames[doc.verifyingOrgId]}
+                    </span>
+                  ) : (
+                    <span className="text-gray-500 text-sm">{`ID: ${doc.verifyingOrgId.slice(
+                      0,
+                      5
+                    )}...${doc.verifyingOrgId.slice(-3)}`}</span>
+                  )
                 ) : (
-                  <span className="text-gray-500 text-sm">{`ID: ${doc.verifier.slice(
-                    0,
-                    5
-                  )}...${doc.verifier.slice(-3)}`}</span>
+                  <span className="text-gray-500 text-sm">Not assigned</span>
+                )}
+              </td>
+              <td className="px-4 py-3 text-deep-moss">
+                {doc.createdAt ? (
+                  <span title={new Date(doc.createdAt).toLocaleString()}>
+                    {new Date(doc.createdAt).toLocaleDateString()}
+                  </span>
+                ) : (
+                  <span className="text-gray-500">Unknown</span>
                 )}
               </td>
               <td className="px-4 py-3">
                 <div className="flex space-x-2">
                   <button
+                    key={`view-${doc.documentId}`}
                     onClick={() => viewDocument(doc)}
                     className="p-2 bg-forest-green text-ivory rounded-sm hover:bg-opacity-90 transition-all"
                     title="View Document"
@@ -232,28 +295,18 @@ export const DocumentTable = ({
                   </button>
 
                   <button
-                    onClick={() => onAction(doc)}
+                    key={`download-${doc.documentId}`}
+                    onClick={() => viewDocument(doc, true)}
                     className="p-2 bg-soft-sage text-deep-moss rounded-sm hover:bg-opacity-90 transition-all"
-                    title={
-                      doc.status === '1'
-                        ? 'Check Status'
-                        : doc.status === '0'
-                        ? 'Download'
-                        : 'View Reason'
-                    }
+                    title="Download Document"
                     disabled={isLoading}
                   >
-                    {doc.status === '1' ? (
-                      <FileText size={16} />
-                    ) : doc.status === '0' ? (
-                      <Download size={16} />
-                    ) : (
-                      <FileText size={16} />
-                    )}
+                    <Download size={16} />
                   </button>
 
                   {doc.status === '1' && (
                     <button
+                      key={`verify-${doc.documentId}`}
                       onClick={() => requestVerification(doc)}
                       className="p-2 bg-soft-sage text-deep-moss rounded-sm hover:bg-opacity-90 transition-all"
                       title="Request Verification"
@@ -264,7 +317,20 @@ export const DocumentTable = ({
                   )}
 
                   <button
-                    onClick={() => setShowQR(doc.documentId.toString())}
+                    key={`qr-${doc.documentId}`}
+                    onClick={() => {
+                      const docId = doc.documentId
+                        ? doc.documentId.toString()
+                        : '';
+                      if (docId) {
+                        setShowQR(docId);
+                      } else {
+                        setToastMessage({
+                          type: 'error',
+                          message: 'Invalid document ID',
+                        });
+                      }
+                    }}
                     className="p-2 bg-ivory text-deep-moss border border-deep-moss rounded-sm hover:bg-soft-sage transition-all"
                     title="QR Code"
                     disabled={isLoading}
@@ -273,6 +339,7 @@ export const DocumentTable = ({
                   </button>
 
                   <button
+                    key={`share-${doc.documentId}`}
                     onClick={() => onShare(doc)}
                     className="p-2 bg-ivory text-deep-moss border border-deep-moss rounded-sm hover:bg-soft-sage transition-all"
                     title="Share"
@@ -297,10 +364,15 @@ export const DocumentTable = ({
             <div className="flex justify-between items-start mb-3">
               <div>
                 <h4 className="font-bold text-lg truncate max-w-[200px]">
-                  {doc.documentName || getDocumentTypeName(doc.documentType)}
+                  {doc.documentName ||
+                    (doc.documentType
+                      ? getDocumentTypeName(doc.documentType)
+                      : 'Unnamed Document')}
                 </h4>
                 <p className="text-xs text-gray-600 mt-1">
-                  {getDocumentTypeName(doc.documentType)}
+                  {doc.documentType
+                    ? getDocumentTypeName(doc.documentType)
+                    : 'Unknown'}
                 </p>
               </div>
               <StatusBadge status={doc.status} />
@@ -308,29 +380,55 @@ export const DocumentTable = ({
 
             <div className="mb-3">
               <p className="text-xs text-gray-600">Verifying Organization:</p>
-              {orgNames[doc.verifier] ? (
-                <p className="text-sm font-medium">{orgNames[doc.verifier]}</p>
+              {doc.verifyingOrgId ? (
+                orgNames[doc.verifyingOrgId] ? (
+                  <p className="text-sm font-medium">
+                    {orgNames[doc.verifyingOrgId]}
+                  </p>
+                ) : (
+                  <p className="text-sm text-gray-500">
+                    {`ID: ${doc.verifyingOrgId.slice(
+                      0,
+                      5
+                    )}...${doc.verifyingOrgId.slice(-3)}`}
+                  </p>
+                )
               ) : (
-                <p className="text-sm text-gray-500">
-                  {`ID: ${doc.verifier.slice(0, 5)}...${doc.verifier.slice(
-                    -3
-                  )}`}
-                </p>
+                <p className="text-sm text-gray-500">Not assigned</p>
               )}
+            </div>
+
+            <div className="mb-3">
+              <p className="text-xs text-gray-600">Upload Date:</p>
+              <p className="text-sm">
+                {doc.createdAt
+                  ? new Date(doc.createdAt).toLocaleDateString()
+                  : 'Unknown'}
+              </p>
             </div>
 
             <div className="mb-3">
               <p className="text-xs text-gray-600">Document Hash:</p>
               <div className="flex items-center bg-soft-sage bg-opacity-50 p-1.5 rounded overflow-hidden">
                 <p className="font-mono text-xs truncate">
-                  {doc.metadataHash.slice(0, 15)}...{doc.metadataHash.slice(-4)}
+                  {doc.metadataHash
+                    ? `${doc.metadataHash.slice(
+                        0,
+                        15
+                      )}...${doc.metadataHash.slice(-4)}`
+                    : 'No hash available'}
                 </p>
                 <button
                   onClick={() =>
-                    copyToClipboard(
-                      doc.metadataHash,
-                      'Hash copied to clipboard!'
-                    )
+                    doc.metadataHash
+                      ? copyToClipboard(
+                          doc.metadataHash,
+                          'Hash copied to clipboard!'
+                        )
+                      : setToastMessage({
+                          type: 'error',
+                          message: 'No hash available to copy',
+                        })
                   }
                   className="ml-1 text-deep-moss hover:text-forest-green flex-shrink-0"
                   title="Copy hash"
@@ -342,6 +440,7 @@ export const DocumentTable = ({
 
             <div className="grid grid-cols-5 gap-1">
               <button
+                key={`mobile-view-${doc.documentId}`}
                 onClick={() => viewDocument(doc)}
                 className="p-2 bg-forest-green text-ivory rounded-sm hover:bg-opacity-90 transition-all flex items-center justify-center"
                 title="View Document"
@@ -351,28 +450,18 @@ export const DocumentTable = ({
               </button>
 
               <button
-                onClick={() => onAction(doc)}
+                key={`mobile-download-${doc.documentId}`}
+                onClick={() => viewDocument(doc, true)}
                 className="p-2 bg-soft-sage text-deep-moss rounded-sm hover:bg-opacity-90 transition-all flex items-center justify-center"
-                title={
-                  doc.status === '1'
-                    ? 'Check Status'
-                    : doc.status === '0'
-                    ? 'Download'
-                    : 'View Reason'
-                }
+                title="Download Document"
                 disabled={isLoading}
               >
-                {doc.status === '1' ? (
-                  <FileText size={16} />
-                ) : doc.status === '0' ? (
-                  <Download size={16} />
-                ) : (
-                  <FileText size={16} />
-                )}
+                <Download size={16} />
               </button>
 
               {doc.status === '1' ? (
                 <button
+                  key={`mobile-verify-${doc.documentId}`}
                   onClick={() => requestVerification(doc)}
                   className="p-2 bg-soft-sage text-deep-moss rounded-sm hover:bg-opacity-90 transition-all flex items-center justify-center"
                   title="Request Verification"
@@ -381,11 +470,25 @@ export const DocumentTable = ({
                   <Send size={16} />
                 </button>
               ) : (
-                <div className="p-2"></div> // Empty space to maintain grid
+                <div
+                  key={`mobile-empty-${doc.documentId}`}
+                  className="p-2"
+                ></div> // Empty space to maintain grid
               )}
 
               <button
-                onClick={() => setShowQR(doc.documentId.toString())}
+                key={`mobile-qr-${doc.documentId}`}
+                onClick={() => {
+                  const docId = doc.documentId ? doc.documentId.toString() : '';
+                  if (docId) {
+                    setShowQR(docId);
+                  } else {
+                    setToastMessage({
+                      type: 'error',
+                      message: 'Invalid document ID',
+                    });
+                  }
+                }}
                 className="p-2 bg-ivory text-deep-moss border border-deep-moss rounded-sm hover:bg-soft-sage transition-all flex items-center justify-center"
                 title="QR Code"
                 disabled={isLoading}
@@ -394,6 +497,7 @@ export const DocumentTable = ({
               </button>
 
               <button
+                key={`mobile-share-${doc.documentId}`}
                 onClick={() => onShare(doc)}
                 className="p-2 bg-ivory text-deep-moss border border-deep-moss rounded-sm hover:bg-soft-sage transition-all flex items-center justify-center"
                 title="Share"

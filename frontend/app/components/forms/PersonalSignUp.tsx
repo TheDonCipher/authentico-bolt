@@ -1,8 +1,8 @@
 import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { X } from 'lucide-react';
-import { ethers } from 'ethers';
 import { useRouter } from 'next/navigation';
+import { useActiveAccount } from 'thirdweb/react';
 interface PersonalSignUpProps {
   closeSignup: () => void;
   showIndSignUp: boolean;
@@ -24,6 +24,7 @@ export const PersonalSignUp: React.FC<PersonalSignUpProps> = ({
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [success, setSuccess] = React.useState<string | null>(null);
+  const activeAccount = useActiveAccount();
   const [account, setAccount] = React.useState<string | null>(null);
   const [isWalletConnected, setIsWalletConnected] = React.useState(false);
 
@@ -33,33 +34,16 @@ export const PersonalSignUp: React.FC<PersonalSignUpProps> = ({
 
   const [role, setRole] = React.useState<string | null>(null);
   useEffect(() => {
-    const initializeWallet = async () => {
-      console.log('------window.ethereum-----', window.ethereum);
-      await window.ethereum.enable();
-
-      const provider = new ethers.providers.Web3Provider(window.ethereum);
-
-      await provider.send('eth_requestAccounts', []);
-      console.log('------provider-----', provider);
-      console.log('---fetching network details----');
-      const network = await provider.getNetwork();
-      if (!network.ensAddress) {
-        console.warn('Network does not support ENS');
-      }
-
-      const signer = provider.getSigner();
-      console.log('------signer-----', signer);
-      const account = await signer.getAddress();
-      console.log('------account-----', account);
-
-      setAccount(account);
-      setFormData((prev) => ({ ...prev, walletAddress: account }));
-
+    // Use the account from useActiveAccount hook
+    if (activeAccount) {
+      setAccount(activeAccount.address);
+      setFormData((prev) => ({
+        ...prev,
+        walletAddress: activeAccount.address,
+      }));
       setIsWalletConnected(true);
-    };
-
-    initializeWallet();
-  }, []);
+    }
+  }, [activeAccount]);
 
   const handleSetName = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const { value } = e.target;
@@ -102,10 +86,10 @@ export const PersonalSignUp: React.FC<PersonalSignUpProps> = ({
     console.log('Email:', email);
 
     setFormData({
-      name: name,
-      email: email,
-      password: password,
-      walletAddress: account,
+      name: name || '',
+      email: email || '',
+      password: password || '',
+      walletAddress: account || '',
       role: '0',
     });
 
@@ -124,10 +108,10 @@ export const PersonalSignUp: React.FC<PersonalSignUpProps> = ({
     setSuccess(null);
 
     setFormData({
-      name: name,
-      email: email,
-      password: password,
-      walletAddress: account,
+      name: name || '',
+      email: email || '',
+      password: password || '',
+      walletAddress: account || '',
       role: '0',
     });
 

@@ -6,6 +6,8 @@ services:
     plan: free
     buildCommand: npm install
     startCommand: node index.js
+    healthCheckPath: /api/health
+    autoDeploy: true
     envVars:
       # Environment type
       - key: NODE_ENV

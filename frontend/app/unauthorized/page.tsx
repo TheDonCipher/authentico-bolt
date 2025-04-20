@@ -18,9 +18,9 @@ export default function UnauthorizedPage() {
     }
 
     if (user.userType === 'individual') {
-      router.push(`/user/${user.uid}/dashboard`);
+      router.push('/individual-dashboard');
     } else if (user.userType === 'organization') {
-      router.push(`/org/${user.uid}/dashboard`);
+      router.push('/organization-dashboard');
     } else if (user.userType === 'admin') {
       router.push('/admin-dashboard');
     } else {

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/lib/firebase-admin-server';
+import { auth } from '../../../../lib/firebase-admin-server';
 import axios from 'axios';
 
 // Get the API URL from environment variables

@@ -20,6 +20,7 @@ import {
   X,
   Save,
   RefreshCw,
+  User,
 } from 'lucide-react';
 
 interface ToastMessage {
@@ -124,6 +125,20 @@ export default function SettingsPage() {
                 <div className="flex items-center gap-3 px-4 py-3 bg-forest-green text-ivory border-2 border-deep-moss shadow-brutal">
                   <Settings size={20} className="text-ivory" />
                   <span className="font-bold">Settings</span>
+                </div>
+              </Link>
+
+              {/* Individual dashboard link */}
+              <Link
+                href={
+                  user ? `/user/${user.uid}/dashboard` : '/individual-dashboard'
+                }
+              >
+                <div className="flex items-center gap-3 px-4 py-3 border-2 border-transparent hover:bg-ivory hover:border-deep-moss hover:shadow-brutal hover:-translate-y-0.5 transition-all">
+                  <Users size={20} className="text-deep-moss" />
+                  <span className="font-bold text-deep-moss">
+                    Individual Dashboard
+                  </span>
                 </div>
               </Link>
             </nav>

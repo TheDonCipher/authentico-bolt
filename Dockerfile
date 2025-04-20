@@ -2,6 +2,9 @@
 FROM node:18-alpine AS base
 WORKDIR /app
 
+# Install necessary tools for health checks
+RUN apk add --no-cache wget curl
+
 # ---- Dependencies ----
 # Install dependencies leveraging npm workspaces and Docker cache layers
 FROM base AS deps
@@ -30,7 +33,7 @@ COPY tsconfig.json tailwind.config.js postcss.config.js ./
 RUN npm run build --workspace=frontend
 
 # ---- Backend Production Image ----
-FROM node:18-alpine AS backend-prod
+FROM base AS backend-prod
 WORKDIR /app
 
 # Set NODE_ENV to production
@@ -48,10 +51,15 @@ COPY --from=backend-builder /app/backend ./backend
 
 WORKDIR /app/backend
 EXPOSE ${PORT}
+
+# Add health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
+  CMD wget -qO- http://localhost:${PORT}/api/health || exit 1
+
 CMD ["npm", "start"]
 
 # ---- Frontend Production Image ----
-FROM node:18-alpine AS frontend-prod
+FROM base AS frontend-prod
 WORKDIR /app
 
 ENV NODE_ENV production
@@ -66,9 +74,14 @@ COPY --from=deps /app/frontend/package.json ./frontend/package.json
 # Copy built frontend application from the 'frontend-builder' stage
 COPY --from=frontend-builder /app/frontend/.next ./frontend/.next
 COPY --from=frontend-builder /app/frontend/public ./frontend/public
-# Copy next.config.js if it exists and is needed at runtime
-# COPY --from=frontend-builder /app/frontend/next.config.js ./frontend/
+# Copy next.config.js and other config files needed at runtime
+COPY --from=frontend-builder /app/frontend/next.config.mjs ./frontend/
 
 WORKDIR /app/frontend
 EXPOSE ${PORT}
+
+# Add health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
+  CMD wget -qO- http://localhost:${PORT}/api/health || exit 1
+
 CMD ["npm", "start"]

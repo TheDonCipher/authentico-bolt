@@ -2,7 +2,7 @@ import { cookies } from 'next/headers';
 
 // Function to set auth token in cookies
 export async function setAuthCookie(token: string) {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   await cookieStore.set({
     name: 'authToken',
     value: token,
@@ -16,7 +16,7 @@ export async function setAuthCookie(token: string) {
 
 // Function to set user data in cookies (for middleware access)
 export async function setUserDataCookie(userData: any) {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   await cookieStore.set({
     name: 'userData',
     value: JSON.stringify({
@@ -35,21 +35,21 @@ export async function setUserDataCookie(userData: any) {
 
 // Function to clear auth cookies
 export async function clearAuthCookies() {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   await cookieStore.delete('authToken');
   await cookieStore.delete('userData');
 }
 
 // Function to get auth token from cookies
 export async function getAuthCookie() {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const authCookie = cookieStore.get('authToken');
   return authCookie?.value;
 }
 
 // Function to get user data from cookies
 export async function getUserDataCookie() {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const userDataCookie = cookieStore.get('userData')?.value;
   if (userDataCookie) {
     try {

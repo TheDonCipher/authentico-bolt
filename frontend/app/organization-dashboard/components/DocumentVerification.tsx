@@ -4,13 +4,14 @@ import React, { useState } from 'react';
 import { Check, X, Eye, AlertTriangle } from 'lucide-react';
 import axios from 'axios';
 import { getAuthToken } from '../../../lib/token-util';
+import { getFirestore, doc, getDoc, updateDoc } from 'firebase/firestore';
 
 interface DocumentVerificationProps {
   request: any;
   onVerificationComplete: () => void;
 }
 
-export const DocumentVerification: React.FC<DocumentVerificationProps> = ({
+const DocumentVerification: React.FC<DocumentVerificationProps> = ({
   request,
   onVerificationComplete,
 }) => {
@@ -30,10 +31,27 @@ export const DocumentVerification: React.FC<DocumentVerificationProps> = ({
         throw new Error('Authentication required');
       }
 
+      // Get the document from Firestore first to ensure we have the latest data
+      const db = getFirestore();
+      const docRef = doc(db, 'documents', request.documentId);
+      const docSnap = await getDoc(docRef);
+
+      if (!docSnap.exists()) {
+        throw new Error('Document not found');
+      }
+
+      // Update the document status in Firestore directly
+      await updateDoc(docRef, {
+        status: 'verified', // Use lowercase for consistency
+        verifiedAt: new Date(),
+        verifiedBy: request.verifyingOrgId,
+      });
+
+      // Also update via API to ensure blockchain anchoring
       await axios.post(
         `/api/documents/${request.documentId}/verify`,
         {
-          status: 'Verified',
+          status: 'verified', // Use lowercase for consistency
         },
         {
           headers: {
@@ -70,10 +88,27 @@ export const DocumentVerification: React.FC<DocumentVerificationProps> = ({
         throw new Error('Authentication required');
       }
 
+      // Get the document from Firestore first to ensure we have the latest data
+      const db = getFirestore();
+      const docRef = doc(db, 'documents', request.documentId);
+      const docSnap = await getDoc(docRef);
+
+      if (!docSnap.exists()) {
+        throw new Error('Document not found');
+      }
+
+      // Update the document status in Firestore directly
+      await updateDoc(docRef, {
+        status: 'rejected', // Use lowercase for consistency
+        rejectedAt: new Date(),
+        rejectedBy: request.verifyingOrgId,
+        rejectionReason: rejectionReason,
+      });
+
       await axios.post(
         `/api/documents/${request.documentId}/verify`,
         {
-          status: 'Rejected',
+          status: 'rejected', // Use lowercase for consistency
           rejectionReason: rejectionReason,
         },
         {
@@ -102,6 +137,26 @@ export const DocumentVerification: React.FC<DocumentVerificationProps> = ({
     window.open(`/documents/${request.documentId}`, '_blank');
   };
 
+  // Check the document status to determine which actions to show
+  const getDocumentStatus = () => {
+    if (!request || !request.documentId) return 'pending';
+
+    // Try to get status from different possible fields
+    const status = request.status || request.documentStatus;
+
+    // Normalize status to lowercase for consistency
+    if (status) {
+      if (typeof status === 'string') {
+        return status.toLowerCase();
+      }
+      return status;
+    }
+
+    return 'pending';
+  };
+
+  const documentStatus = getDocumentStatus();
+
   return (
     <div className="flex flex-wrap gap-2">
       {error && (
@@ -114,7 +169,10 @@ export const DocumentVerification: React.FC<DocumentVerificationProps> = ({
       {showRejectionForm ? (
         <div className="w-full">
           <div className="mb-2">
-            <label htmlFor="rejectionReason" className="block text-xs mb-1 font-bold">
+            <label
+              htmlFor="rejectionReason"
+              className="block text-xs mb-1 font-bold"
+            >
               Reason for Rejection:
             </label>
             <textarea
@@ -152,19 +210,56 @@ export const DocumentVerification: React.FC<DocumentVerificationProps> = ({
           >
             <Eye size={12} className="mr-1" /> View
           </button>
-          <button
-            onClick={handleVerify}
-            disabled={isVerifying}
-            className="bg-forest-green text-ivory px-2 py-1 text-xs border border-deep-moss hover:shadow-[1px_1px_0px_0px_rgba(27,67,50,0.8)] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
-          >
-            {isVerifying ? 'Verifying...' : <><Check size={12} className="mr-1" /> Verify</>}
-          </button>
-          <button
-            onClick={() => setShowRejectionForm(true)}
-            className="bg-burnt-sienna bg-opacity-20 px-2 py-1 text-xs border border-deep-moss hover:shadow-[1px_1px_0px_0px_rgba(27,67,50,0.8)] transition-all flex items-center"
-          >
-            <X size={12} className="mr-1" /> Reject
-          </button>
+
+          {/* Show different buttons based on document status */}
+          {documentStatus === 'pending' && (
+            <>
+              <button
+                onClick={handleVerify}
+                disabled={isVerifying}
+                className="bg-forest-green text-ivory px-2 py-1 text-xs border border-deep-moss hover:shadow-[1px_1px_0px_0px_rgba(27,67,50,0.8)] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+              >
+                {isVerifying ? (
+                  'Verifying...'
+                ) : (
+                  <>
+                    <Check size={12} className="mr-1" /> Verify
+                  </>
+                )}
+              </button>
+              <button
+                onClick={() => setShowRejectionForm(true)}
+                className="bg-burnt-sienna bg-opacity-20 px-2 py-1 text-xs border border-deep-moss hover:shadow-[1px_1px_0px_0px_rgba(27,67,50,0.8)] transition-all flex items-center"
+              >
+                <X size={12} className="mr-1" /> Reject
+              </button>
+            </>
+          )}
+
+          {documentStatus === 'verified' && (
+            <button
+              onClick={() => setShowRejectionForm(true)}
+              className="bg-burnt-sienna bg-opacity-20 px-2 py-1 text-xs border border-deep-moss hover:shadow-[1px_1px_0px_0px_rgba(27,67,50,0.8)] transition-all flex items-center"
+            >
+              <X size={12} className="mr-1" /> Revoke
+            </button>
+          )}
+
+          {documentStatus === 'rejected' && (
+            <button
+              onClick={handleVerify}
+              disabled={isVerifying}
+              className="bg-forest-green text-ivory px-2 py-1 text-xs border border-deep-moss hover:shadow-[1px_1px_0px_0px_rgba(27,67,50,0.8)] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+            >
+              {isVerifying ? (
+                'Verifying...'
+              ) : (
+                <>
+                  <Check size={12} className="mr-1" /> Approve
+                </>
+              )}
+            </button>
+          )}
         </>
       )}
     </div>

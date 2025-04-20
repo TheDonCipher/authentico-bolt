@@ -27,7 +27,7 @@ import { Tooltip } from '../ui/Tooltip';
 interface EnhancedDocumentCardProps {
   doc: Document;
   onShare: (doc: Document) => void;
-  onAction: (doc: Document) => void;
+  onAction?: (doc: Document) => void;
   documentName?: string;
   verifyingOrgName?: string;
   transactionHash?: string;
@@ -40,7 +40,7 @@ interface EnhancedDocumentCardProps {
 export const EnhancedDocumentCard = ({
   doc,
   onShare,
-  onAction,
+  onAction = () => {},
   documentName,
   verifyingOrgName,
   transactionHash,
@@ -62,7 +62,9 @@ export const EnhancedDocumentCard = ({
     message: string;
   } | null>(null);
 
-  const verificationUrl = `${window.location.origin}/verify/${doc.documentId}`;
+  const verificationUrl = doc.documentId
+    ? `${window.location.origin}/verify/${doc.documentId}`
+    : `${window.location.origin}/verify`;
   const explorerUrl = transactionHash
     ? `https://sepolia.etherscan.io/tx/${transactionHash}`
     : undefined;
@@ -70,6 +72,10 @@ export const EnhancedDocumentCard = ({
   // Function to fetch and view the document
   const viewDocument = async () => {
     try {
+      if (!doc || !doc.documentId) {
+        throw new Error('Invalid document ID');
+      }
+
       setIsLoading(true);
       const idToken = await getAuthToken();
 
@@ -77,8 +83,11 @@ export const EnhancedDocumentCard = ({
         throw new Error('Not authenticated');
       }
 
+      // Validate document ID
+      const docId = doc.documentId.toString();
+
       const response = await axios.get(
-        `/api/documents/${doc.documentId}/secure-details`,
+        `/api/documents/${docId}/secure-details`,
         {
           headers: {
             Authorization: `Bearer ${idToken}`,
@@ -86,16 +95,23 @@ export const EnhancedDocumentCard = ({
         }
       );
 
+      if (!response.data || !response.data.decryptedFile) {
+        throw new Error('Invalid document data received from server');
+      }
+
       setDocumentData({
         data: response.data.decryptedFile,
-        mimeType: response.data.mimeType,
+        mimeType: response.data.mimeType || 'application/octet-stream',
       });
       setShowDocument(true);
     } catch (error) {
       console.error('Error viewing document:', error);
       setToastMessage({
         type: 'error',
-        message: 'Failed to load document for viewing',
+        message:
+          error instanceof Error
+            ? error.message
+            : 'Failed to load document for viewing',
       });
     } finally {
       setIsLoading(false);
@@ -157,9 +173,12 @@ export const EnhancedDocumentCard = ({
       <div className="flex justify-between items-start mb-3">
         <div className="overflow-hidden">
           <h4 className="font-bold text-lg truncate">
-            {documentName || getDocumentTypeName(doc.documentType)}
+            {documentName ||
+              (doc.documentType
+                ? getDocumentTypeName(doc.documentType)
+                : 'Unnamed Document')}
           </h4>
-          {documentName && (
+          {documentName && doc.documentType && (
             <p className="text-xs text-gray-600 mt-1 truncate">
               {getDocumentTypeName(doc.documentType)}
             </p>
@@ -181,7 +200,11 @@ export const EnhancedDocumentCard = ({
             </div>
             <p className="font-medium truncate max-w-[60%]">
               {verifyingOrgName ||
-                `ID: ${doc.verifier.slice(0, 5)}...${doc.verifier.slice(-3)}`}
+                (doc.verifier
+                  ? `ID: ${doc.verifier.slice(0, 5)}...${doc.verifier.slice(
+                      -3
+                    )}`
+                  : 'Not assigned')}
             </p>
           </div>
 
@@ -195,25 +218,32 @@ export const EnhancedDocumentCard = ({
             </div>
             <div className="flex items-center bg-soft-sage bg-opacity-50 px-1.5 py-0.5 rounded overflow-hidden">
               <p className="font-mono truncate">
-                {doc.publicAddress.slice(0, 6)}...{doc.publicAddress.slice(-4)}
+                {doc.publicAddress
+                  ? `${doc.publicAddress.slice(
+                      0,
+                      6
+                    )}...${doc.publicAddress.slice(-4)}`
+                  : 'Not available'}
               </p>
-              <button
-                onClick={() =>
-                  copyToClipboard(
-                    doc.publicAddress,
-                    'Wallet address copied to clipboard!'
-                  )
-                }
-                className="ml-1 text-deep-moss hover:text-forest-green flex-shrink-0"
-                title="Copy wallet address"
-              >
-                <Copy size={12} />
-              </button>
+              {doc.publicAddress && (
+                <button
+                  onClick={() =>
+                    copyToClipboard(
+                      doc.publicAddress,
+                      'Wallet address copied to clipboard!'
+                    )
+                  }
+                  className="ml-1 text-deep-moss hover:text-forest-green flex-shrink-0"
+                  title="Copy wallet address"
+                >
+                  <Copy size={12} />
+                </button>
+              )}
             </div>
           </div>
 
           {/* Document Hash */}
-          {doc.metadataHash && (
+          {doc.metadataHash && doc.metadataHash.length > 0 && (
             <div className="flex items-center justify-between">
               <div className="flex items-center">
                 <p className="text-gray-600 mr-1">Hash:</p>
@@ -345,6 +375,7 @@ export const EnhancedDocumentCard = ({
         {/* View Document Button */}
         <button
           type="button"
+          key="view-button"
           className="bg-forest-green text-ivory px-2 py-1 text-xs border border-deep-moss hover:shadow-[1px_1px_0px_0px_rgba(27,67,50,0.8)] transition-all font-medium flex items-center justify-center flex-1"
           onClick={viewDocument}
           disabled={isLoading}
@@ -356,25 +387,26 @@ export const EnhancedDocumentCard = ({
         {/* Download/Status Button */}
         <button
           type="button"
+          key="action-button"
           className="bg-soft-sage px-2 py-1 text-xs border border-deep-moss hover:shadow-[1px_1px_0px_0px_rgba(27,67,50,0.8)] transition-all font-medium flex items-center justify-center flex-1"
           onClick={() => onAction(doc)}
           disabled={isLoading}
         >
           {doc.status === '1' && (
             <>
-              <FileText size={12} className="mr-1" />
+              <FileText key="status-icon-1" size={12} className="mr-1" />
               Status
             </>
           )}
           {doc.status === '0' && (
             <>
-              <Download size={12} className="mr-1" />
+              <Download key="status-icon-0" size={12} className="mr-1" />
               Download
             </>
           )}
           {doc.status === '2' && (
             <>
-              <FileText size={12} className="mr-1" />
+              <FileText key="status-icon-2" size={12} className="mr-1" />
               Reason
             </>
           )}
@@ -384,6 +416,7 @@ export const EnhancedDocumentCard = ({
         {doc.status === '1' && (
           <button
             type="button"
+            key="verify-button"
             className="bg-soft-sage px-2 py-1 text-xs border border-deep-moss hover:shadow-[1px_1px_0px_0px_rgba(27,67,50,0.8)] transition-all font-medium flex items-center justify-center w-full mt-1"
             onClick={requestVerification}
             disabled={isLoading}
@@ -396,6 +429,7 @@ export const EnhancedDocumentCard = ({
         {/* QR Code Button */}
         <button
           type="button"
+          key="qr-button"
           className="bg-ivory px-2 py-1 text-xs border border-deep-moss hover:shadow-[1px_1px_0px_0px_rgba(27,67,50,0.8)] transition-all font-medium flex items-center justify-center flex-1"
           onClick={() => setShowQR(true)}
           disabled={isLoading}
@@ -407,6 +441,7 @@ export const EnhancedDocumentCard = ({
         {/* Share Button */}
         <button
           type="button"
+          key="share-button"
           className="bg-ivory px-2 py-1 text-xs border border-deep-moss hover:shadow-[1px_1px_0px_0px_rgba(27,67,50,0.8)] transition-all font-medium flex items-center justify-center flex-1"
           onClick={() => {
             copyToClipboard(
@@ -482,12 +517,26 @@ export const EnhancedDocumentCard = ({
           <div className="bg-ivory p-6 border-4 border-deep-moss max-w-4xl w-full max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-xl font-bold">Document Viewer</h3>
-              <button
-                onClick={() => setShowDocument(false)}
-                className="p-1 hover:bg-soft-sage rounded-full"
-              >
-                <X size={24} />
-              </button>
+              <div className="flex items-center gap-2">
+                {documentData.data && documentData.mimeType && (
+                  <a
+                    href={`data:${documentData.mimeType};base64,${documentData.data}`}
+                    download={`${
+                      documentName || `document-${doc.documentId}`
+                    }.${documentData.mimeType.split('/')[1] || 'file'}`}
+                    className="p-2 bg-soft-sage text-deep-moss rounded-sm hover:bg-opacity-90 transition-all"
+                    title="Download"
+                  >
+                    <Download size={20} />
+                  </a>
+                )}
+                <button
+                  onClick={() => setShowDocument(false)}
+                  className="p-1 hover:bg-soft-sage rounded-full"
+                >
+                  <X size={24} />
+                </button>
+              </div>
             </div>
 
             <DocumentViewer

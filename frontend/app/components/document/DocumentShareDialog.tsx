@@ -63,10 +63,20 @@ export const DocumentShareDialog = ({
     link.click();
   };
 
+  const handleBackgroundClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    // Only close if the background overlay was clicked directly
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
+
   return (
-    <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4">
-      <div className="bg-ivory border-4 border-deep-moss p-6 max-w-md w-full">
-        <div className="flex justify-between items-center mb-6">
+    <div
+      className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4 overflow-y-auto"
+      onClick={handleBackgroundClick}
+    >
+      <div className="bg-ivory border-4 border-deep-moss p-6 max-w-md w-full max-h-[90vh] overflow-y-auto my-8">
+        <div className="flex justify-between items-center mb-6 sticky top-0 bg-ivory z-10">
           <h2 className="text-2xl font-bold text-deep-moss">
             Share Document Verification
           </h2>

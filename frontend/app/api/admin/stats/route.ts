@@ -68,6 +68,8 @@ export async function GET(request: NextRequest) {
       documentsSnapshot,
       organizationsSnapshot,
       pendingOrgsSnapshot,
+      verifiedDocsSnapshot,
+      rejectedDocsSnapshot,
     ] = await Promise.all([
       db.collection(USER_COLLECTION).count().get(),
       db.collection(DOCUMENT_COLLECTION).count().get(),
@@ -75,6 +77,16 @@ export async function GET(request: NextRequest) {
       db
         .collection(ORGANIZATION_COLLECTION)
         .where('status', '==', 'pending')
+        .count()
+        .get(),
+      db
+        .collection(DOCUMENT_COLLECTION)
+        .where('status', '==', 'Verified')
+        .count()
+        .get(),
+      db
+        .collection(DOCUMENT_COLLECTION)
+        .where('status', '==', 'Rejected')
         .count()
         .get(),
     ]);
@@ -85,6 +97,8 @@ export async function GET(request: NextRequest) {
       documents: documentsSnapshot.data().count,
       organizations: organizationsSnapshot.data().count,
       pendingOrganizations: pendingOrgsSnapshot.data().count,
+      verifiedDocuments: verifiedDocsSnapshot.data().count,
+      rejectedDocuments: rejectedDocsSnapshot.data().count,
     });
   } catch (error: any) {
     console.error('Error fetching admin statistics:', error);

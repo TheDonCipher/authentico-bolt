@@ -7,10 +7,13 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await context.params;
   try {
-    console.log(`Get secure document details API route called for document ${params.id}`);
+    console.log(
+      `Get secure document details API route called for document ${id}`
+    );
 
     // Get the authorization header
     const authHeader = request.headers.get('authorization');
@@ -25,36 +28,47 @@ export async function GET(
     const decodedToken = await auth.verifyIdToken(token);
     const uid = decodedToken.uid;
 
-    console.log(`Getting secure document details for ${params.id} for user ${uid}`);
+    console.log(`Getting secure document details for ${id} for user ${uid}`);
 
     // Forward the request to the backend
     try {
-      const response = await axios.get(`${API_URL}/documents/${params.id}/secure-details`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await axios.get(
+        `${API_URL}/documents/${id}/secure-details`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
       console.log('Backend secure document details response received');
 
       return NextResponse.json(response.data);
     } catch (error: any) {
-      console.error('Error forwarding secure document details request to backend:', error.message);
+      console.error(
+        'Error forwarding secure document details request to backend:',
+        error.message
+      );
 
       // Return the error from the backend
       return NextResponse.json(
-        { 
-          error: error.response?.data?.error || 'Failed to get secure document details',
-          details: error.response?.data?.details || error.message
+        {
+          error:
+            error.response?.data?.error ||
+            'Failed to get secure document details',
+          details: error.response?.data?.details || error.message,
         },
         { status: error.response?.status || 500 }
       );
     }
   } catch (error: any) {
     console.error('Error in secure document details API route:', error);
-    return NextResponse.json({ 
-      error: 'Internal server error',
-      details: error.message
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        error: 'Internal server error',
+        details: error.message,
+      },
+      { status: 500 }
+    );
   }
 }

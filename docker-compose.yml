@@ -7,13 +7,21 @@ services:
       dockerfile: Dockerfile # Use the root Dockerfile
       target: frontend-prod # Target the final frontend stage from the Dockerfile
     ports:
-      - "3000:3000" # Map host port 3000 to container port 3000
+      - '3000:3000' # Map host port 3000 to container port 3000
     env_file:
       - ./frontend/.env # Load environment variables from frontend/.env
     depends_on:
-      - backend # Ensure backend starts before frontend
+      backend: # Ensure backend starts before frontend
+        condition: service_healthy
     networks:
       - authentico-net
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://localhost:3000/api/health']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    restart: unless-stopped
 
   backend:
     build:
@@ -21,15 +29,21 @@ services:
       dockerfile: Dockerfile # Use the root Dockerfile
       target: backend-prod # Target the final backend stage from the Dockerfile
     ports:
-      - "8080:8080" # Map host port 8080 to container port 8080 (default in Dockerfile)
+      - '8080:8080' # Map host port 8080 to container port 8080 (default in Dockerfile)
     env_file:
       - ./backend/.env # Load environment variables from backend/.env
     networks:
       - authentico-net
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://localhost:8080/api/health']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    restart: unless-stopped
 
 networks:
   authentico-net: # Define a shared network for services
     driver: bridge
-
 # Removed postgres_data volume as db service is removed
 # Removed commented out services (document, verification, user, cypress)

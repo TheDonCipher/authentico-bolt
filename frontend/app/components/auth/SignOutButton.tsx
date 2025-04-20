@@ -1,7 +1,11 @@
 import React, { useState } from 'react';
 import { LogOut } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
-import { useDisconnect, useActiveAccount } from 'thirdweb/react';
+import {
+  useDisconnect,
+  useActiveAccount,
+  useActiveWallet,
+} from 'thirdweb/react';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 
 interface SignOutButtonProps {
@@ -14,6 +18,7 @@ export const SignOutButton: React.FC<SignOutButtonProps> = ({
   const { logout, loading: authLoading } = useAuth();
   const { disconnect } = useDisconnect();
   const account = useActiveAccount();
+  const wallet = useActiveWallet();
   const [loading, setLoading] = useState(false);
 
   const handleSignOut = async () => {
@@ -24,9 +29,10 @@ export const SignOutButton: React.FC<SignOutButtonProps> = ({
       await logout();
 
       // Then disconnect the wallet if it exists
-      if (account) {
+      if (wallet) {
         try {
-          disconnect();
+          // Pass the active wallet to the disconnect function
+          disconnect(wallet);
         } catch (disconnectError) {
           console.error('Error disconnecting wallet:', disconnectError);
           // Continue even if wallet disconnect fails

@@ -55,7 +55,7 @@ service cloud.firestore {
       allow read: if isAuthenticated() &&
                   (resource.data.ownerUid == request.auth.uid ||
                    resource.data.verifyingOrgId == request.auth.uid ||
-                   resource.data.sharedWith[request.auth.uid] == true ||
+                   (resource.data.sharedWith != null && resource.data.sharedWith[request.auth.uid] == true) ||
                    isAdmin());
       allow create: if isAuthenticated();
       allow update: if isAuthenticated() &&
@@ -68,10 +68,10 @@ service cloud.firestore {
 
     // Notifications
     match /notifications/{notificationId} {
-      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
       allow create: if isAuthenticated() || isAdmin();
-      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid;
-      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow update: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
     }
 
     // Organization Members

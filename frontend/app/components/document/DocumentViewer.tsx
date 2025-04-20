@@ -21,7 +21,7 @@ export const DocumentViewer = ({
     try {
       // Convert base64 to binary
       const byteCharacters = atob(documentData);
-      const byteArrays = [];
+      const byteArrays: Uint8Array[] = [];
 
       for (let offset = 0; offset < byteCharacters.length; offset += 512) {
         const slice = byteCharacters.slice(offset, offset + 512);

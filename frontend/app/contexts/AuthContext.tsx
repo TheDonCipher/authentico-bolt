@@ -78,14 +78,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const account = useActiveAccount();
 
   // Compute admin status
-  const isAdmin =
+  const isAdmin: boolean =
     user?.userType === 'admin' ||
-    (user?.walletAddress &&
+    !!(
+      user?.walletAddress &&
       user.walletAddress.toLowerCase() ===
         (
           process.env.NEXT_PUBLIC_ADMIN_WALLET_ADDRESS ||
           '0x4Ca717EAAC6Ec3917Cb6E23557e1CEa7267E2A1c'
-        ).toLowerCase());
+        ).toLowerCase()
+    );
 
   // Clear any error
   const clearError = () => setError(null);
@@ -428,9 +430,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const navigateToDashboard = useCallback(() => {
     if (user) {
       if (activeContext === 'individual') {
-        router.push(`/user/${user.uid}/dashboard`);
+        router.push(`/individual-dashboard`);
       } else if (activeContext === 'organization' && activeOrgId) {
-        router.push(`/org/${activeOrgId}/dashboard`);
+        router.push(`/organization-dashboard`);
       }
     }
   }, [user, activeContext, activeOrgId, router]);

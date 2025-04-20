@@ -81,7 +81,8 @@ export async function POST(request: NextRequest) {
       const axiosFormData = new FormData();
 
       // Copy all entries from the original formData to the new one
-      for (const [key, value] of formData.entries()) {
+      const entries = Array.from(formData.entries());
+      for (const [key, value] of entries) {
         // Special handling for file fields
         if (key === 'document_file' && value instanceof File) {
           // Only log in development environment

@@ -33,7 +33,7 @@ interface ToastMessage {
 
 export default function VerificationPage() {
   const params = useParams();
-  const orgId = params.orgId as string;
+  const orgId = params?.orgId as string;
   const { user } = useAuth();
 
   const [verificationRequests, setVerificationRequests] = useState<

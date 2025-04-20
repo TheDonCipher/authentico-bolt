@@ -7,10 +7,11 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await context.params;
   try {
-    console.log(`Get document API route called for document ${params.id}`);
+    console.log(`Get document API route called for document ${id}`);
 
     // Get the authorization header
     const authHeader = request.headers.get('authorization');
@@ -25,11 +26,11 @@ export async function GET(
     const decodedToken = await auth.verifyIdToken(token);
     const uid = decodedToken.uid;
 
-    console.log(`Getting document ${params.id} for user ${uid}`);
+    console.log(`Getting document ${id} for user ${uid}`);
 
     // Forward the request to the backend
     try {
-      const response = await axios.get(`${API_URL}/documents/${params.id}`, {
+      const response = await axios.get(`${API_URL}/documents/${id}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -46,7 +47,7 @@ export async function GET(
         console.log('Backend not available, creating mock response');
 
         // Get the document from Firestore
-        const doc = await db.collection('documents').doc(params.id).get();
+        const doc = await db.collection('documents').doc(id).get();
 
         if (!doc.exists) {
           return NextResponse.json(

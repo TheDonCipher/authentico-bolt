@@ -32,7 +32,12 @@
     "test:verified-org-upload": "node test-scripts/test-verified-org-upload.js",
     "setup:firebase-env": "node scripts/setup-firebase-env.js",
     "generate:master-key": "node scripts/generate-master-key.js",
-    "generate:fixed-master-key": "node scripts/generate-fixed-master-key.js"
+    "generate:fixed-master-key": "node scripts/generate-fixed-master-key.js",
+    "deploy": "powershell -File scripts/deploy.ps1",
+    "deploy:vercel": "powershell -File scripts/deploy.ps1 -Environment prod -Target vercel -Build -Deploy",
+    "deploy:render": "powershell -File scripts/deploy.ps1 -Environment prod -Target render -Build",
+    "deploy:docker": "powershell -File scripts/deploy.ps1 -Environment prod -Target docker -Build -Deploy",
+    "deploy:build": "powershell -File scripts/deploy.ps1 -Environment prod -Build"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.6.2",

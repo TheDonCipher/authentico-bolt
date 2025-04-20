@@ -36,7 +36,7 @@ export default function OrganizationMembersPage() {
   const [editingMemberId, setEditingMemberId] = useState<string | null>(null);
   const [editRole, setEditRole] = useState('');
 
-  const orgId = params.orgId as string;
+  const orgId = params?.orgId as string;
 
   // Fetch organization members
   useEffect(() => {

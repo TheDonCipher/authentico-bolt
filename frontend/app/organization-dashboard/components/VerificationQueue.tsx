@@ -2,7 +2,18 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Check, X, Eye, Clock, Bell } from 'lucide-react';
+import {
+  Check,
+  X,
+  Eye,
+  Clock,
+  Bell,
+  Shield,
+  AlertTriangle,
+  FileCheck,
+  Download,
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { db } from '../../../lib/firebase';
 import {
   collection,
@@ -17,7 +28,7 @@ import axios from 'axios';
 import { getAuthToken } from '../../../lib/token-util';
 import { Toast } from '../../components/ui/Toast';
 import { useAuth } from '../../contexts/AuthContext';
-import { DocumentViewer } from '../../components/document/DocumentViewer';
+import DocumentViewerModal from './DocumentViewerModal';
 
 interface Document {
   id: string;
@@ -26,21 +37,22 @@ interface Document {
   status: string;
   createdAt: Date;
   ownerName: string;
+  verifyingOrgId?: string;
 }
 
 const VerificationQueue = () => {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDoc, setSelectedDoc] = useState<string | null>(null);
-  const [viewingDoc, setViewingDoc] = useState<{
-    id: string;
-    data: string;
-    mimeType: string;
-  } | null>(null);
+  const [viewingDoc, setViewingDoc] = useState<string | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
   const [toastMessage, setToastMessage] = useState<{
-    type: 'success' | 'error';
+    type: 'success' | 'error' | 'warning' | 'info';
     message: string;
+  } | null>(null);
+  const [processingDoc, setProcessingDoc] = useState<{
+    id: string;
+    action: 'Verified' | 'Rejected';
   } | null>(null);
   const router = useRouter();
 
@@ -64,7 +76,7 @@ const VerificationQueue = () => {
     const unsubscribe = onSnapshot(
       q,
       (snapshot) => {
-        const fetchedDocs = [];
+        const fetchedDocs: Document[] = [];
         snapshot.forEach((doc) => {
           const data = doc.data();
           // Convert Firestore document to our Document model
@@ -88,20 +100,23 @@ const VerificationQueue = () => {
         console.error('Error in document listener:', error);
         setToastMessage({
           type: 'error',
-          message: 'Failed to listen for document updates.',
+          message:
+            'Failed to load verification queue. Please refresh the page.',
         });
+        // Set empty documents array to avoid showing stale data
+        setDocuments([]);
         setLoading(false);
       }
     );
 
     // Set up notification listener for new verification requests
+    // Using a simpler query to avoid index requirements
     const notificationsRef = collection(db, 'notifications');
     const notificationQuery = query(
       notificationsRef,
       where('userId', '==', user.uid),
-      where('read', '==', false),
-      where('title', '==', 'New Verification Request'),
-      orderBy('createdAt', 'desc')
+      where('read', '==', false)
+      // Removed the title filter and orderBy to avoid index requirements
     );
 
     const notificationUnsubscribe = onSnapshot(
@@ -124,7 +139,11 @@ const VerificationQueue = () => {
     };
   }, [user]);
 
-  const viewDocument = async (docId: string) => {
+  const viewDocument = (docId: string) => {
+    setViewingDoc(docId);
+  };
+
+  const downloadDocument = async (docId: string) => {
     try {
       const idToken = await getAuthToken();
 
@@ -141,16 +160,36 @@ const VerificationQueue = () => {
         }
       );
 
-      setViewingDoc({
-        id: docId,
-        data: response.data.decryptedFile,
-        mimeType: response.data.mimeType,
-      });
+      if (response.data && response.data.decryptedFile) {
+        // Create a download link and trigger it
+        const link = document.createElement('a');
+        link.href = `data:${
+          response.data.mimeType || 'application/octet-stream'
+        };base64,${response.data.decryptedFile}`;
+        link.download = `${response.data.documentName || 'document'}.${
+          (response.data.mimeType || 'application/octet-stream').split(
+            '/'
+          )[1] || 'file'
+        }`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        setToastMessage({
+          type: 'success',
+          message: 'Document download started',
+        });
+      } else {
+        throw new Error('Invalid document data received from server');
+      }
     } catch (error) {
-      console.error('Error viewing document:', error);
+      console.error('Error downloading document:', error);
       setToastMessage({
         type: 'error',
-        message: 'Failed to load document for viewing',
+        message:
+          error instanceof Error
+            ? error.message
+            : 'Failed to download document',
       });
     }
   };
@@ -160,6 +199,20 @@ const VerificationQueue = () => {
     status: 'Verified' | 'Rejected'
   ) => {
     try {
+      // Set processing state
+      setProcessingDoc({
+        id: docId,
+        action: status,
+      });
+
+      // Show processing toast
+      setToastMessage({
+        type: 'info',
+        message: `Processing document ${
+          status === 'Verified' ? 'verification' : 'rejection'
+        }...`,
+      });
+
       const idToken = await getAuthToken();
 
       if (!idToken) {
@@ -172,14 +225,28 @@ const VerificationQueue = () => {
           type: 'error',
           message: 'Please provide a reason for rejection',
         });
+        setProcessingDoc(null);
         return;
       }
 
-      await axios.post(
+      // First update UI to show processing state
+      setToastMessage({
+        type: 'info',
+        message: `Creating blockchain record for document ${status.toLowerCase()}...`,
+      });
+
+      console.log(`Verifying document ${docId} with status ${status}`);
+      console.log(
+        'Rejection reason:',
+        status === 'Rejected' ? rejectionReason : 'None'
+      );
+
+      // Make the API call
+      const response = await axios.post(
         `/api/documents/${docId}/verify`,
         {
           status,
-          rejectionReason: status === 'Rejected' ? rejectionReason : null,
+          rejectionReason: status === 'Rejected' ? rejectionReason : '',
         },
         {
           headers: {
@@ -188,20 +255,27 @@ const VerificationQueue = () => {
         }
       );
 
+      console.log('Verification response:', response.status, response.data);
+
       // Update local state
       setDocuments(documents.filter((doc) => doc.id !== docId));
       setSelectedDoc(null);
       setRejectionReason('');
+      setProcessingDoc(null);
 
+      // Show success message
       setToastMessage({
         type: 'success',
-        message: `Document ${status.toLowerCase()} successfully`,
+        message: `Document ${status.toLowerCase()} successfully and recorded on blockchain`,
       });
     } catch (error) {
       console.error('Error verifying document:', error);
+      setProcessingDoc(null);
       setToastMessage({
         type: 'error',
-        message: `Failed to ${status.toLowerCase()} document`,
+        message: `Failed to ${status.toLowerCase()} document: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`,
       });
     }
   };
@@ -219,11 +293,39 @@ const VerificationQueue = () => {
   if (loading) {
     return (
       <div className="bg-soft-sage border-4 border-deep-moss p-6 shadow-brutal">
-        <div className="animate-pulse">
-          <div className="h-8 bg-ivory w-1/3 mb-6"></div>
-          <div className="h-6 bg-ivory w-full mb-4"></div>
-          <div className="h-6 bg-ivory w-full mb-4"></div>
-          <div className="h-6 bg-ivory w-full mb-4"></div>
+        <h2 className="text-3xl font-black mb-6 text-deep-moss">
+          Verification Queue
+        </h2>
+        <div className="flex items-center justify-center p-12">
+          <div className="relative">
+            <motion.div
+              className="w-16 h-20 bg-ivory border-4 border-deep-moss absolute"
+              animate={{ rotate: [-5, 5, -5] }}
+              transition={{ repeat: Infinity, duration: 2 }}
+            />
+            <motion.div
+              className="w-16 h-20 bg-ivory border-4 border-deep-moss absolute"
+              initial={{ rotate: 5 }}
+              animate={{ rotate: [-3, 7, -3] }}
+              transition={{ repeat: Infinity, duration: 2, delay: 0.3 }}
+            />
+            <motion.div
+              className="w-16 h-20 bg-ivory border-4 border-deep-moss relative z-10 flex items-center justify-center"
+              initial={{ rotate: -3 }}
+              animate={{ rotate: [0, 10, 0] }}
+              transition={{ repeat: Infinity, duration: 2, delay: 0.6 }}
+            >
+              <FileCheck className="text-deep-moss" size={24} />
+            </motion.div>
+          </div>
+          <div className="ml-6">
+            <p className="text-deep-moss font-bold text-lg">
+              Loading verification queue...
+            </p>
+            <p className="text-deep-moss text-sm">
+              Fetching documents that need your verification
+            </p>
+          </div>
         </div>
       </div>
     );
@@ -244,20 +346,14 @@ const VerificationQueue = () => {
           </button>
         </div>
 
-        <div className="mb-6">
-          <DocumentViewer
-            documentData={viewingDoc.data}
-            mimeType={viewingDoc.mimeType}
-            fileName={
-              documents.find((doc) => doc.id === viewingDoc.id)?.documentName ||
-              'document'
-            }
-          />
-        </div>
+        <DocumentViewerModal
+          documentId={viewingDoc}
+          onClose={() => setViewingDoc(null)}
+        />
 
-        <div className="flex space-x-4">
+        <div className="flex space-x-4 mt-6">
           <button
-            onClick={() => verifyDocument(viewingDoc.id, 'Verified')}
+            onClick={() => verifyDocument(viewingDoc, 'Verified')}
             className="flex-1 bg-sap-green text-ivory px-4 py-3 font-bold border-2 border-deep-moss hover:shadow-[2px_2px_0px_0px_rgba(27,67,50,0.8)] transition-all"
           >
             <Check className="inline-block mr-2" size={18} />
@@ -267,7 +363,7 @@ const VerificationQueue = () => {
           <button
             onClick={() => {
               setViewingDoc(null);
-              setSelectedDoc(viewingDoc.id);
+              setSelectedDoc(viewingDoc);
             }}
             className="flex-1 bg-burnt-sienna bg-opacity-20 text-deep-moss px-4 py-3 font-bold border-2 border-deep-moss hover:shadow-[2px_2px_0px_0px_rgba(27,67,50,0.8)] transition-all"
           >
@@ -340,19 +436,50 @@ const VerificationQueue = () => {
                           <Eye size={16} />
                         </button>
                         <button
-                          onClick={() => verifyDocument(doc.id, 'Verified')}
-                          className="bg-sap-green text-ivory p-2 border border-deep-moss hover:shadow-[1px_1px_0px_0px_rgba(27,67,50,0.8)] transition-all"
-                          title="Verify Document"
+                          onClick={() => downloadDocument(doc.id)}
+                          disabled={!!processingDoc}
+                          className="bg-soft-sage text-deep-moss p-2 border border-deep-moss hover:shadow-[1px_1px_0px_0px_rgba(27,67,50,0.8)] transition-all"
+                          title="Download Document"
                         >
-                          <Check size={16} />
+                          <Download size={16} />
                         </button>
-                        <button
-                          onClick={() => setSelectedDoc(doc.id)}
-                          className="bg-burnt-sienna bg-opacity-20 text-deep-moss p-2 border border-deep-moss hover:shadow-[1px_1px_0px_0px_rgba(27,67,50,0.8)] transition-all"
-                          title="Reject Document"
-                        >
-                          <X size={16} />
-                        </button>
+                        {processingDoc && processingDoc.id === doc.id ? (
+                          <div className="flex space-x-2 items-center">
+                            <motion.div
+                              className="w-8 h-8 border-4 border-deep-moss border-t-transparent rounded-full"
+                              animate={{ rotate: 360 }}
+                              transition={{
+                                repeat: Infinity,
+                                duration: 1,
+                                ease: 'linear',
+                              }}
+                            />
+                            <span className="text-xs text-deep-moss font-medium">
+                              {processingDoc.action === 'Verified'
+                                ? 'Verifying...'
+                                : 'Rejecting...'}
+                            </span>
+                          </div>
+                        ) : (
+                          <>
+                            <button
+                              onClick={() => verifyDocument(doc.id, 'Verified')}
+                              className="bg-sap-green text-ivory p-2 border border-deep-moss hover:shadow-[1px_1px_0px_0px_rgba(27,67,50,0.8)] transition-all flex items-center"
+                              title="Verify Document"
+                              disabled={!!processingDoc}
+                            >
+                              <Check size={16} />
+                            </button>
+                            <button
+                              onClick={() => setSelectedDoc(doc.id)}
+                              className="bg-burnt-sienna bg-opacity-20 text-deep-moss p-2 border border-deep-moss hover:shadow-[1px_1px_0px_0px_rgba(27,67,50,0.8)] transition-all flex items-center"
+                              title="Reject Document"
+                              disabled={!!processingDoc}
+                            >
+                              <X size={16} />
+                            </button>
+                          </>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -362,55 +489,79 @@ const VerificationQueue = () => {
           </div>
 
           {/* Rejection Dialog */}
-          {selectedDoc && (
-            <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4">
-              <div className="bg-ivory p-6 border-4 border-deep-moss max-w-md w-full">
-                <h3 className="text-xl font-bold mb-4 text-deep-moss">
-                  Reject Document
-                </h3>
-                <p className="mb-4 text-deep-moss">
-                  Please provide a reason for rejection:
-                </p>
+          <AnimatePresence>
+            {selectedDoc && (
+              <motion.div
+                className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+              >
+                <motion.div
+                  className="bg-ivory p-6 border-4 border-deep-moss max-w-md w-full"
+                  initial={{ scale: 0.9, y: 20 }}
+                  animate={{ scale: 1, y: 0 }}
+                  exit={{ scale: 0.9, y: 20 }}
+                  transition={{ type: 'spring', bounce: 0.4 }}
+                >
+                  <h3 className="text-xl font-bold mb-4 text-deep-moss">
+                    Reject Document
+                  </h3>
+                  <p className="mb-4 text-deep-moss">
+                    Please provide a reason for rejection:
+                  </p>
 
-                <textarea
-                  value={rejectionReason}
-                  onChange={(e) => setRejectionReason(e.target.value)}
-                  className="w-full p-3 border-2 border-deep-moss focus:border-forest-green focus:outline-none mb-4"
-                  rows={4}
-                  placeholder="Enter rejection reason..."
-                  required
-                />
+                  <textarea
+                    value={rejectionReason}
+                    onChange={(e) => setRejectionReason(e.target.value)}
+                    className="w-full p-3 border-2 border-deep-moss focus:border-forest-green focus:outline-none mb-4"
+                    rows={4}
+                    placeholder="Enter rejection reason..."
+                    required
+                  />
 
-                <div className="flex justify-end space-x-3">
-                  <button
-                    onClick={() => {
-                      setSelectedDoc(null);
-                      setRejectionReason('');
-                    }}
-                    className="bg-soft-sage text-deep-moss px-4 py-2 font-bold border-2 border-deep-moss hover:shadow-[2px_2px_0px_0px_rgba(27,67,50,0.8)] transition-all"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={() => verifyDocument(selectedDoc, 'Rejected')}
-                    className="bg-burnt-sienna bg-opacity-20 text-deep-moss px-4 py-2 font-bold border-2 border-deep-moss hover:shadow-[2px_2px_0px_0px_rgba(27,67,50,0.8)] transition-all"
-                    disabled={!rejectionReason}
-                  >
-                    Reject
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
+                  <div className="flex justify-end space-x-3">
+                    <button
+                      onClick={() => {
+                        setSelectedDoc(null);
+                        setRejectionReason('');
+                      }}
+                      className="bg-soft-sage text-deep-moss px-4 py-2 font-bold border-2 border-deep-moss hover:shadow-[2px_2px_0px_0px_rgba(27,67,50,0.8)] transition-all"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={() => verifyDocument(selectedDoc, 'Rejected')}
+                      className="bg-burnt-sienna bg-opacity-20 text-deep-moss px-4 py-2 font-bold border-2 border-deep-moss hover:shadow-[2px_2px_0px_0px_rgba(27,67,50,0.8)] transition-all"
+                      disabled={!rejectionReason}
+                    >
+                      Reject
+                    </button>
+                  </div>
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </>
       )}
 
       {/* Toast Notifications */}
-      {toastMessage && (
-        <div className="fixed bottom-4 right-4 z-50">
-          <Toast type={toastMessage.type} message={toastMessage.message} />
-        </div>
-      )}
+      <AnimatePresence>
+        {toastMessage && (
+          <motion.div
+            className="fixed bottom-4 right-4 z-50"
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 50 }}
+          >
+            <Toast
+              type={toastMessage.type}
+              message={toastMessage.message}
+              onClose={() => setToastMessage(null)}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

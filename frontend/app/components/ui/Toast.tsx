@@ -20,56 +20,96 @@ export const Toast: React.FC<{
     }
   }, [duration, onClose]);
 
+  // Define styles based on toast type
+  const getTypeStyles = () => {
+    switch (type) {
+      case 'success':
+        return {
+          bgColor: 'bg-soft-sage',
+          iconColor: 'text-sap-green',
+          borderColor: 'border-sap-green',
+          icon: <CheckCircle className="flex-shrink-0" size={20} />,
+          label: 'Success',
+        };
+      case 'warning':
+        return {
+          bgColor: 'bg-sunflower',
+          iconColor: 'text-deep-moss',
+          borderColor: 'border-deep-moss',
+          icon: <AlertTriangle className="flex-shrink-0" size={20} />,
+          label: 'Warning',
+        };
+      case 'info':
+        return {
+          bgColor: 'bg-sky-blue',
+          iconColor: 'text-deep-moss',
+          borderColor: 'border-deep-moss',
+          icon: <Info className="flex-shrink-0" size={20} />,
+          label: 'Info',
+        };
+      case 'error':
+        return {
+          bgColor: 'bg-burnt-sienna bg-opacity-80',
+          iconColor: 'text-ivory',
+          borderColor: 'border-deep-moss',
+          icon: <AlertCircle className="flex-shrink-0" size={20} />,
+          label: 'Error',
+        };
+      default:
+        return {
+          bgColor: 'bg-soft-sage',
+          iconColor: 'text-deep-moss',
+          borderColor: 'border-deep-moss',
+          icon: <Info className="flex-shrink-0" size={20} />,
+          label: 'Notice',
+        };
+    }
+  };
+
+  const styles = getTypeStyles();
+
   return (
     <motion.div
-      initial={{ opacity: 0, y: 50 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: 50 }}
-      className={`fixed bottom-4 mx-4 md:mx-0 md:left-1/2 md:transform md:-translate-x-1/2
-      ${
-        type === 'success'
-          ? 'bg-soft-sage'
-          : type === 'warning'
-          ? 'bg-sunflower-yellow bg-opacity-20'
-          : type === 'info'
-          ? 'bg-blue-100'
-          : 'bg-burnt-sienna bg-opacity-20'
-      }
-      text-deep-moss p-3 md:p-4 border-2 md:border-4 border-deep-moss font-bold
-      shadow-[2px_2px_0px_0px_rgba(27,67,50,0.8)] md:shadow-[4px_4px_0px_0px_rgba(27,67,50,0.8)]
-      z-[100] max-w-md w-[calc(100%-2rem)] md:w-auto
-      flex items-center justify-between text-sm md:text-base`}
+      initial={{ opacity: 0, y: 50, rotate: -2 }}
+      animate={{ opacity: 1, y: 0, rotate: 0 }}
+      exit={{ opacity: 0, y: 50, rotate: 2 }}
+      transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+      className="fixed bottom-4 right-4 z-[100] max-w-md w-[calc(100%-2rem)] md:w-auto"
     >
-      <div className="flex items-center flex-1 mr-2">
-        {type === 'success' ? (
-          <CheckCircle
-            className="mr-2 text-sap-green flex-shrink-0"
-            size={16}
-          />
-        ) : type === 'warning' ? (
-          <AlertTriangle
-            className="mr-2 text-sunflower-yellow flex-shrink-0"
-            size={16}
-          />
-        ) : type === 'info' ? (
-          <Info className="mr-2 text-blue-600 flex-shrink-0" size={16} />
-        ) : (
-          <AlertCircle
-            className="mr-2 text-burnt-sienna flex-shrink-0"
-            size={16}
-          />
-        )}
-        <span className="line-clamp-3">{message}</span>
-      </div>
-      {onClose && (
-        <button
-          onClick={onClose}
-          className="ml-2 p-1 hover:text-forest-green transition-colors flex-shrink-0"
-          aria-label="Close notification"
+      <div
+        className={`
+        ${styles.bgColor}
+        p-0 border-4 ${styles.borderColor}
+        shadow-[4px_4px_0px_0px_rgba(27,67,50,0.8)]
+        overflow-hidden
+      `}
+      >
+        {/* Top label bar */}
+        <div
+          className={`${styles.iconColor} bg-deep-moss px-3 py-1 flex items-center justify-between`}
         >
-          <X size={16} />
-        </button>
-      )}
+          <div className="flex items-center">
+            <span className="font-bold text-ivory text-sm">{styles.label}</span>
+          </div>
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="ml-2 p-1 text-ivory hover:text-soft-sage transition-colors flex-shrink-0"
+              aria-label="Close notification"
+            >
+              <X size={16} />
+            </button>
+          )}
+        </div>
+
+        {/* Message content */}
+        <div className="p-3 flex items-start">
+          <div className={`mr-3 ${styles.iconColor}`}>{styles.icon}</div>
+          <div className="flex-1">
+            <p className="text-deep-moss font-medium line-clamp-3">{message}</p>
+          </div>
+        </div>
+      </div>
     </motion.div>
   );
 };

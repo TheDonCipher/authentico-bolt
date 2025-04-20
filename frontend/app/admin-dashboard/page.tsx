@@ -13,6 +13,16 @@ import { Loader } from '../components/ui/Loader';
 import { Toast } from '../components/ui/Toast';
 import { SignOutButton } from '../components/auth/SignOutButton';
 import { VerificationAuditLog } from './components/VerificationAuditLog';
+import {
+  collection,
+  query,
+  where,
+  getDocs,
+  orderBy,
+  Timestamp,
+  getFirestore,
+} from 'firebase/firestore';
+import { db } from '../../lib/firebase';
 
 import {
   Home,
@@ -28,6 +38,7 @@ import {
   Check,
   Eye,
   History,
+  User,
 } from 'lucide-react';
 
 interface ToastMessage {
@@ -50,9 +61,9 @@ export default function AdminDashboardPage() {
     verifiedDocuments: 0,
     rejectedDocuments: 0,
     loading: true,
-    error: null,
+    error: null as string | null,
   });
-  const [applications, setApplications] = useState([]);
+  const [applications, setApplications] = useState<any[]>([]);
   const [loadingApplications, setLoadingApplications] = useState(false);
 
   // Check if user is admin
@@ -80,36 +91,97 @@ export default function AdminDashboardPage() {
           throw new Error('Not authenticated');
         }
 
-        // Fetch statistics from API
-        const response = await fetch(API_ENDPOINTS.ADMIN.STATS, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          // Add cache: 'no-store' to prevent caching issues
-          cache: 'no-store',
-        });
+        try {
+          // Try to fetch statistics from API first
+          const response = await fetch(API_ENDPOINTS.ADMIN.STATS, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+            // Add cache: 'no-store' to prevent caching issues
+            cache: 'no-store',
+          });
 
-        if (!response.ok) {
-          console.error(
-            'Failed to fetch admin statistics:',
-            await response.text()
+          if (!response.ok) {
+            console.error(
+              'Failed to fetch admin statistics from API:',
+              await response.text()
+            );
+            throw new Error(
+              `Failed to fetch admin statistics: ${response.status} ${response.statusText}`
+            );
+          }
+
+          const data = await response.json();
+          setStats({
+            users: data.users || 0,
+            documents: data.documents || 0,
+            organizations: data.organizations || 0,
+            pendingOrganizations: data.pendingOrganizations || 0,
+            verifiedDocuments: data.verifiedDocuments || 0,
+            rejectedDocuments: data.rejectedDocuments || 0,
+            loading: false,
+            error: null,
+          });
+        } catch (apiError) {
+          console.error('API error, falling back to Firestore:', apiError);
+
+          // Fallback to direct Firestore queries
+          const db = getFirestore();
+
+          // Count users
+          const usersSnapshot = await getDocs(collection(db, 'users'));
+          const users = usersSnapshot.size;
+
+          // Count organizations and pending organizations
+          const orgsQuery = query(
+            collection(db, 'users'),
+            where('userType', '==', 'organization')
           );
-          throw new Error(
-            `Failed to fetch admin statistics: ${response.status} ${response.statusText}`
-          );
+          const orgsSnapshot = await getDocs(orgsQuery);
+          const organizations = orgsSnapshot.size;
+
+          // Count pending organizations
+          let pendingOrganizations = 0;
+          orgsSnapshot.forEach((doc) => {
+            const data = doc.data();
+            if (
+              data.status === 'pending' ||
+              data.verificationStatus === 'pending'
+            ) {
+              pendingOrganizations++;
+            }
+          });
+
+          // Count documents and their statuses
+          const docsSnapshot = await getDocs(collection(db, 'documents'));
+          const documents = docsSnapshot.size;
+
+          let verifiedDocuments = 0;
+          let rejectedDocuments = 0;
+
+          docsSnapshot.forEach((doc) => {
+            const data = doc.data();
+            if (data.status === 'Verified' || data.status === 'verified') {
+              verifiedDocuments++;
+            } else if (
+              data.status === 'Rejected' ||
+              data.status === 'rejected'
+            ) {
+              rejectedDocuments++;
+            }
+          });
+
+          setStats({
+            users,
+            documents,
+            organizations,
+            pendingOrganizations,
+            verifiedDocuments,
+            rejectedDocuments,
+            loading: false,
+            error: null,
+          });
         }
-
-        const data = await response.json();
-        setStats({
-          users: data.users || 0,
-          documents: data.documents || 0,
-          organizations: data.organizations || 0,
-          pendingOrganizations: data.pendingOrganizations || 0,
-          verifiedDocuments: data.verifiedDocuments || 0,
-          rejectedDocuments: data.rejectedDocuments || 0,
-          loading: false,
-          error: null,
-        });
       } catch (error) {
         console.error('Error fetching admin statistics:', error);
         setStats((prev) => ({
@@ -152,27 +224,68 @@ export default function AdminDashboardPage() {
           throw new Error('Not authenticated');
         }
 
-        // Fetch applications from API
-        const response = await fetch(API_ENDPOINTS.ORGANIZATIONS.APPLICATIONS, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          cache: 'no-store',
-        });
+        try {
+          // Try to fetch applications from API first
+          const response = await fetch(
+            API_ENDPOINTS.ORGANIZATIONS.APPLICATIONS,
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+              cache: 'no-store',
+            }
+          );
 
-        if (!response.ok) {
-          console.error(
-            'Failed to fetch organization applications:',
-            await response.text()
+          if (!response.ok) {
+            console.error(
+              'Failed to fetch organization applications from API:',
+              await response.text()
+            );
+            throw new Error(
+              `Failed to fetch organization applications: ${response.status} ${response.statusText}`
+            );
+          }
+
+          const data = await response.json();
+          console.log('Fetched organization applications from API:', data);
+          setApplications(data);
+        } catch (apiError) {
+          console.error('API error, falling back to Firestore:', apiError);
+
+          // Fallback to direct Firestore query
+          const usersRef = collection(db, 'users');
+          const q = query(
+            usersRef,
+            where('userType', '==', 'organization'),
+            orderBy('createdAt', 'desc')
           );
-          throw new Error(
-            `Failed to fetch organization applications: ${response.status} ${response.statusText}`
+
+          const snapshot = await getDocs(q);
+          const orgApplications = snapshot.docs.map((doc) => {
+            const data = doc.data();
+            console.log('Organization data from Firestore:', doc.id, data);
+            return {
+              id: doc.id,
+              orgName:
+                data.organizationName || data.orgName || 'Unknown Organization',
+              contactEmail: data.contactEmail || data.email || '',
+              contactPerson: data.contactPerson || data.name || '',
+              website: data.website || '',
+              status: data.status || 'pending',
+              submittedAt:
+                data.createdAt instanceof Timestamp
+                  ? data.createdAt.toDate()
+                  : new Date(),
+              description: data.description || '',
+            };
+          });
+
+          console.log(
+            'Fetched organization applications from Firestore:',
+            orgApplications
           );
+          setApplications(orgApplications);
         }
-
-        const data = await response.json();
-        console.log('Fetched organization applications:', data);
-        setApplications(data);
       } catch (error) {
         console.error('Error fetching organization applications:', error);
         setToastMessage({
@@ -274,8 +387,13 @@ export default function AdminDashboardPage() {
               </Link>
 
               {/* Individual dashboard link */}
-              <Link href="/individual-dashboard">
+              <Link
+                href={
+                  user ? `/user/${user.uid}/dashboard` : '/individual-dashboard'
+                }
+              >
                 <div className="flex items-center gap-3 px-4 py-3 border-2 border-transparent hover:bg-ivory hover:border-deep-moss hover:shadow-brutal hover:-translate-y-0.5 transition-all">
+                  <User size={20} className="text-deep-moss" />
                   <span className="font-bold text-deep-moss">
                     Individual Dashboard
                   </span>
@@ -285,25 +403,7 @@ export default function AdminDashboardPage() {
 
             {/* Sign Out Button */}
             <div className="mt-4 pt-6">
-              <SignOutButton className="flex items-center gap-3 w-full px-4 py-3 border-2 border-deep-moss bg-burnt-sienna bg-opacity-20 text-deep-moss hover:shadow-brutal hover:-translate-y-0.5 transition-all">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="text-deep-moss"
-                >
-                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                  <polyline points="16 17 21 12 16 7"></polyline>
-                  <line x1="21" y1="12" x2="9" y2="12"></line>
-                </svg>
-                <span className="font-bold text-deep-moss">Sign Out</span>
-              </SignOutButton>
+              <SignOutButton className="w-full px-4 py-3 border-2 border-deep-moss bg-burnt-sienna bg-opacity-20 text-deep-moss hover:shadow-brutal hover:-translate-y-0.5 transition-all" />
             </div>
           </div>
         </aside>
@@ -389,7 +489,7 @@ export default function AdminDashboardPage() {
                     className={`px-4 py-2 font-bold transition-all flex-1 sm:flex-none text-center ${
                       activeTab === 'dashboard'
                         ? 'bg-forest-green text-ivory border-2 border-deep-moss shadow-[4px_4px_0px_0px_rgba(27,67,50,0.8)]'
-                        : 'hover:bg-soft-sage hover:border-2 hover:border-deep-moss hover:shadow-[2px_2px_0px_0px_rgba(27,67,50,0.8)]'
+                        : 'bg-ivory text-deep-moss border-2 border-deep-moss hover:bg-soft-sage hover:shadow-[2px_2px_0px_0px_rgba(27,67,50,0.8)]'
                     }`}
                   >
                     Dashboard
@@ -399,7 +499,7 @@ export default function AdminDashboardPage() {
                     className={`px-4 py-2 font-bold transition-all flex-1 sm:flex-none text-center ${
                       activeTab === 'applications'
                         ? 'bg-forest-green text-ivory border-2 border-deep-moss shadow-[4px_4px_0px_0px_rgba(27,67,50,0.8)]'
-                        : 'hover:bg-soft-sage hover:border-2 hover:border-deep-moss hover:shadow-[2px_2px_0px_0px_rgba(27,67,50,0.8)]'
+                        : 'bg-ivory text-deep-moss border-2 border-deep-moss hover:bg-soft-sage hover:shadow-[2px_2px_0px_0px_rgba(27,67,50,0.8)]'
                     }`}
                   >
                     Org Applications
@@ -409,7 +509,7 @@ export default function AdminDashboardPage() {
                     className={`px-4 py-2 font-bold transition-all flex-1 sm:flex-none text-center ${
                       activeTab === 'audit'
                         ? 'bg-forest-green text-ivory border-2 border-deep-moss shadow-[4px_4px_0px_0px_rgba(27,67,50,0.8)]'
-                        : 'hover:bg-soft-sage hover:border-2 hover:border-deep-moss hover:shadow-[2px_2px_0px_0px_rgba(27,67,50,0.8)]'
+                        : 'bg-ivory text-deep-moss border-2 border-deep-moss hover:bg-soft-sage hover:shadow-[2px_2px_0px_0px_rgba(27,67,50,0.8)]'
                     }`}
                   >
                     <History size={16} className="inline-block mr-1" />
@@ -506,7 +606,7 @@ export default function AdminDashboardPage() {
                             Total Users
                           </h4>
                           <p className="text-2xl sm:text-3xl font-black text-forest-green">
-                            {stats.users}
+                            {stats.users || 0}
                           </p>
                         </div>
                         <Link
@@ -518,7 +618,7 @@ export default function AdminDashboardPage() {
                               Organizations
                             </h4>
                             <p className="text-2xl sm:text-3xl font-black text-forest-green">
-                              {stats.organizations}
+                              {stats.organizations || 0}
                             </p>
                           </div>
                         </Link>
@@ -527,7 +627,7 @@ export default function AdminDashboardPage() {
                             Documents
                           </h4>
                           <p className="text-2xl sm:text-3xl font-black text-forest-green">
-                            {stats.documents}
+                            {stats.documents || 0}
                           </p>
                         </div>
                         <div className="bg-ivory p-4 border-2 border-deep-moss hover:shadow-brutal hover:-translate-y-0.5 transition-all">
@@ -535,7 +635,7 @@ export default function AdminDashboardPage() {
                             Pending Orgs
                           </h4>
                           <p className="text-2xl sm:text-3xl font-black text-amber-500">
-                            {stats.pendingOrganizations}
+                            {stats.pendingOrganizations || 0}
                           </p>
                         </div>
                         <div className="bg-ivory p-4 border-2 border-deep-moss hover:shadow-brutal hover:-translate-y-0.5 transition-all">
@@ -598,10 +698,12 @@ export default function AdminDashboardPage() {
                                 key={app.id}
                                 className="border-b border-deep-moss hover:bg-soft-sage hover:bg-opacity-30"
                               >
-                                <td className="p-2 font-medium">
+                                <td className="p-2 font-medium text-deep-moss">
                                   {app.orgName}
                                 </td>
-                                <td className="p-2">{app.contactEmail}</td>
+                                <td className="p-2 text-deep-moss">
+                                  {app.contactEmail}
+                                </td>
                                 <td className="p-2">
                                   <span
                                     className={`px-2 py-1 rounded-full text-xs font-medium ${
@@ -615,7 +717,7 @@ export default function AdminDashboardPage() {
                                     {app.status}
                                   </span>
                                 </td>
-                                <td className="p-2">
+                                <td className="p-2 text-deep-moss">
                                   {new Date(
                                     app.submittedAt
                                   ).toLocaleDateString()}
@@ -676,22 +778,30 @@ export default function AdminDashboardPage() {
                               key={app.id}
                               className="border-b border-deep-moss hover:bg-soft-sage hover:bg-opacity-30"
                             >
-                              <td className="p-2 font-medium">{app.orgName}</td>
-                              <td className="p-2">{app.contactEmail}</td>
-                              <td className="p-2">
-                                <a
-                                  href={app.website}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-forest-green hover:underline flex items-center gap-1"
-                                >
-                                  <ExternalLink size={12} />
-                                  {
-                                    app.website
-                                      .replace(/^https?:\/\//, '')
-                                      .split('/')[0]
-                                  }
-                                </a>
+                              <td className="p-2 font-medium text-deep-moss">
+                                {app.orgName}
+                              </td>
+                              <td className="p-2 text-deep-moss">
+                                {app.contactEmail}
+                              </td>
+                              <td className="p-2 text-deep-moss">
+                                {app.website ? (
+                                  <a
+                                    href={app.website}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-forest-green hover:underline flex items-center gap-1"
+                                  >
+                                    <ExternalLink size={12} />
+                                    {
+                                      app.website
+                                        .replace(/^https?:\/\//, '')
+                                        .split('/')[0]
+                                    }
+                                  </a>
+                                ) : (
+                                  'Not provided'
+                                )}
                               </td>
                               <td className="p-2">
                                 <span
@@ -706,28 +816,37 @@ export default function AdminDashboardPage() {
                                   {app.status}
                                 </span>
                               </td>
-                              <td className="p-2">
+                              <td className="p-2 text-deep-moss">
                                 {new Date(app.submittedAt).toLocaleDateString()}
                               </td>
                               <td className="p-2">
                                 <div className="flex gap-1">
                                   <button
-                                    className="p-1 bg-green-100 text-green-800 rounded border border-green-300 hover:bg-green-200"
+                                    className="p-2 bg-green-100 text-green-800 rounded border border-green-300 hover:bg-green-200 flex items-center gap-1 min-w-[32px] justify-center"
                                     title="Approve"
                                   >
                                     <Check size={14} />
+                                    <span className="text-xs sm:text-sm font-medium">
+                                      Approve
+                                    </span>
                                   </button>
                                   <button
-                                    className="p-1 bg-red-100 text-red-800 rounded border border-red-300 hover:bg-red-200"
+                                    className="p-2 bg-red-100 text-red-800 rounded border border-red-300 hover:bg-red-200 flex items-center gap-1 min-w-[32px] justify-center"
                                     title="Reject"
                                   >
                                     <X size={14} />
+                                    <span className="text-xs sm:text-sm font-medium">
+                                      Reject
+                                    </span>
                                   </button>
                                   <button
-                                    className="p-1 bg-blue-100 text-blue-800 rounded border border-blue-300 hover:bg-blue-200"
+                                    className="p-2 bg-blue-100 text-blue-800 rounded border border-blue-300 hover:bg-blue-200 flex items-center gap-1 min-w-[32px] justify-center"
                                     title="View Details"
                                   >
                                     <Eye size={14} />
+                                    <span className="text-xs sm:text-sm font-medium">
+                                      View
+                                    </span>
                                   </button>
                                 </div>
                               </td>

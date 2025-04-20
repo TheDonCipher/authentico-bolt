@@ -1,4 +1,4 @@
-import { db } from '../firebase-admin-server';
+import { db } from '../firebase-admin-server.js';
 import { FieldValue } from 'firebase-admin/firestore';
 import { OrganizationVerificationStatus } from '../../app/types/user';
 
@@ -23,24 +23,47 @@ export class AuditLogService {
     notes?: string
   ): Promise<string> {
     try {
+      console.log(
+        `Creating audit log for organization ${organizationId} status change from ${oldStatus} to ${newStatus}`
+      );
+
       // Get organization name
-      const orgDoc = await db.collection('users').doc(organizationId).get();
-      if (!orgDoc.exists) {
-        throw new Error(`Organization with ID ${organizationId} not found`);
+      let organizationName = 'Unknown Organization';
+      try {
+        const orgDoc = await db.collection('users').doc(organizationId).get();
+        if (orgDoc.exists) {
+          const orgData = orgDoc.data();
+          organizationName =
+            orgData?.organizationName ||
+            orgData?.name ||
+            'Unknown Organization';
+        } else {
+          console.warn(
+            `Organization with ID ${organizationId} not found when creating audit log`
+          );
+        }
+      } catch (orgError) {
+        console.error(`Error getting organization data: ${orgError.message}`);
+        // Continue with default organization name
       }
-      
-      const orgData = orgDoc.data();
-      const organizationName = orgData?.organizationName || orgData?.name || 'Unknown Organization';
-      
+
       // Get updater name
-      const updaterDoc = await db.collection('users').doc(updatedBy).get();
       let updaterName = 'Unknown User';
-      
-      if (updaterDoc.exists) {
-        const updaterData = updaterDoc.data();
-        updaterName = updaterData?.name || 'Unknown User';
+      try {
+        const updaterDoc = await db.collection('users').doc(updatedBy).get();
+        if (updaterDoc.exists) {
+          const updaterData = updaterDoc.data();
+          updaterName = updaterData?.name || 'Unknown User';
+        } else {
+          console.warn(
+            `User with ID ${updatedBy} not found when creating audit log`
+          );
+        }
+      } catch (userError) {
+        console.error(`Error getting updater data: ${userError.message}`);
+        // Continue with default updater name
       }
-      
+
       // Create audit log entry
       const auditLogRef = await db.collection('verificationAuditLogs').add({
         organizationId,
@@ -52,14 +75,16 @@ export class AuditLogService {
         updatedAt: FieldValue.serverTimestamp(),
         notes: notes || null,
       });
-      
+
+      console.log(`Successfully created audit log with ID ${auditLogRef.id}`);
+
       return auditLogRef.id;
     } catch (error) {
       console.error('Error creating audit log:', error);
       throw error;
     }
   }
-  
+
   /**
    * Get audit logs for an organization
    * @param organizationId The ID of the organization
@@ -72,8 +97,8 @@ export class AuditLogService {
         .where('organizationId', '==', organizationId)
         .orderBy('updatedAt', 'desc')
         .get();
-        
-      return snapshot.docs.map(doc => ({
+
+      return snapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
         updatedAt: doc.data().updatedAt ? doc.data().updatedAt.toDate() : null,
@@ -83,7 +108,7 @@ export class AuditLogService {
       throw error;
     }
   }
-  
+
   /**
    * Get all audit logs (admin only)
    * @returns Array of all audit log entries
@@ -94,8 +119,8 @@ export class AuditLogService {
         .collection('verificationAuditLogs')
         .orderBy('updatedAt', 'desc')
         .get();
-        
-      return snapshot.docs.map(doc => ({
+
+      return snapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
         updatedAt: doc.data().updatedAt ? doc.data().updatedAt.toDate() : null,

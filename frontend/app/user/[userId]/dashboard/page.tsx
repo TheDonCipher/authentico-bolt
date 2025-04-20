@@ -5,15 +5,25 @@ import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { Plus, Check, X, Bell, Grid, List } from 'lucide-react';
 import { useActiveAccount } from 'thirdweb/react';
-import { collection, query, where, onSnapshot, Timestamp, orderBy } from 'firebase/firestore';
+import {
+  collection,
+  query,
+  where,
+  onSnapshot,
+  Timestamp,
+  orderBy,
+  doc,
+  updateDoc,
+} from 'firebase/firestore';
 import { db } from '../../../../lib/firebase';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useOrganization } from '../../../contexts/OrganizationContext';
 import { ContextSwitcher } from '../../../components/dashboard/ContextSwitcher';
 import { NotificationBell } from '../../../components/dashboard/NotificationBell';
 import { ProfileCard } from '../../../components/dashboard/ProfileCard';
+import { SignOutButton } from '../../../components/auth/SignOutButton';
 import { Stats } from '../../../components/dashboard/Stats';
-import { EnhancedDocumentCard } from '../../../components/dashboard/EnhancedDocumentCard';
+import EnhancedDocumentCard from '../../../individual-dashboard/components/EnhancedDocumentCard';
 import { DocumentTable } from '../../../individual-dashboard/components/DocumentTable';
 import { DocumentUploadDialog } from '../../../individual-dashboard/components/DocumentUploadDialog';
 import { DocumentShareDialog } from '../../../components/document/DocumentShareDialog';
@@ -24,23 +34,9 @@ import {
   getDocumentTypes,
   getVerifiedOrganizations,
 } from '../../../../lib/api-client';
+import { Document } from '../../../models/Document';
 
-interface Document {
-  documentId: string;
-  documentName: string;
-  documentType: string;
-  documentHash: string;
-  ipfsHash: string;
-  ownerUid: string;
-  verifier: string;
-  verifyingOrgId: string;
-  status: 'Pending' | 'Verified' | 'Rejected';
-  transactionHash?: string;
-  blockNumber?: number;
-  tokenId?: number;
-  createdAt: Date;
-  updatedAt: Date;
-}
+// Document interface is now imported from models/Document
 
 interface ToastMessage {
   type: 'success' | 'error' | 'warning';
@@ -50,7 +46,7 @@ interface ToastMessage {
 export default function IndividualDashboardPage() {
   const router = useRouter();
   const params = useParams();
-  const userId = params.userId as string;
+  const userId = params?.userId as string;
   const { user, loading: authLoading } = useAuth();
   const { userOrganizations, isLoadingOrgs } = useOrganization();
   const [activeTab, setActiveTab] = useState('documents');
@@ -84,51 +80,175 @@ export default function IndividualDashboardPage() {
     if (!user || user.uid !== userId) return;
 
     setIsLoading(true);
-    
+
     try {
       // Set up real-time listener for documents
       const documentsRef = collection(db, 'documents');
-      const q = query(
-        documentsRef,
-        where('ownerUid', '==', userId)
-      );
+      // Query documents where this user is the owner
+      // Try multiple possible field names for owner ID
+      const q = query(documentsRef, where('ownerUid', '==', userId));
 
-      const unsubscribe = onSnapshot(q, (snapshot) => {
-        const fetchedDocuments: Document[] = [];
-        snapshot.forEach((doc) => {
-          const data = doc.data();
-          fetchedDocuments.push({
-            documentId: doc.id,
-            documentName: data.name || 'Unnamed Document',
-            documentType: data.documentType || 'Unknown',
-            documentHash: data.documentHash || '',
-            ipfsHash: data.ipfsHash || '',
-            ownerUid: data.ownerUid,
-            verifier: data.verifier || '',
-            verifyingOrgId: data.verifyingOrgId || '',
-            status: data.status || 'Pending',
-            transactionHash: data.transactionHash,
-            blockNumber: data.blockNumber,
-            tokenId: data.tokenId,
-            createdAt: data.createdAt instanceof Timestamp
-              ? data.createdAt.toDate()
-              : new Date(),
-            updatedAt: data.updatedAt instanceof Timestamp
-              ? data.updatedAt.toDate()
-              : new Date(),
+      console.log('Setting up document listener for user:', userId);
+
+      const unsubscribe = onSnapshot(
+        q,
+        (snapshot) => {
+          const fetchedDocuments: Document[] = [];
+          console.log(
+            `Found ${snapshot.docs.length} documents for user ${userId}`
+          );
+
+          snapshot.forEach((doc) => {
+            const data = doc.data();
+            console.log('Document data from Firestore:', doc.id, data);
+
+            // Ensure we have all the required fields with proper fallbacks
+            const documentData = new Document(
+              doc.id,
+              '', // urlPicture
+              data.userWalletAddress || data.publicAddress || '', // publicAddress
+              data.originalDocHash || data.metadataHash || '', // metadataHash
+              data.status || 'Pending Verification',
+              data.documentType || 'Unknown',
+              data.verifyingOrgId || data.verifier || '', // Use verifyingOrgId instead of verifier
+              data.documentName || data.name || 'Unnamed Document',
+              data.transactionHash || '',
+              data.blockNumber || 0,
+              data.tokenId || 0,
+              data.createdAt instanceof Timestamp
+                ? data.createdAt.toDate().toISOString()
+                : new Date().toISOString(),
+              data.updatedAt instanceof Timestamp
+                ? data.updatedAt.toDate().toISOString()
+                : new Date().toISOString(),
+              data.ownerUid || userId,
+              data.verifyingOrgId || data.verifier || ''
+            );
+
+            // Log the processed document data
+            console.log('Processed document data:', documentData);
+
+            fetchedDocuments.push(documentData);
           });
-        });
 
-        setDocuments(fetchedDocuments);
-        setIsLoading(false);
-      });
+          // If no documents found with ownerUid, try fallback query with walletAddress
+          if (fetchedDocuments.length === 0 && user.walletAddress) {
+            console.log(
+              'No documents found with ownerUid, trying walletAddress fallback'
+            );
+            // This will be handled in a separate effect
+          }
+
+          setDocuments(fetchedDocuments);
+          setIsLoading(false);
+        },
+        (error) => {
+          console.error('Error in document listener:', error);
+          setToastMessage({
+            type: 'error',
+            message: 'Failed to load documents. Please refresh the page.',
+          });
+          setIsLoading(false);
+        }
+      );
 
       return () => unsubscribe();
     } catch (error) {
-      console.error('Error fetching documents:', error);
+      console.error('Error setting up document listener:', error);
+      setToastMessage({
+        type: 'error',
+        message: 'Failed to set up document listener. Please refresh the page.',
+      });
       setIsLoading(false);
     }
   }, [user, userId]);
+
+  // Fallback document fetch using walletAddress if no documents found with ownerUid
+  useEffect(() => {
+    if (
+      !user ||
+      user.uid !== userId ||
+      !user.walletAddress ||
+      documents.length > 0 ||
+      isLoading
+    ) {
+      return;
+    }
+
+    console.log(
+      'Attempting fallback document fetch using walletAddress:',
+      user.walletAddress
+    );
+
+    try {
+      const documentsRef = collection(db, 'documents');
+      const q = query(
+        documentsRef,
+        where('publicAddress', '==', user.walletAddress.toLowerCase())
+      );
+
+      setIsLoading(true);
+
+      const unsubscribe = onSnapshot(
+        q,
+        (snapshot) => {
+          const fetchedDocuments: Document[] = [];
+          console.log(
+            `Found ${snapshot.docs.length} documents with walletAddress ${user.walletAddress}`
+          );
+
+          snapshot.forEach((doc) => {
+            const data = doc.data();
+            console.log(
+              'Document data from walletAddress fallback:',
+              doc.id,
+              data
+            );
+
+            // Create document with fallback fields
+            const documentData = new Document(
+              doc.id,
+              '', // urlPicture
+              data.publicAddress || data.userWalletAddress || '', // publicAddress
+              data.metadataHash || data.originalDocHash || '', // metadataHash
+              data.status || 'Pending Verification',
+              data.documentType || 'Unknown',
+              data.verifyingOrgId || data.verifier || '', // Use verifyingOrgId instead of verifier
+              data.documentName || data.name || 'Unnamed Document',
+              data.transactionHash || '',
+              data.blockNumber || 0,
+              data.tokenId || 0,
+              data.createdAt instanceof Timestamp
+                ? data.createdAt.toDate().toISOString()
+                : new Date().toISOString(),
+              data.updatedAt instanceof Timestamp
+                ? data.updatedAt.toDate().toISOString()
+                : new Date().toISOString(),
+              data.ownerUid || userId,
+              data.verifyingOrgId || data.verifier || ''
+            );
+
+            fetchedDocuments.push(documentData);
+          });
+
+          if (fetchedDocuments.length > 0) {
+            setDocuments(fetchedDocuments);
+          }
+
+          setIsLoading(false);
+        },
+        (error) => {
+          console.error('Error in fallback document listener:', error);
+          setIsLoading(false);
+        }
+      );
+
+      return () => unsubscribe();
+    } catch (error) {
+      console.error('Error setting up fallback document listener:', error);
+      setIsLoading(false);
+    }
+  }, [user, userId, documents.length, isLoading]);
 
   // Fetch organization names
   useEffect(() => {
@@ -156,50 +276,88 @@ export default function IndividualDashboardPage() {
       const notificationsRef = collection(db, 'notifications');
       const q = query(
         notificationsRef,
-        where('userId', '==', userId),
-        orderBy('createdAt', 'desc')
+        where('userId', '==', userId)
+        // Removed orderBy to avoid index requirements
       );
 
-      const unsubscribe = onSnapshot(q, (snapshot) => {
-        const fetchedNotifications: any[] = [];
-        snapshot.forEach((doc) => {
-          const data = doc.data();
-          fetchedNotifications.push({
-            id: doc.id,
-            ...data,
-            createdAt:
-              data.createdAt instanceof Timestamp
-                ? data.createdAt.toDate()
-                : new Date(),
+      const unsubscribe = onSnapshot(
+        q,
+        (snapshot) => {
+          const fetchedNotifications: any[] = [];
+          snapshot.forEach((doc) => {
+            const data = doc.data();
+            fetchedNotifications.push({
+              id: doc.id,
+              ...data,
+              createdAt:
+                data.createdAt instanceof Timestamp
+                  ? data.createdAt.toDate()
+                  : new Date(),
+            });
           });
-        });
 
-        // Update activities based on notifications
-        const notificationActivities = fetchedNotifications.map(
-          (notification) => ({
-            id: notification.id,
-            text: notification.message,
-            date: notification.createdAt.toLocaleDateString(),
-            icon:
-              notification.data?.status === 'Verified' ? (
-                <Check size={14} />
-              ) : notification.data?.status === 'Rejected' ? (
-                <X size={14} />
-              ) : (
-                <Bell size={14} />
-              ),
-            notification: notification,
-          })
-        );
+          // Update activities based on notifications
+          const notificationActivities = fetchedNotifications.map(
+            (notification) => ({
+              id: notification.id,
+              text: notification.message,
+              date: notification.createdAt.toLocaleDateString(),
+              read: notification.read || false,
+              icon:
+                notification.data?.status === 'Verified' ? (
+                  <Check size={14} />
+                ) : notification.data?.status === 'Rejected' ? (
+                  <X size={14} />
+                ) : (
+                  <Bell size={14} />
+                ),
+              notification: notification,
+            })
+          );
 
-        setActivities(notificationActivities.slice(0, 5));
-      });
+          setActivities(notificationActivities.slice(0, 5));
+        },
+        (error) => {
+          console.error('Error in notifications listener:', error);
+          // Don't show toast for notification errors as they're not critical
+        }
+      );
 
       return () => unsubscribe();
     } catch (error) {
-      console.error('Error fetching notifications:', error);
+      console.error('Error setting up notifications listener:', error);
     }
   }, [user, userId]);
+
+  // Mark notifications as read when activity pane is opened
+  useEffect(() => {
+    const markNotificationsAsRead = async () => {
+      if (!showActivityPane || !user || activities.length === 0) return;
+
+      try {
+        // Get unread notifications
+        const unreadNotifications = activities.filter(
+          (activity) => !activity.read
+        );
+        if (unreadNotifications.length === 0) return;
+
+        console.log(
+          'Marking notifications as read:',
+          unreadNotifications.map((n) => n.id)
+        );
+
+        // Update each notification in Firestore
+        for (const activity of unreadNotifications) {
+          const notificationRef = doc(db, 'notifications', activity.id);
+          await updateDoc(notificationRef, { read: true });
+        }
+      } catch (error) {
+        console.error('Error marking notifications as read:', error);
+      }
+    };
+
+    markNotificationsAsRead();
+  }, [showActivityPane, activities, user]);
 
   // Handle document upload success
   const handleUploadSuccess = () => {
@@ -252,7 +410,7 @@ export default function IndividualDashboardPage() {
         <h1 className="hidden md:block text-2xl font-black mb-8 text-deep-moss bg-soft-sage p-2 border-4 border-deep-moss inline-block">
           AUTHENTICO
         </h1>
-        
+
         {/* Navigation */}
         <nav className="flex-1 flex justify-around md:block">
           <ul className="flex md:flex-col w-full gap-2 md:gap-4">
@@ -262,7 +420,7 @@ export default function IndividualDashboardPage() {
                 className={`w-full text-center md:text-left p-2 md:p-3 border-2 md:border-4 border-deep-moss font-bold text-sm md:text-base ${
                   activeTab === 'documents'
                     ? 'bg-forest-green text-ivory'
-                    : 'hover:bg-soft-sage hover:shadow-[2px_2px_0px_0px_rgba(27,67,50,0.8)] md:hover:shadow-[4px_4px_0px_0px_rgba(27,67,50,0.8)]'
+                    : 'bg-ivory text-deep-moss hover:bg-soft-sage hover:shadow-[2px_2px_0px_0px_rgba(27,67,50,0.8)] md:hover:shadow-[4px_4px_0px_0px_rgba(27,67,50,0.8)]'
                 }`}
               >
                 <span className="hidden md:inline">My Documents</span>
@@ -275,7 +433,7 @@ export default function IndividualDashboardPage() {
                 className={`w-full text-center md:text-left p-2 md:p-3 border-2 md:border-4 border-deep-moss font-bold text-sm md:text-base ${
                   activeTab === 'activity'
                     ? 'bg-forest-green text-ivory'
-                    : 'hover:bg-soft-sage hover:shadow-[2px_2px_0px_0px_rgba(27,67,50,0.8)] md:hover:shadow-[4px_4px_0px_0px_rgba(27,67,50,0.8)]'
+                    : 'bg-ivory text-deep-moss hover:bg-soft-sage hover:shadow-[2px_2px_0px_0px_rgba(27,67,50,0.8)] md:hover:shadow-[4px_4px_0px_0px_rgba(27,67,50,0.8)]'
                 }`}
               >
                 <span className="hidden md:inline">Activity</span>
@@ -288,14 +446,14 @@ export default function IndividualDashboardPage() {
                 className={`w-full text-center md:text-left p-2 md:p-3 border-2 md:border-4 border-deep-moss font-bold text-sm md:text-base ${
                   activeTab === 'settings'
                     ? 'bg-forest-green text-ivory'
-                    : 'hover:bg-soft-sage hover:shadow-[2px_2px_0px_0px_rgba(27,67,50,0.8)] md:hover:shadow-[4px_4px_0px_0px_rgba(27,67,50,0.8)]'
+                    : 'bg-ivory text-deep-moss hover:bg-soft-sage hover:shadow-[2px_2px_0px_0px_rgba(27,67,50,0.8)] md:hover:shadow-[4px_4px_0px_0px_rgba(27,67,50,0.8)]'
                 }`}
               >
                 <span className="hidden md:inline">Settings</span>
                 <span className="md:hidden">Settings</span>
               </button>
             </li>
-            
+
             {/* Admin Dashboard Link - Only visible to admin wallet */}
             {thirdwebAccount &&
               thirdwebAccount.address.toLowerCase() ===
@@ -312,6 +470,11 @@ export default function IndividualDashboardPage() {
               )}
           </ul>
         </nav>
+
+        {/* Sign Out Button */}
+        <div className="hidden md:block mt-4 pt-6">
+          <SignOutButton className="w-full px-4 py-3 border-2 border-deep-moss bg-burnt-sienna bg-opacity-20 text-deep-moss hover:shadow-brutal hover:-translate-y-0.5 transition-all" />
+        </div>
       </aside>
 
       {/* Main Content Container */}
@@ -327,7 +490,7 @@ export default function IndividualDashboardPage() {
             </div>
             <div className="flex items-center gap-4 md:gap-6">
               <NotificationBell
-                count={activities.length}
+                count={activities.filter((activity) => !activity.read).length}
                 onClick={() => {
                   // Show activity pane
                   gotoActivityPane();
@@ -425,7 +588,11 @@ export default function IndividualDashboardPage() {
                             key={doc.documentId}
                             doc={doc}
                             documentName={doc.documentName}
-                            verifyingOrgName={orgNames[doc.verifyingOrgId]}
+                            verifyingOrgName={
+                              doc.verifyingOrgId
+                                ? orgNames[doc.verifyingOrgId]
+                                : 'Unknown'
+                            }
                             transactionHash={doc.transactionHash}
                             blockNumber={doc.blockNumber}
                             tokenId={doc.tokenId}
@@ -444,6 +611,7 @@ export default function IndividualDashboardPage() {
                     ) : (
                       <DocumentTable
                         documents={documents}
+                        orgNames={orgNames}
                         onShare={(document) => {
                           setSharingDocument({
                             id: document.documentId,
@@ -567,8 +735,8 @@ export default function IndividualDashboardPage() {
       {isShareDialogOpen && sharingDocument && (
         <DocumentShareDialog
           isOpen={isShareDialogOpen}
-          documentId={sharingDocument.id.toString()}
-          documentName={sharingDocument.name}
+          documentId={sharingDocument.id ? sharingDocument.id.toString() : ''}
+          documentName={sharingDocument.name || 'Document'}
           onClose={() => {
             setIsShareDialogOpen(false);
             setSharingDocument(null);

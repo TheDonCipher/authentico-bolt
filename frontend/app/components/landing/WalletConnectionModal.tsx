@@ -69,12 +69,15 @@ export const WalletConnectionModal: React.FC<WalletConnectionModalProps> = ({
               ? userOrganizations[0].orgId
               : null;
 
-          redirectToDashboard(
-            router,
-            { ...account, userType: 'individual' },
-            activeContext,
-            activeOrgId
-          );
+          // Create a User object from the account
+          const user = {
+            uid: account.address, // Use address as uid
+            walletAddress: account.address,
+            name: 'User', // Default name
+            userType: 'individual' as 'individual' | 'organization' | 'admin',
+          };
+
+          redirectToDashboard(router, user, activeContext, activeOrgId);
         }, 1000);
       } else if (result.newUser) {
         // New user needs to register
@@ -181,8 +184,6 @@ export const WalletConnectionModal: React.FC<WalletConnectionModalProps> = ({
                 title: 'Welcome to Authentico',
                 subtitle: 'Secure document verification powered by blockchain',
               },
-              // Prevent modal from closing after connecting
-              closeOnConnect: false,
             }}
           />
         </div>

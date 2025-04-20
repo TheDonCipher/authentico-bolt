@@ -110,6 +110,13 @@ const OrganizationApplications = () => {
     status: OrganizationVerificationStatus
   ) => {
     try {
+      setToastMessage({
+        type: 'info',
+        message: `Processing ${
+          status === 'verified' ? 'approval' : 'rejection'
+        }...`,
+      });
+
       // Get Firebase ID token using the token utility
       const idToken = await getAuthToken();
       if (!idToken) {
@@ -130,33 +137,40 @@ const OrganizationApplications = () => {
       console.log(`Mapped status from ${status} to API status: ${apiStatus}`);
 
       // Now proceed with the actual update
-      const response = await axios.put(
-        `/api/organizations/applications/${applicationId}`,
-        {
-          status: apiStatus,
-          notes: notes,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${idToken}`,
+      try {
+        const response = await axios.put(
+          `/api/organizations/applications/${applicationId}`,
+          {
+            status: apiStatus,
+            notes: notes,
           },
+          {
+            headers: {
+              Authorization: `Bearer ${idToken}`,
+            },
+          }
+        );
+
+        console.log('API response:', response.data);
+
+        // Check if there's a warning in the response
+        if (response.data.warning) {
+          console.warn('API warning:', response.data.warning);
+          setToastMessage({
+            type: 'info',
+            message: `Application ${status} with warning: ${response.data.warning}`,
+          });
+        } else {
+          setToastMessage({
+            type: 'success',
+            message:
+              response.data.message ||
+              `Organization application ${status} successfully`,
+          });
         }
-      );
-
-      console.log('API response:', response.data);
-
-      // Check if there's a warning in the response
-      if (response.data.warning) {
-        console.warn('API warning:', response.data.warning);
-        setToastMessage({
-          type: 'info',
-          message: `Application ${status} with warning: ${response.data.warning}`,
-        });
-      } else {
-        setToastMessage({
-          type: 'success',
-          message: `Organization application ${status} successfully`,
-        });
+      } catch (apiError) {
+        console.error('API call error:', apiError);
+        throw apiError;
       }
 
       // Update local state
@@ -503,6 +517,36 @@ const OrganizationApplications = () => {
                             </button>
                           </>
                         )}
+                        {app.status === 'verified' && (
+                          <>
+                            <button
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setSelectedApp(app.id);
+                              }}
+                              className="bg-burnt-sienna bg-opacity-20 text-deep-moss p-2 border border-deep-moss hover:shadow-[1px_1px_0px_0px_rgba(27,67,50,0.8)] transition-all"
+                              title="Revoke Verification"
+                            >
+                              <X size={16} />
+                            </button>
+                          </>
+                        )}
+                        {app.status === 'rejected' && (
+                          <>
+                            <button
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                updateApplicationStatus(app.id, 'verified');
+                              }}
+                              className="bg-forest-green text-white p-2 border border-deep-moss hover:shadow-[1px_1px_0px_0px_rgba(27,67,50,0.8)] transition-all"
+                              title="Approve Application"
+                            >
+                              <Check size={16} />
+                            </button>
+                          </>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -639,8 +683,41 @@ const OrganizationApplications = () => {
                   </div>
                 )}
 
-                {viewingApp.status === 'pending' && (
-                  <div className="flex justify-end space-x-3 mt-6">
+                <div className="flex justify-end space-x-3 mt-6">
+                  {viewingApp.status === 'pending' && (
+                    <>
+                      <button
+                        onClick={() => {
+                          updateApplicationStatus(viewingApp.id, 'verified');
+                          setViewingApp(null);
+                        }}
+                        className="bg-forest-green text-white px-4 py-2 font-bold border-2 border-deep-moss hover:shadow-[2px_2px_0px_0px_rgba(27,67,50,0.8)] transition-all"
+                      >
+                        Approve Application
+                      </button>
+                      <button
+                        onClick={() => {
+                          setSelectedApp(viewingApp.id);
+                          setViewingApp(null);
+                        }}
+                        className="bg-burnt-sienna bg-opacity-20 text-deep-moss px-4 py-2 font-bold border-2 border-deep-moss hover:shadow-[2px_2px_0px_0px_rgba(27,67,50,0.8)] transition-all"
+                      >
+                        Reject Application
+                      </button>
+                    </>
+                  )}
+                  {viewingApp.status === 'verified' && (
+                    <button
+                      onClick={() => {
+                        setSelectedApp(viewingApp.id);
+                        setViewingApp(null);
+                      }}
+                      className="bg-burnt-sienna bg-opacity-20 text-deep-moss px-4 py-2 font-bold border-2 border-deep-moss hover:shadow-[2px_2px_0px_0px_rgba(27,67,50,0.8)] transition-all"
+                    >
+                      Revoke Verification
+                    </button>
+                  )}
+                  {viewingApp.status === 'rejected' && (
                     <button
                       onClick={() => {
                         updateApplicationStatus(viewingApp.id, 'verified');
@@ -650,17 +727,14 @@ const OrganizationApplications = () => {
                     >
                       Approve Application
                     </button>
-                    <button
-                      onClick={() => {
-                        setSelectedApp(viewingApp.id);
-                        setViewingApp(null);
-                      }}
-                      className="bg-burnt-sienna bg-opacity-20 text-deep-moss px-4 py-2 font-bold border-2 border-deep-moss hover:shadow-[2px_2px_0px_0px_rgba(27,67,50,0.8)] transition-all"
-                    >
-                      Reject Application
-                    </button>
-                  </div>
-                )}
+                  )}
+                  <button
+                    onClick={() => setViewingApp(null)}
+                    className="bg-soft-sage text-deep-moss px-4 py-2 font-bold border-2 border-deep-moss hover:shadow-[2px_2px_0px_0px_rgba(27,67,50,0.8)] transition-all"
+                  >
+                    Close
+                  </button>
+                </div>
               </div>
             </div>
           )}

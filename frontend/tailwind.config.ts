@@ -32,6 +32,15 @@ const config: Config = {
         'sap-green': '#66BB6A', // Use for "Verified" or success confirmations
         'burnt-sienna': '#D84315', // For "error" states with a natural, muted feel
         'sky-blue': '#81D4FA', // Calming secondary highlight (optional for CTAs or links)
+
+        // Extended Palette for UI Enhancements
+        'deep-forest': '#1B5E20', // Darker variant of forest-green for hover states
+        'light-sage': '#E8F5E9', // Lighter variant of soft-sage for subtle backgrounds
+        'warm-ivory': '#FFF8E1', // Warmer variant of ivory for highlighted content
+        'deep-sienna': '#BF360C', // Deeper variant of burnt-sienna for critical errors
+        'golden-yellow': '#FFD600', // Brighter variant of sunflower for important highlights
+        'mint-green': '#B9F6CA', // Fresh mint color for new/unread items
+        'lavender-blue': '#B39DDB', // Subtle purple for tertiary elements
       },
     },
   },

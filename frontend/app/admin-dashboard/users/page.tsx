@@ -25,6 +25,7 @@ import {
   UserCheck,
   UserX,
   RefreshCw,
+  User,
 } from 'lucide-react';
 
 interface ToastMessage {
@@ -246,8 +247,13 @@ export default function UsersPage() {
               </Link>
 
               {/* Individual dashboard link */}
-              <Link href="/individual-dashboard">
+              <Link
+                href={
+                  user ? `/user/${user.uid}/dashboard` : '/individual-dashboard'
+                }
+              >
                 <div className="flex items-center gap-3 px-4 py-3 border-2 border-transparent hover:bg-ivory hover:border-deep-moss hover:shadow-brutal hover:-translate-y-0.5 transition-all">
+                  <Users size={20} className="text-deep-moss" />
                   <span className="font-bold text-deep-moss">
                     Individual Dashboard
                   </span>

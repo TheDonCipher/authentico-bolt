@@ -131,7 +131,7 @@ export const ProfileCard = () => {
           <div className="flex flex-col">
             <span className="font-bold text-deep-moss text-base tracking-tight truncate max-w-[120px] sm:max-w-[150px]">
               {user?.userType === 'organization'
-                ? user?.organizationName || user?.orgName || 'Organization'
+                ? user?.organizationName || 'Organization'
                 : user?.name || 'User'}
             </span>
             <div className="flex items-center">

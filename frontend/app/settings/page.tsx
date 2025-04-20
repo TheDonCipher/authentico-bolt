@@ -26,28 +26,39 @@ const Settings = () => {
   const [role, setRole] = React.useState<string | null>(null);
   useEffect(() => {
     const initializeWallet = async () => {
-      console.log('------window.ethereum-----', window.ethereum);
-      await window.ethereum.enable();
+      try {
+        // Check if ethereum is available in window
+        const ethereum = (window as any).ethereum;
+        if (!ethereum) {
+          console.warn('Ethereum provider not found');
+          return;
+        }
 
-      const provider = new ethers.providers.Web3Provider(window.ethereum);
+        console.log('------window.ethereum-----', ethereum);
+        await ethereum.enable();
 
-      await provider.send('eth_requestAccounts', []);
-      console.log('------provider-----', provider);
-      console.log('---fetching network details----');
-      const network = await provider.getNetwork();
-      if (!network.ensAddress) {
-        console.warn('Network does not support ENS');
+        const provider = new ethers.providers.Web3Provider(ethereum);
+
+        await provider.send('eth_requestAccounts', []);
+        console.log('------provider-----', provider);
+        console.log('---fetching network details----');
+        const network = await provider.getNetwork();
+        if (!network.ensAddress) {
+          console.warn('Network does not support ENS');
+        }
+
+        const signer = provider.getSigner();
+        console.log('------signer-----', signer);
+        const account = await signer.getAddress();
+        console.log('------account-----', account);
+
+        setAccount(account);
+        setFormData((prev) => ({ ...prev, walletAddress: account }));
+
+        setIsWalletConnected(true);
+      } catch (error) {
+        console.error('Error initializing wallet:', error);
       }
-
-      const signer = provider.getSigner();
-      console.log('------signer-----', signer);
-      const account = await signer.getAddress();
-      console.log('------account-----', account);
-
-      setAccount(account);
-      setFormData((prev) => ({ ...prev, walletAddress: account }));
-
-      setIsWalletConnected(true);
     };
 
     initializeWallet();
@@ -94,10 +105,10 @@ const Settings = () => {
     console.log('Email:', email);
 
     setFormData({
-      name: name,
-      email: email,
-      password: password,
-      walletAddress: account,
+      name: name || '',
+      email: email || '',
+      password: password || '',
+      walletAddress: account || '',
       role: '0',
     });
 
@@ -116,10 +127,10 @@ const Settings = () => {
     setSuccess(null);
 
     setFormData({
-      name: name,
-      email: email,
-      password: password,
-      walletAddress: account,
+      name: name || '',
+      email: email || '',
+      password: password || '',
+      walletAddress: account || '',
       role: '0',
     });
 

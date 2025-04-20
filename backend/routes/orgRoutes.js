@@ -428,60 +428,23 @@ router.put('/applications/:applicationId', verifyToken, async (req, res) => {
       // Continue with the process even if notification fails
     }
 
-    // If approved, create or update user account
+    // If approved, update the organization's status in Firestore
     if (status === 'approved') {
       try {
-        // Check if user already exists with this email
-        const userQuery = await usersCollection
-          .where('email', '==', appData.contactEmail)
-          .get();
+        // First, check if the organization already exists in Firestore
+        // This should be the user who submitted the application
+        const orgDoc = await usersCollection.doc(appData.submittedBy).get();
 
-        if (userQuery.empty) {
-          // Create new user in Firebase Auth
-          const userRecord = await admin.auth().createUser({
-            email: appData.contactEmail,
-            emailVerified: true,
-            displayName: appData.orgName,
-          });
+        if (orgDoc.exists) {
+          console.log(
+            `Updating existing organization ${appData.submittedBy} in Firestore`
+          );
 
-          // Set custom claims
-          await admin.auth().setCustomUserClaims(userRecord.uid, {
+          // Update the organization document
+          await usersCollection.doc(appData.submittedBy).update({
             userType: 'organization',
             isVerified: true,
-          });
-
-          // Create user document in Firestore
-          await usersCollection.doc(userRecord.uid).set({
-            email: appData.contactEmail,
-            name: appData.orgName,
-            userType: 'organization',
-            isVerified: true,
-            website: appData.website,
-            description: appData.description || '',
-            address: appData.address || '',
-            phoneNumber: appData.phoneNumber || '',
-            industry: appData.industry || '',
-            registrationNumber: appData.registrationNumber || '',
-            foundedYear: appData.foundedYear || '',
-            documentTypes: appData.documentTypes || [],
-            verificationBadge: true,
-            createdAt: admin.firestore.FieldValue.serverTimestamp(),
-            createdBy: req.user.uid,
-          });
-        } else {
-          // Update existing user
-          const userDoc = userQuery.docs[0];
-
-          // Update custom claims
-          await admin.auth().setCustomUserClaims(userDoc.id, {
-            userType: 'organization',
-            isVerified: true,
-          });
-
-          // Update user document
-          await usersCollection.doc(userDoc.id).update({
-            userType: 'organization',
-            isVerified: true,
+            verificationStatus: 'verified',
             name: appData.orgName,
             website: appData.website,
             description: appData.description || '',
@@ -492,8 +455,59 @@ router.put('/applications/:applicationId', verifyToken, async (req, res) => {
             foundedYear: appData.foundedYear || '',
             documentTypes: appData.documentTypes || [],
             verificationBadge: true,
+            verifiedAt: admin.firestore.FieldValue.serverTimestamp(),
             updatedAt: admin.firestore.FieldValue.serverTimestamp(),
             updatedBy: req.user.uid,
+          });
+
+          // Try to update custom claims if possible
+          try {
+            // Get the user's UID from Firebase Auth
+            const userRecord = await admin
+              .auth()
+              .getUserByEmail(appData.contactEmail)
+              .catch(() => null); // Catch and return null if user doesn't exist
+
+            if (userRecord) {
+              // Update custom claims
+              await admin.auth().setCustomUserClaims(userRecord.uid, {
+                userType: 'organization',
+                isVerified: true,
+              });
+              console.log(`Updated custom claims for user ${userRecord.uid}`);
+            } else {
+              console.log(
+                `No Firebase Auth user found for email ${appData.contactEmail}, skipping custom claims update`
+              );
+            }
+          } catch (claimsError) {
+            console.error('Error updating custom claims:', claimsError);
+            // Continue even if custom claims update fails
+          }
+        } else {
+          console.log(
+            `Organization ${appData.submittedBy} not found in Firestore, creating new document`
+          );
+
+          // Create a new organization document
+          await usersCollection.doc(appData.submittedBy).set({
+            email: appData.contactEmail,
+            name: appData.orgName,
+            userType: 'organization',
+            isVerified: true,
+            verificationStatus: 'verified',
+            website: appData.website,
+            description: appData.description || '',
+            address: appData.address || '',
+            phoneNumber: appData.phoneNumber || '',
+            industry: appData.industry || '',
+            registrationNumber: appData.registrationNumber || '',
+            foundedYear: appData.foundedYear || '',
+            documentTypes: appData.documentTypes || [],
+            verificationBadge: true,
+            verifiedAt: admin.firestore.FieldValue.serverTimestamp(),
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            createdBy: req.user.uid,
           });
         }
       } catch (error) {

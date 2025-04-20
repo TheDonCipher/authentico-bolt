@@ -9,16 +9,16 @@ import { auth, db } from '../../../../lib/firebase-admin-server';
 export async function GET(request: NextRequest) {
   try {
     // Get cookies
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const authTokenCookie = cookieStore.get('authToken');
     const userDataCookie = cookieStore.get('userData');
-    
+
     // Check if cookies exist
     const hasCookies = {
       authToken: !!authTokenCookie,
       userData: !!userDataCookie,
     };
-    
+
     // Parse user data if available
     let userData = null;
     try {
@@ -28,12 +28,12 @@ export async function GET(request: NextRequest) {
     } catch (error) {
       console.error('Error parsing user data cookie:', error);
     }
-    
+
     // Check token validity if available
     let tokenValid = false;
-    let tokenData = null;
-    let firebaseUser = null;
-    
+    let tokenData: any = null;
+    let firebaseUser: any = null;
+
     if (authTokenCookie) {
       try {
         // Verify the token
@@ -45,9 +45,12 @@ export async function GET(request: NextRequest) {
           iat: decodedToken.iat,
           auth_time: decodedToken.auth_time,
         };
-        
+
         // Get user from Firestore
-        const userDoc = await db.collection('users').doc(decodedToken.uid).get();
+        const userDoc = await db
+          .collection('users')
+          .doc(decodedToken.uid)
+          .get();
         if (userDoc.exists) {
           firebaseUser = {
             uid: userDoc.id,
@@ -62,7 +65,7 @@ export async function GET(request: NextRequest) {
         console.error('Token verification error:', error);
       }
     }
-    
+
     // Return session information
     return NextResponse.json({
       hasCookies,

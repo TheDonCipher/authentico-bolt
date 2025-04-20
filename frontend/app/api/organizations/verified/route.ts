@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
 
       // Combine the results, ensuring no duplicates
       const verifiedOrgIds = new Set();
-      const verifiedDocs = [];
+      const verifiedDocs: any[] = [];
 
       // Add docs from the new status query
       verifiedWithStatusSnapshot.forEach((doc) => {

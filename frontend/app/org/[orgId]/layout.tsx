@@ -28,7 +28,7 @@ export default function OrganizationLayout({
   const { isAdmin } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const orgId = params.orgId as string;
+  const orgId = params?.orgId as string;
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);

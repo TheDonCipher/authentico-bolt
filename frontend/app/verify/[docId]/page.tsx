@@ -25,7 +25,7 @@ interface DocumentData {
 
 const VerifyPage = () => {
   const params = useParams();
-  const docId = params.docId as string;
+  const docId = params?.docId as string;
 
   const [document, setDocument] = useState<DocumentData | null>(null);
   const [loading, setLoading] = useState(true);

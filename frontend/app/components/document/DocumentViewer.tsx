@@ -33,9 +33,34 @@ export const DocumentViewer = ({
     return () => clearTimeout(timer);
   }, []);
 
+  // Validate document data before processing
+  useEffect(() => {
+    if (!documentData) {
+      setError('Document data is missing. Please try again later.');
+      return;
+    }
+
+    // Check if documentData is a valid base64 string
+    try {
+      // A simple check to see if the string is base64-like
+      if (!/^[A-Za-z0-9+/=]+$/.test(documentData)) {
+        throw new Error('Invalid document data format');
+      }
+    } catch (err) {
+      console.error('Document data validation error:', err);
+      setError(
+        'The document data appears to be corrupted. Please try again or contact support.'
+      );
+    }
+  }, [documentData]);
+
   // Create a blob URL for the document
   const createBlobUrl = () => {
     try {
+      if (!documentData) {
+        throw new Error('Document data is missing');
+      }
+
       // Convert base64 to binary
       const byteCharacters = atob(documentData);
       const byteArrays: Uint8Array[] = [];
@@ -58,7 +83,8 @@ export const DocumentViewer = ({
       console.error('Error creating blob URL:', err);
       setError(
         'Failed to process document for viewing. ' +
-          (err instanceof Error ? err.message : String(err))
+          (err instanceof Error ? err.message : String(err)) +
+          ' Please try refreshing the page or contact support if the issue persists.'
       );
       return null;
     }

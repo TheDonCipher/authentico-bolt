@@ -94,7 +94,7 @@ export const EnhancedDocumentCard = ({
       const idToken = await getAuthToken();
 
       if (!idToken) {
-        throw new Error('Not authenticated');
+        throw new Error('Not authenticated. Please sign in again.');
       }
 
       // Validate document ID
@@ -102,15 +102,14 @@ export const EnhancedDocumentCard = ({
 
       console.log(`Fetching document details for ID: ${docId}`);
 
-      // Skip Firestore lookup and go directly to the API
-      console.log('Skipping Firestore lookup and going directly to the API');
-
+      // Add timeout to the request to prevent hanging
       const response = await axios.get(
         `/api/documents/${docId}/secure-details`,
         {
           headers: {
             Authorization: `Bearer ${idToken}`,
           },
+          timeout: 15000, // 15 second timeout
         }
       );
 
@@ -148,14 +147,37 @@ export const EnhancedDocumentCard = ({
       } else {
         throw new Error('Invalid document data received from server');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error viewing document:', error);
+
+      // Provide more specific error messages based on the error type
+      let errorMessage = 'Failed to load document for viewing';
+
+      if (error.response) {
+        // The request was made and the server responded with a status code
+        // that falls out of the range of 2xx
+        if (error.response.status === 404) {
+          errorMessage =
+            'Document not found. It may have been deleted or moved.';
+        } else if (error.response.status === 403) {
+          errorMessage = 'You do not have permission to view this document.';
+        } else if (error.response.status === 401) {
+          errorMessage = 'Authentication failed. Please sign in again.';
+        } else if (error.response.data && error.response.data.error) {
+          errorMessage = error.response.data.error;
+        }
+      } else if (error.request) {
+        // The request was made but no response was received
+        errorMessage =
+          'No response from server. Please check your internet connection and try again.';
+      } else if (error.message) {
+        // Something happened in setting up the request that triggered an Error
+        errorMessage = error.message;
+      }
+
       setToastMessage({
         type: 'error',
-        message:
-          error instanceof Error
-            ? error.message
-            : 'Failed to load document for viewing',
+        message: errorMessage,
       });
     } finally {
       setIsLoading(false);

@@ -31,53 +31,117 @@ export async function GET(
     console.log(`Getting secure document details for ${id} for user ${uid}`);
     console.log('User token claims:', decodedToken);
 
-    // Forward the request to the backend
+    // Try to get the document from Firestore first to verify it exists
+    const { getFirestore } = await import('firebase-admin/firestore');
+    const db = getFirestore();
+
     try {
-      console.log(
-        `Making request to backend: ${API_URL}/documents/${id}/secure-details`
-      );
+      // Check if document exists in Firestore
+      const docRef = db.collection('documents').doc(id);
+      const docSnapshot = await docRef.get();
 
-      const response = await axios.get(
-        `${API_URL}/documents/${id}/secure-details`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      console.log('Backend secure document details response received');
-      console.log('Response status:', response.status);
-      console.log('Response data keys:', Object.keys(response.data));
-
-      return NextResponse.json(response.data);
-    } catch (error: any) {
-      console.error(
-        'Error forwarding secure document details request to backend:',
-        error.message
-      );
-
-      // Log more detailed error information
-      if (error.response) {
-        console.error('Error response status:', error.response.status);
-        console.error('Error response data:', error.response.data);
-      } else if (error.request) {
-        console.error('No response received, request was:', error.request);
-      } else {
-        console.error('Error setting up request:', error.message);
+      if (!docSnapshot.exists) {
+        console.error(`Document ${id} not found in Firestore`);
+        return NextResponse.json(
+          { error: 'Document not found' },
+          { status: 404 }
+        );
       }
-      console.error('Error config:', error.config);
 
-      // Return the error from the backend
-      return NextResponse.json(
-        {
-          error:
-            error.response?.data?.error ||
-            'Failed to get secure document details',
-          details: error.response?.data?.details || error.message,
-        },
-        { status: error.response?.status || 500 }
+      const docData = docSnapshot.data();
+
+      // Check if user has permission to access this document
+      if (docData.ownerUid !== uid && docData.verifyingOrgId !== uid) {
+        console.error(`User ${uid} not authorized to access document ${id}`);
+        return NextResponse.json(
+          { error: 'You do not have permission to access this document' },
+          { status: 403 }
+        );
+      }
+
+      console.log(
+        `Document ${id} found in Firestore, proceeding to backend request`
       );
+
+      // Forward the request to the backend
+      try {
+        console.log(
+          `Making request to backend: ${API_URL}/documents/${id}/secure-details`
+        );
+
+        const response = await axios.get(
+          `${API_URL}/documents/${id}/secure-details`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+            timeout: 10000, // 10 second timeout
+          }
+        );
+
+        console.log('Backend secure document details response received');
+        console.log('Response status:', response.status);
+        console.log('Response data keys:', Object.keys(response.data));
+
+        return NextResponse.json(response.data);
+      } catch (error: any) {
+        console.error(
+          'Error forwarding secure document details request to backend:',
+          error.message
+        );
+
+        // Log more detailed error information
+        if (error.response) {
+          console.error('Error response status:', error.response.status);
+          console.error('Error response data:', error.response.data);
+        } else if (error.request) {
+          console.error('No response received, request was:', error.request);
+        } else {
+          console.error('Error setting up request:', error.message);
+        }
+        console.error('Error config:', error.config);
+
+        // Return the error from the backend
+        return NextResponse.json(
+          {
+            error:
+              error.response?.data?.error ||
+              'Failed to get secure document details',
+            details: error.response?.data?.details || error.message,
+          },
+          { status: error.response?.status || 500 }
+        );
+      }
+    } catch (firestoreError: any) {
+      console.error('Error checking document in Firestore:', firestoreError);
+
+      // Try the backend as a fallback
+      try {
+        console.log('Falling back to direct backend request');
+        const response = await axios.get(
+          `${API_URL}/documents/${id}/secure-details`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        return NextResponse.json(response.data);
+      } catch (backendError: any) {
+        console.error(
+          'Both Firestore and backend failed:',
+          backendError.message
+        );
+        return NextResponse.json(
+          {
+            error:
+              'Failed to retrieve document from both Firestore and backend',
+            details: backendError.message,
+          },
+          { status: 500 }
+        );
+      }
     }
   } catch (error: any) {
     console.error('Error in secure document details API route:', error);

@@ -55,6 +55,7 @@ interface AuthContextType {
   logout: () => Promise<void>;
   clearError: () => void;
   isAdmin: boolean;
+  isAutoLogin?: boolean; // Added isAutoLogin property
 }
 
 // Create the auth context
@@ -74,6 +75,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [activeOrgId, setActiveOrgId] = useState<string | null>(null);
   // Track wallets that are known to be unregistered to avoid login loops
   const [unregisteredWallets, setUnregisteredWallets] = useState<string[]>([]);
+  // Track auto-login state
+  const [isAutoLogin, setIsAutoLogin] = useState<boolean>(false);
   const router = useRouter();
   const account = useActiveAccount();
 
@@ -351,6 +354,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
               account.address
             );
             setLoading(true);
+            setIsAutoLogin(true); // Set auto-login state to true
             setError('Authenticating with your wallet...');
 
             const result = await login(account.address);
@@ -400,6 +404,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
             setError(err.message || 'Failed to authenticate with wallet');
           } finally {
             setLoading(false);
+            setIsAutoLogin(false); // Reset auto-login state
           }
         })();
       }
@@ -502,6 +507,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         activeContext,
         setActiveContext,
         isAdmin,
+        isAutoLogin,
       }}
     >
       {isInitializing || loading ? (
@@ -536,6 +542,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
               <p className="text-[#2F4F4F] font-bold">
                 {isInitializing
                   ? 'Loading Authentico...'
+                  : isAutoLogin
+                  ? 'Automatically Signing In With Connected Wallet...'
                   : loading && !user
                   ? 'Securely Signing Out...'
                   : loading && user

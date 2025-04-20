@@ -15,7 +15,8 @@
     "cypress:run": "cypress run",
     "prepare:deploy": "npm install postcss-import postcss-nesting tailwindcss-animate",
     "install:postcss-deps": "node scripts/install-postcss-deps.js",
-    "verify:deployment": "node scripts/verify-deployment.js"
+    "verify:deployment": "node scripts/verify-deployment.js",
+    "deploy:fixes": "node scripts/deploy-fixes.js"
   },
   "dependencies": {
     "@radix-ui/react-tabs": "^1.1.4",

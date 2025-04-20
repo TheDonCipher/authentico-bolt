@@ -31,7 +31,7 @@ export const ConnectWalletButton: React.FC<ConnectWalletButtonProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [toastMessage, setToastMessage] = useState<ToastMessage | null>(null);
   const account = useActiveAccount();
-  const { login, error, clearError } = useAuth();
+  const { login, error, clearError, isAutoLogin } = useAuth();
   const router = useRouter();
 
   const handleLogin = async () => {
@@ -137,15 +137,19 @@ export const ConnectWalletButton: React.FC<ConnectWalletButtonProps> = ({
       {account && (
         <button
           onClick={handleLogin}
-          disabled={isLoading}
+          disabled={isLoading || isAutoLogin}
           className={`flex items-center justify-center gap-2 bg-forest-green text-ivory py-2 px-4 rounded-lg hover:bg-deep-moss transition-colors ${
-            isLoading ? 'opacity-70 cursor-not-allowed' : ''
+            isLoading || isAutoLogin ? 'opacity-70 cursor-not-allowed' : ''
           } ${className}`}
         >
-          {isLoading ? (
+          {isLoading || isAutoLogin ? (
             <>
               <LoadingSpinner size={16} />
-              <span>Verifying Wallet Credentials...</span>
+              <span>
+                {isAutoLogin
+                  ? 'Automatically Signing In...'
+                  : 'Verifying Wallet Credentials...'}
+              </span>
             </>
           ) : (
             <>

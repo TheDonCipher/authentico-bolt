@@ -27,7 +27,7 @@ export const WalletConnectionModal: React.FC<WalletConnectionModalProps> = ({
     message: string;
   } | null>(null);
   const account = useActiveAccount();
-  const { login, activeContext } = useAuth();
+  const { login, activeContext, isAutoLogin } = useAuth();
   const { userOrganizations } = useOrganization();
   const router = useRouter();
   const handleClose = (e: React.MouseEvent) => {
@@ -209,13 +209,17 @@ export const WalletConnectionModal: React.FC<WalletConnectionModalProps> = ({
                 onClick={handleSignIn}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                disabled={isLoading}
+                disabled={isLoading || isAutoLogin}
                 className="w-full bg-forest-green text-ivory text-base sm:text-lg font-bold py-2 sm:py-3 px-4 sm:px-6 rounded-lg border-2 border-deep-moss hover:bg-deep-moss transition duration-300 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed touch-target"
               >
-                {isLoading ? (
+                {isLoading || isAutoLogin ? (
                   <>
                     <LoadingSpinner />
-                    <span>Verifying Wallet Credentials...</span>
+                    <span>
+                      {isAutoLogin
+                        ? 'Automatically Signing In...'
+                        : 'Verifying Wallet Credentials...'}
+                    </span>
                   </>
                 ) : (
                   <>
@@ -231,7 +235,7 @@ export const WalletConnectionModal: React.FC<WalletConnectionModalProps> = ({
                 onClick={handleRegister}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                disabled={isLoading}
+                disabled={isLoading || isAutoLogin}
                 className="w-full bg-soft-sage text-deep-moss text-base sm:text-lg font-bold py-2 sm:py-3 px-4 sm:px-6 rounded-lg border-2 border-deep-moss hover:bg-forest-green hover:text-ivory transition duration-300 touch-target"
               >
                 Register New Account

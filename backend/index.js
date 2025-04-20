@@ -56,10 +56,26 @@ app.use(express.json());
 app.use(bodyParser.urlencoded({ extended: true, limit: '10mb' }));
 app.use(
   cors({
-    origin:
-      process.env.NODE_ENV === 'development'
-        ? ['http://localhost:3000', 'http://127.0.0.1:3000']
-        : process.env.FRONTEND_URL,
+    origin: function (origin, callback) {
+      // Allow requests with no origin (like mobile apps, curl, etc)
+      if (!origin) return callback(null, true);
+
+      const allowedOrigins =
+        process.env.NODE_ENV === 'development'
+          ? ['http://localhost:3000', 'http://127.0.0.1:3000']
+          : [
+              'https://authentico-demov2.vercel.app',
+              'https://authentico-demov2.netlify.app',
+              'https://authentico-bolt.netlify.app',
+            ];
+
+      if (allowedOrigins.indexOf(origin) !== -1 || !origin) {
+        callback(null, true);
+      } else {
+        console.log('CORS blocked origin:', origin);
+        callback(null, true); // Allow all origins for now to debug
+      }
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],

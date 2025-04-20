@@ -10,6 +10,7 @@ const apiClient = axios.create({
   timeout: 30000, // 30 seconds
   // Don't set default Content-Type to allow axios to set the correct one based on the request
   // This is especially important for multipart/form-data requests
+  withCredentials: true, // Important for CORS with credentials
 });
 
 // Add a request interceptor to automatically add the auth token

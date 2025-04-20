@@ -146,7 +146,7 @@ const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
         {loading ? (
           <div className="flex flex-col items-center justify-center p-12">
             <div className="mb-4">
-              <Loader className="h-8 w-8 text-deep-moss" />
+              <Loader size="small" />
             </div>
             <p className="text-deep-moss">Loading document...</p>
           </div>

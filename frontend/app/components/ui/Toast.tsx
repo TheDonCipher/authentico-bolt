@@ -99,7 +99,7 @@ export const Toast: React.FC<{
               className="ml-2 p-1 text-ivory hover:text-soft-sage transition-colors flex-shrink-0 touch-target"
               aria-label="Close notification"
             >
-              <X size={14} sm:size={16} />
+              <X size={14} className="sm:w-4 sm:h-4" />
             </button>
           )}
         </div>

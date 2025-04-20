@@ -148,7 +148,7 @@ export const WalletConnectionModal: React.FC<WalletConnectionModalProps> = ({
             className="p-2 hover:bg-gray-100 rounded-full transition-colors touch-target"
             aria-label="Close modal"
           >
-            <X size={18} sm:size={20} />
+            <X size={18} className="sm:w-5 sm:h-5" />
           </button>
         </div>
 
@@ -220,9 +220,8 @@ export const WalletConnectionModal: React.FC<WalletConnectionModalProps> = ({
                 ) : (
                   <>
                     <Wallet
-                      className="inline-block mr-2"
+                      className="inline-block mr-2 sm:w-5 sm:h-5"
                       size={16}
-                      sm:size={20}
                     />
                     <span>Sign In</span>
                   </>

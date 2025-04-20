@@ -65,21 +65,21 @@ export const Footer: React.FC = () => (
               className="hover:text-soft-sage transition-colors p-2 touch-target"
               aria-label="GitHub"
             >
-              <Github size={20} sm:size={24} />
+              <Github size={20} className="sm:w-6 sm:h-6" />
             </Link>
             <Link
               href="#"
               className="hover:text-soft-sage transition-colors p-2 touch-target"
               aria-label="LinkedIn"
             >
-              <Linkedin size={20} sm:size={24} />
+              <Linkedin size={20} className="sm:w-6 sm:h-6" />
             </Link>
             <Link
               href="#"
               className="hover:text-soft-sage transition-colors p-2 touch-target"
               aria-label="Twitter"
             >
-              <Twitter size={20} sm:size={24} />
+              <Twitter size={20} className="sm:w-6 sm:h-6" />
             </Link>
           </div>
         </div>

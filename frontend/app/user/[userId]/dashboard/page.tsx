@@ -780,7 +780,7 @@ export default function IndividualDashboardPage() {
             setReuploadDocument(null);
           }}
           onSuccess={handleUploadSuccess}
-          documentToReupload={reuploadDocument}
+          documentToReupload={reuploadDocument as Document}
         />
       )}
 

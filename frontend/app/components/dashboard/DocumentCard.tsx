@@ -294,7 +294,7 @@ export const DocumentCard = ({
                   onClick={() => setShowQR(false)}
                   className="p-1 hover:bg-soft-sage rounded-full touch-target"
                 >
-                  <X size={20} sm:size={24} />
+                  <X size={20} className="sm:w-6 sm:h-6" />
                 </button>
               </div>
 
@@ -350,7 +350,7 @@ export const DocumentCard = ({
                 onClick={() => setShowDocument(false)}
                 className="p-1 hover:bg-soft-sage rounded-full touch-target"
               >
-                <X size={20} sm:size={24} />
+                <X size={20} className="sm:w-6 sm:h-6" />
               </button>
             </div>
 

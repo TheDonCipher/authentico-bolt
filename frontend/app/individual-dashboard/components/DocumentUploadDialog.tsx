@@ -40,9 +40,10 @@ export const DocumentUploadDialog = ({
     if (isOpen) {
       // If we have a document to re-upload, pre-fill the form
       if (documentToReupload) {
-        setDocumentName(documentToReupload.documentName || '');
-        setDocumentType(documentToReupload.documentType || 'identity');
-        setSelectedOrganization(documentToReupload.verifyingOrgId || '');
+        // Access properties safely with optional chaining
+        setDocumentName(documentToReupload?.documentName || '');
+        setDocumentType(documentToReupload?.documentType || 'identity');
+        setSelectedOrganization(documentToReupload?.verifyingOrgId || '');
       } else {
         // Otherwise reset the form
         setDocumentName('');
@@ -291,7 +292,7 @@ export const DocumentUploadDialog = ({
           </div>
         )}
 
-        {documentToReupload && documentToReupload.status === 'Rejected' && (
+        {documentToReupload && documentToReupload?.status === 'Rejected' && (
           <div className="bg-soft-sage bg-opacity-50 p-4 mb-4 border-2 border-deep-moss">
             <h3 className="font-bold text-deep-moss mb-2">
               Re-uploading Rejected Document
@@ -300,13 +301,13 @@ export const DocumentUploadDialog = ({
               Your document was rejected. Please make the necessary corrections
               before re-uploading.
             </p>
-            {documentToReupload.rejectionReason && (
+            {documentToReupload?.rejectionReason && (
               <div className="mt-2 p-2 bg-ivory border border-deep-moss">
                 <p className="text-sm font-medium text-deep-moss">
                   Rejection reason:
                 </p>
                 <p className="text-sm text-deep-moss">
-                  {documentToReupload.rejectionReason}
+                  {documentToReupload?.rejectionReason}
                 </p>
               </div>
             )}

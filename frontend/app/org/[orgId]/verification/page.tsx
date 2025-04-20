@@ -179,7 +179,7 @@ export default function VerificationPage() {
                   data.documentName || data.name || 'Unnamed Document',
                 documentType:
                   data.documentType || data.documentTypeName || 'Unknown Type',
-                status: 'pending' as 'pending' | 'verified' | 'rejected',
+                status: 'pending',
                 createdAt:
                   data.createdAt?.toDate() ||
                   data.uploadedAt?.toDate() ||
@@ -196,7 +196,12 @@ export default function VerificationPage() {
               return b.createdAt.getTime() - a.createdAt.getTime();
             });
 
-            setVerificationRequests(sortedDocs);
+            // Ensure the status is one of the allowed values
+            const typedDocs = sortedDocs.map((doc) => ({
+              ...doc,
+              status: doc.status as 'pending' | 'verified' | 'rejected',
+            }));
+            setVerificationRequests(typedDocs);
             setError(null);
             setLoading(false);
             return;
@@ -236,7 +241,7 @@ export default function VerificationPage() {
                   data.documentName || data.name || 'Unnamed Document',
                 documentType:
                   data.documentType || data.documentTypeName || 'Unknown Type',
-                status: 'pending' as 'pending' | 'verified' | 'rejected',
+                status: 'pending',
                 createdAt:
                   data.createdAt?.toDate() ||
                   data.uploadedAt?.toDate() ||
@@ -255,7 +260,12 @@ export default function VerificationPage() {
             return b.createdAt.getTime() - a.createdAt.getTime();
           });
 
-          setVerificationRequests(sortedDocs);
+          // Ensure the status is one of the allowed values
+          const typedDocs = sortedDocs.map((doc) => ({
+            ...doc,
+            status: doc.status as 'pending' | 'verified' | 'rejected',
+          }));
+          setVerificationRequests(typedDocs);
           setError(null);
           setLoading(false);
           return;

@@ -4,29 +4,33 @@ This document explains the changes made to fix the Netlify deployment issues rel
 
 ## Changes Made
 
-1. **Updated PostCSS configuration format**
+1. **Moved PostCSS dependencies to regular dependencies**
+
+   - Moved all PostCSS-related packages from devDependencies to dependencies in package.json
+   - This ensures they're available during the Netlify build process
+   - Added: postcss, postcss-import, postcss-nesting, tailwindcss, tailwindcss-animate, autoprefixer
+
+2. **Updated PostCSS configuration format**
 
    - Changed PostCSS configuration to use string-based plugin names instead of `require()`
    - This fixes the "A PostCSS Plugin was passed as a function using require()" error
    - Updated both `postcss.config.js` and `postcss.config.netlify.js`
 
-2. **Simplified Next.js configuration**
+3. **Simplified Next.js configuration**
 
    - Removed custom PostCSS configuration in webpack config from `next.config.js`
    - Now relying on the standard `postcss.config.js` file
 
-3. **Enhanced Netlify build script**
+4. **Enhanced Netlify build script**
 
-   - Updated `scripts/netlify-build.js` to include all necessary PostCSS dependencies
+   - Updated `scripts/netlify-build.js` to verify and install missing dependencies
+   - Added smarter dependency checking that only installs what's missing
    - Added explicit handling for environment variables
    - Improved error handling and logging
 
-4. **Standardized PostCSS dependencies**
-
-   - Ensured all required dependencies are installed during build
-   - Added `autoprefixer` and `tailwindcss` to the explicitly installed dependencies
-
-5. **Maintained netlify.toml configuration**
+5. **Updated Netlify configuration**
+   - Added netlify.toml to the frontend directory
+   - This is necessary because only the frontend folder is uploaded to Netlify
    - Kept `ignore_warnings = true` to prevent warnings from failing the build
 
 ## Troubleshooting

@@ -21,15 +21,33 @@ const requiredDeps = [
 console.log('Starting Netlify build process...');
 console.log('Checking for required PostCSS dependencies...');
 
-// Install dependencies explicitly as production dependencies
+// Verify dependencies are installed
 try {
-  console.log(`Installing PostCSS dependencies: ${requiredDeps.join(', ')}`);
-  execSync(`npm install --save ${requiredDeps.join(' ')}`, {
-    stdio: 'inherit',
-  });
-  console.log('PostCSS dependencies installed successfully!');
+  console.log(`Verifying PostCSS dependencies: ${requiredDeps.join(', ')}`);
+
+  // Check if dependencies are already installed
+  const missingDeps = [];
+  for (const dep of requiredDeps) {
+    try {
+      require.resolve(dep);
+      console.log(`✓ ${dep} is installed`);
+    } catch (e) {
+      console.log(`✗ ${dep} is missing, will install`);
+      missingDeps.push(dep);
+    }
+  }
+
+  // Install any missing dependencies
+  if (missingDeps.length > 0) {
+    console.log(`Installing missing dependencies: ${missingDeps.join(', ')}`);
+    execSync(`npm install --save ${missingDeps.join(' ')}`, {
+      stdio: 'inherit',
+    });
+  }
+
+  console.log('PostCSS dependencies verified successfully!');
 } catch (error) {
-  console.error('Error installing PostCSS dependencies:', error);
+  console.error('Error verifying PostCSS dependencies:', error);
   process.exit(1);
 }
 

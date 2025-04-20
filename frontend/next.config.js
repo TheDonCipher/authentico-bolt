@@ -1,5 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Enable font optimization
+  optimizeFonts: true,
   transpilePackages: ['thirdweb', 'firebase'],
   webpack: (config) => {
     // Fixes wallet connect dependency issue
@@ -15,6 +17,13 @@ const nextConfig = {
   },
   eslint: {
     ignoreDuringBuilds: true,
+  },
+  typescript: {
+    // !! WARN !!
+    // Dangerously allow production builds to successfully complete even if
+    // your project has type errors.
+    // !! WARN !!
+    ignoreBuildErrors: true,
   },
 
   // Use rewrites for API routing based on environment

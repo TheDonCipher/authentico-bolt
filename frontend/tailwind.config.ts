@@ -22,7 +22,9 @@ const config: Config = {
           'conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))',
       },
       fontFamily: {
-        sans: ['Archivo', 'sans-serif'],
+        sans: ['var(--font-inter)', 'system-ui', 'sans-serif'],
+        inter: ['var(--font-inter)', 'system-ui', 'sans-serif'],
+        archivo: ['var(--font-archivo)', 'system-ui', 'sans-serif'],
       },
       colors: {
         // Primary Colors (Earth & Trust)

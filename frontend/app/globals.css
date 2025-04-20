@@ -3,9 +3,8 @@
 @import 'tailwindcss/utilities';
 
 :root {
-  --font-inter: 'Inter', system-ui, -apple-system, sans-serif;
+  /* Font variables are now managed by next/font */
   --font-playfair: 'Playfair Display', serif;
-  --font-archivo: 'Archivo', system-ui, -apple-system, sans-serif;
   --foreground-rgb: 0, 0, 0;
   --background-start-rgb: 250, 249, 246; /* Ivory */
   --background-end-rgb: 250, 249, 246; /* Ivory */

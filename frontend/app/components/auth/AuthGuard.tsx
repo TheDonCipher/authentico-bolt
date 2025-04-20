@@ -91,7 +91,7 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({
     return (
       <div className="flex items-center justify-center min-h-screen">
         <LoadingSpinner size={40} />
-        <p className="ml-2 text-lg">Loading...</p>
+        <p className="ml-2 text-lg">Verifying Access Credentials...</p>
       </div>
     );
   }

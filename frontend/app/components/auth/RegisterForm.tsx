@@ -253,7 +253,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
             {isLoading ? (
               <>
                 <LoadingSpinner size={16} className="mr-2" />
-                <span>Registering...</span>
+                <span>Creating Blockchain Identity...</span>
               </>
             ) : (
               'Register'

@@ -523,9 +523,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
                   ? 'Loading Authentico...'
                   : loading && !user
                   ? 'Securely Signing Out...'
+                  : loading && user
+                  ? 'Preparing Your Dashboard...'
                   : error && error !== 'Authenticating with your wallet...'
                   ? error
-                  : 'Authenticating with your wallet...'}
+                  : 'Verifying Your Blockchain Credentials...'}
               </p>
 
               {!isInitializing && (

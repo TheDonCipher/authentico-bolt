@@ -145,7 +145,7 @@ export const ConnectWalletButton: React.FC<ConnectWalletButtonProps> = ({
           {isLoading ? (
             <>
               <LoadingSpinner size={16} />
-              <span>Signing In...</span>
+              <span>Verifying Wallet Credentials...</span>
             </>
           ) : (
             <>

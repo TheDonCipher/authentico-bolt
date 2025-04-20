@@ -51,7 +51,9 @@ export const NeubrutalistLoading: React.FC<NeubrutalistLoadingProps> = ({
           </div>
         </div>
 
-        <p className="text-deep-moss font-bold">Please wait a moment</p>
+        <p className="text-deep-moss font-bold">
+          Securely processing your request
+        </p>
       </div>
     </div>
   );

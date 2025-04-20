@@ -215,7 +215,7 @@ export const WalletConnectionModal: React.FC<WalletConnectionModalProps> = ({
                 {isLoading ? (
                   <>
                     <LoadingSpinner />
-                    <span>Signing In...</span>
+                    <span>Verifying Wallet Credentials...</span>
                   </>
                 ) : (
                   <>

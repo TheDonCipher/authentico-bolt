@@ -82,7 +82,10 @@ export default function RegisterPage() {
 
   if (pageLoading || isInitializing) {
     return (
-      <NeubrutalistLoading message="Preparing Registration" fullScreen={true} />
+      <NeubrutalistLoading
+        message="Preparing Blockchain Registration"
+        fullScreen={true}
+      />
     );
   }
 
@@ -111,7 +114,7 @@ export default function RegisterPage() {
           </div>
 
           {registering ? (
-            <NeubrutalistLoading message="Creating your account..." />
+            <NeubrutalistLoading message="Establishing Blockchain Identity..." />
           ) : (
             <RegisterForm
               onCancel={() => router.push('/')}

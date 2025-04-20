@@ -1,10 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { clearAuthCookies } from '../../../../lib/auth-cookies-server';
 
+// CORS headers to allow cross-origin requests
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+};
+
+// Handle OPTIONS requests (preflight)
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 204,
+    headers: corsHeaders,
+  });
+}
+
 export async function POST(request: NextRequest) {
   try {
-    // Create a response object
-    const response = NextResponse.json({ success: true });
+    // Create a response object with CORS headers
+    const response = NextResponse.json(
+      { success: true },
+      { headers: corsHeaders }
+    );
 
     // Clear auth cookies
     await clearAuthCookies();
@@ -14,7 +32,7 @@ export async function POST(request: NextRequest) {
     console.error('Error clearing cookies:', error);
     return NextResponse.json(
       { error: error.message || 'Failed to clear cookies' },
-      { status: 500 }
+      { status: 500, headers: corsHeaders }
     );
   }
 }

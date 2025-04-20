@@ -308,10 +308,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         const autoLoginDisabled = localStorage.getItem('autoLoginDisabled');
         if (autoLoginDisabled === 'true') {
           console.log('Auto-login is disabled due to repeated failures');
-          setError(
-            'Automatic login is disabled due to repeated failures. Please login manually.'
+          // Clear this flag if it's been more than 5 minutes since it was set
+          const disabledTimestamp = parseInt(
+            localStorage.getItem('autoLoginDisabledTimestamp') || '0',
+            10
           );
-          return;
+          const now = Date.now();
+          const fiveMinutesMs = 5 * 60 * 1000;
+
+          if (now - disabledTimestamp > fiveMinutesMs) {
+            console.log('Auto-login disabled flag is stale, clearing it');
+            localStorage.removeItem('autoLoginDisabled');
+            localStorage.removeItem('autoLoginDisabledTimestamp');
+            localStorage.setItem('autoLoginFailureCount', '0');
+          } else {
+            setError(
+              'Automatic login is disabled due to repeated failures. Please login manually.'
+            );
+            return;
+          }
         }
 
         // Store the last auto-login attempt timestamp in session storage
@@ -367,17 +382,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
                 newFailureCount.toString()
               );
 
-              // Disable auto-login after 3 consecutive failures
-              if (newFailureCount >= 3) {
+              // Disable auto-login after 2 consecutive failures
+              if (newFailureCount >= 2) {
                 console.log('Disabling auto-login due to repeated failures');
                 localStorage.setItem('autoLoginDisabled', 'true');
+                localStorage.setItem(
+                  'autoLoginDisabledTimestamp',
+                  Date.now().toString()
+                );
 
-                // Re-enable after 30 minutes
-                setTimeout(() => {
-                  console.log('Re-enabling auto-login');
-                  localStorage.removeItem('autoLoginDisabled');
-                  localStorage.setItem('autoLoginFailureCount', '0');
-                }, 1800000); // 30 minutes
+                // We'll check the timestamp when needed instead of using setTimeout
+                // This is more reliable across page refreshes
               }
             }
           } catch (err: any) {

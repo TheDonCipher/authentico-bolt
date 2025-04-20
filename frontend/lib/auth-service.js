@@ -34,8 +34,22 @@ const loginWithWallet = async (walletAddress) => {
       });
 
       console.log('Login API response status:', response.status);
-      const data = await response.json();
-      console.log('Login API response data:', data);
+
+      // Safely parse JSON response
+      let data;
+      try {
+        const text = await response.text();
+        console.log('Login API raw response:', text);
+        data = text ? JSON.parse(text) : {};
+        console.log('Login API parsed data:', data);
+      } catch (parseError) {
+        console.error('Error parsing login response:', parseError);
+        return {
+          success: false,
+          parseError: true,
+          message: 'Error parsing server response. Please try again later.',
+        };
+      }
 
       if (response.ok) {
         console.log('Login API response OK, signing in with custom token');
@@ -106,18 +120,34 @@ const loginWithWallet = async (walletAddress) => {
       }
     } catch (fetchError) {
       // Handle network errors specifically
+      console.error('Fetch error during login:', fetchError);
+
       if (
         fetchError.message === 'Failed to fetch' ||
-        fetchError.name === 'TypeError'
+        fetchError.name === 'TypeError' ||
+        fetchError.message.includes('NetworkError') ||
+        fetchError.message.includes('network') ||
+        fetchError.message.includes('timeout')
       ) {
-        console.error('Network error during login:', fetchError);
         return {
           success: false,
           networkError: true,
           message:
-            'Network error. API server may be offline. Please try again later.',
+            'Network error. API server may be offline or experiencing high load. Please try again later.',
+          details: fetchError.message,
         };
       }
+
+      // Handle SyntaxError from JSON parsing
+      if (fetchError.name === 'SyntaxError') {
+        return {
+          success: false,
+          parseError: true,
+          message: 'Error parsing server response. Please try again later.',
+          details: fetchError.message,
+        };
+      }
+
       throw fetchError; // Re-throw other errors to be handled by the outer catch
     }
   } catch (error) {
@@ -164,13 +194,26 @@ const registerUser = async (walletAddress, userType, userData) => {
       throw new Error('Invalid wallet address format');
     }
 
+    console.log('Registering user with wallet address:', walletAddress);
     const response = await fetch('/api/auth/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ walletAddress, userType, userData }),
     });
 
-    const data = await response.json();
+    console.log('Register API response status:', response.status);
+
+    // Safely parse JSON response
+    let data;
+    try {
+      const text = await response.text();
+      console.log('Register API raw response:', text);
+      data = text ? JSON.parse(text) : {};
+      console.log('Register API parsed data:', data);
+    } catch (parseError) {
+      console.error('Error parsing register response:', parseError);
+      throw new Error('Error parsing server response. Please try again later.');
+    }
     if (!response.ok) {
       if (response.status === 409) {
         throw new Error(
@@ -181,13 +224,34 @@ const registerUser = async (walletAddress, userType, userData) => {
     }
 
     // After registration, log the user in
+    console.log(
+      'Logging in after registration with wallet address:',
+      walletAddress
+    );
     const loginResponse = await fetch('/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ walletAddress }),
     });
 
-    const loginData = await loginResponse.json();
+    console.log(
+      'Login after register API response status:',
+      loginResponse.status
+    );
+
+    // Safely parse JSON response
+    let loginData;
+    try {
+      const text = await loginResponse.text();
+      console.log('Login after register API raw response:', text);
+      loginData = text ? JSON.parse(text) : {};
+      console.log('Login after register API parsed data:', loginData);
+    } catch (parseError) {
+      console.error('Error parsing login after register response:', parseError);
+      throw new Error(
+        'Error parsing server response after registration. Please try again later.'
+      );
+    }
 
     if (loginResponse.ok) {
       const userCredential = await signInWithCustomToken(auth, loginData.token);

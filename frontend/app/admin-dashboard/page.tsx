@@ -324,11 +324,22 @@ export default function AdminDashboardPage() {
           {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
         </button>
 
+        {/* Overlay for mobile sidebar */}
+        {sidebarOpen && (
+          <div
+            className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-30"
+            onClick={toggleSidebar}
+            aria-hidden="true"
+          />
+        )}
+
         {/* Sidebar */}
         <aside
           className={`${
-            sidebarOpen ? 'fixed inset-0 z-40' : 'hidden'
-          } md:relative md:block md:w-64 bg-soft-sage border-r-4 border-deep-moss h-auto md:min-h-screen md:h-full md:sticky md:top-0 z-30 overflow-y-auto transition-all duration-300 ease-in-out`}
+            sidebarOpen
+              ? 'fixed right-0 top-0 bottom-0 w-[280px] z-40'
+              : 'hidden'
+          } md:relative md:block md:w-64 bg-soft-sage border-r-4 border-deep-moss h-auto md:min-h-screen md:h-full md:sticky md:top-0 overflow-y-auto transition-all duration-300 ease-in-out`}
         >
           <div className="p-4 flex flex-col min-h-full">
             {/* Close button - only visible on mobile when sidebar is open */}

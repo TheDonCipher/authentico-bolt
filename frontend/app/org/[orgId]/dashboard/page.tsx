@@ -499,13 +499,13 @@ export default function OrganizationDashboardPage() {
 
         <div className="mb-6">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b-4 border-deep-moss pb-4 mb-6 md:mb-8 gap-4">
-            <h2 className="text-3xl md:text-4xl font-black text-deep-moss">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-deep-moss">
               Organization Dashboard
             </h2>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2 w-full sm:w-auto overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0">
               <button
                 onClick={() => setActiveTab('dashboard')}
-                className={`px-4 py-2 font-bold transition-all ${
+                className={`px-3 sm:px-4 py-2 font-bold transition-all whitespace-nowrap text-sm sm:text-base ${
                   activeTab === 'dashboard'
                     ? 'bg-forest-green text-ivory border-2 border-deep-moss shadow-[4px_4px_0px_0px_rgba(27,67,50,0.8)]'
                     : 'bg-ivory text-deep-moss border-2 border-deep-moss hover:bg-soft-sage hover:shadow-[2px_2px_0px_0px_rgba(27,67,50,0.8)]'
@@ -515,7 +515,7 @@ export default function OrganizationDashboardPage() {
               </button>
               <button
                 onClick={() => setActiveTab('verification')}
-                className={`px-4 py-2 font-bold transition-all ${
+                className={`px-3 sm:px-4 py-2 font-bold transition-all whitespace-nowrap text-sm sm:text-base ${
                   activeTab === 'verification'
                     ? 'bg-forest-green text-ivory border-2 border-deep-moss shadow-[4px_4px_0px_0px_rgba(27,67,50,0.8)]'
                     : 'bg-ivory text-deep-moss border-2 border-deep-moss hover:bg-soft-sage hover:shadow-[2px_2px_0px_0px_rgba(27,67,50,0.8)]'
@@ -525,7 +525,7 @@ export default function OrganizationDashboardPage() {
               </button>
               <button
                 onClick={() => setActiveTab('documents')}
-                className={`px-4 py-2 font-bold transition-all ${
+                className={`px-3 sm:px-4 py-2 font-bold transition-all whitespace-nowrap text-sm sm:text-base ${
                   activeTab === 'documents'
                     ? 'bg-forest-green text-ivory border-2 border-deep-moss shadow-[4px_4px_0px_0px_rgba(27,67,50,0.8)]'
                     : 'bg-ivory text-deep-moss border-2 border-deep-moss hover:bg-soft-sage hover:shadow-[2px_2px_0px_0px_rgba(27,67,50,0.8)]'
@@ -547,34 +547,95 @@ export default function OrganizationDashboardPage() {
             Recent Documents
           </h3>
           {documents.length > 0 ? (
-            <div className="overflow-x-auto -mx-4 md:mx-0 px-4 md:px-0">
-              <table className="w-full border-collapse text-sm md:text-base">
-                <thead>
-                  <tr className="bg-forest-green text-ivory">
-                    <th className="p-2 text-left">Document Name</th>
-                    <th className="p-2 text-left hidden sm:table-cell">Type</th>
-                    <th className="p-2 text-left hidden md:table-cell">
-                      Submitted By
-                    </th>
-                    <th className="p-2 text-left">Status</th>
-                    <th className="p-2 text-left">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {documents.map((doc) => (
-                    <tr key={doc.id} className="border-b border-deep-moss">
-                      <td className="p-2 whitespace-nowrap text-deep-moss">
-                        {doc.documentName || doc.name || 'Unnamed Document'}
-                      </td>
-                      <td className="p-2 whitespace-nowrap hidden sm:table-cell text-deep-moss">
-                        {doc.documentTypeName || doc.documentType || 'Unknown'}
-                      </td>
-                      <td className="p-2 whitespace-nowrap hidden md:table-cell text-deep-moss">
-                        {doc.ownerName || doc.ownerUid || 'Unknown User'}
-                      </td>
-                      <td className="p-2 whitespace-nowrap">
+            <>
+              {/* Desktop/Tablet View */}
+              <div className="hidden sm:block overflow-x-auto -mx-4 md:mx-0 px-4 md:px-0">
+                <table className="w-full border-collapse text-sm md:text-base">
+                  <thead>
+                    <tr className="bg-forest-green text-ivory">
+                      <th className="p-2 text-left">Document Name</th>
+                      <th className="p-2 text-left hidden sm:table-cell">
+                        Type
+                      </th>
+                      <th className="p-2 text-left hidden md:table-cell">
+                        Submitted By
+                      </th>
+                      <th className="p-2 text-left">Status</th>
+                      <th className="p-2 text-left">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {documents.map((doc) => (
+                      <tr key={doc.id} className="border-b border-deep-moss">
+                        <td className="p-2 whitespace-nowrap text-deep-moss">
+                          {doc.documentName || doc.name || 'Unnamed Document'}
+                        </td>
+                        <td className="p-2 whitespace-nowrap hidden sm:table-cell text-deep-moss">
+                          {doc.documentTypeName ||
+                            doc.documentType ||
+                            'Unknown'}
+                        </td>
+                        <td className="p-2 whitespace-nowrap hidden md:table-cell text-deep-moss">
+                          {doc.ownerName || doc.ownerUid || 'Unknown User'}
+                        </td>
+                        <td className="p-2 whitespace-nowrap">
+                          <span
+                            className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              doc.status === 'verified'
+                                ? 'bg-green-100 text-green-800'
+                                : doc.status === 'rejected'
+                                ? 'bg-red-100 text-red-800'
+                                : 'bg-yellow-100 text-yellow-800'
+                            }`}
+                          >
+                            {doc.status || 'pending'}
+                          </span>
+                        </td>
+                        <td className="p-2 whitespace-nowrap">
+                          <div className="flex space-x-2">
+                            <button
+                              onClick={() => {
+                                setActiveTab('documents');
+                                localStorage.setItem('viewDocumentId', doc.id);
+                              }}
+                              className="bg-soft-sage text-deep-moss p-2 border border-deep-moss hover:shadow-[1px_1px_0px_0px_rgba(27,67,50,0.8)] transition-all"
+                              title="View Document"
+                            >
+                              <span className="flex items-center justify-center">
+                                <Eye size={16} />
+                              </span>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile View */}
+              <div className="sm:hidden space-y-4">
+                {documents.slice(0, 5).map((doc) => (
+                  <div
+                    key={`mobile-${doc.id}`}
+                    className="bg-ivory p-4 border-2 border-deep-moss"
+                  >
+                    <h4 className="font-bold text-deep-moss text-lg mb-2">
+                      {doc.documentName || doc.name || 'Unnamed Document'}
+                    </h4>
+                    <div className="grid grid-cols-2 gap-2 mb-3">
+                      <div>
+                        <p className="text-xs text-gray-600">Type:</p>
+                        <p className="text-sm text-deep-moss">
+                          {doc.documentTypeName ||
+                            doc.documentType ||
+                            'Unknown'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-600">Status:</p>
                         <span
-                          className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
                             doc.status === 'verified'
                               ? 'bg-green-100 text-green-800'
                               : doc.status === 'rejected'
@@ -584,30 +645,39 @@ export default function OrganizationDashboardPage() {
                         >
                           {doc.status || 'pending'}
                         </span>
-                      </td>
-                      <td className="p-2 whitespace-nowrap">
-                        <div className="flex space-x-2">
-                          <button
-                            onClick={() => {
-                              setActiveTab('documents');
-                              // We'll need to pass the document ID to the DocumentReception component
-                              // This is a simple way to do it for now
-                              localStorage.setItem('viewDocumentId', doc.id);
-                            }}
-                            className="bg-soft-sage text-deep-moss p-2 border border-deep-moss hover:shadow-[1px_1px_0px_0px_rgba(27,67,50,0.8)] transition-all"
-                            title="View Document"
-                          >
-                            <span className="flex items-center justify-center">
-                              <Eye size={16} />
-                            </span>
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                      </div>
+                    </div>
+                    <div className="mb-3">
+                      <p className="text-xs text-gray-600">Submitted By:</p>
+                      <p className="text-sm text-deep-moss">
+                        {doc.ownerName || doc.ownerUid || 'Unknown User'}
+                      </p>
+                    </div>
+                    <div className="flex justify-end">
+                      <button
+                        onClick={() => {
+                          setActiveTab('documents');
+                          localStorage.setItem('viewDocumentId', doc.id);
+                        }}
+                        className="bg-soft-sage text-deep-moss px-3 py-1.5 border border-deep-moss hover:shadow-[1px_1px_0px_0px_rgba(27,67,50,0.8)] transition-all flex items-center gap-1"
+                      >
+                        <Eye size={16} /> View
+                      </button>
+                    </div>
+                  </div>
+                ))}
+                {documents.length > 5 && (
+                  <div className="text-center mt-2">
+                    <button
+                      onClick={() => setActiveTab('documents')}
+                      className="text-deep-moss underline text-sm"
+                    >
+                      View all {documents.length} documents
+                    </button>
+                  </div>
+                )}
+              </div>
+            </>
           ) : (
             <p className="text-deep-moss font-medium">No documents found</p>
           )}

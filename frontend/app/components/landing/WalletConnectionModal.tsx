@@ -77,6 +77,7 @@ export const WalletConnectionModal: React.FC<WalletConnectionModalProps> = ({
             userType: 'individual' as 'individual' | 'organization' | 'admin',
           };
 
+          // Don't close the modal - the redirect will navigate away from this page
           redirectToDashboard(router, user, activeContext, activeOrgId);
         }, 1000);
       } else if (result.newUser) {
@@ -109,7 +110,7 @@ export const WalletConnectionModal: React.FC<WalletConnectionModalProps> = ({
       });
       return;
     }
-    toogleShow();
+    // Don't close the modal before redirecting
     router.push('/register');
   };
 

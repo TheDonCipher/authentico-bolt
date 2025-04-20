@@ -74,41 +74,51 @@ const AdminStats = () => {
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-      <div className="bg-[#E8EDE1] p-6 border-4 border-[#556B2F] shadow-brutal">
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+      <div className="bg-[#E8EDE1] p-4 md:p-6 border-2 md:border-4 border-[#556B2F] shadow-brutal">
         <div className="flex items-center mb-2">
           <Users className="mr-2 text-[#556B2F]" size={20} />
-          <h3 className="font-bold text-xl text-[#2F4F4F]">Total Users</h3>
+          <h3 className="font-bold text-lg md:text-xl text-[#2F4F4F]">
+            Total Users
+          </h3>
         </div>
-        <p className="text-4xl font-black text-[#556B2F]">{stats.totalUsers}</p>
+        <p className="text-3xl md:text-4xl font-black text-[#556B2F]">
+          {stats.totalUsers}
+        </p>
       </div>
 
-      <div className="bg-[#E8EDE1] p-6 border-4 border-[#556B2F] shadow-brutal">
+      <div className="bg-[#E8EDE1] p-4 md:p-6 border-2 md:border-4 border-[#556B2F] shadow-brutal">
         <div className="flex items-center mb-2">
           <FileText className="mr-2 text-[#556B2F]" size={20} />
-          <h3 className="font-bold text-xl text-[#2F4F4F]">Documents</h3>
+          <h3 className="font-bold text-lg md:text-xl text-[#2F4F4F]">
+            Documents
+          </h3>
         </div>
-        <p className="text-4xl font-black text-[#556B2F]">
+        <p className="text-3xl md:text-4xl font-black text-[#556B2F]">
           {stats.totalDocuments}
         </p>
       </div>
 
-      <div className="bg-[#E8EDE1] p-6 border-4 border-[#556B2F] shadow-brutal">
+      <div className="bg-[#E8EDE1] p-4 md:p-6 border-2 md:border-4 border-[#556B2F] shadow-brutal">
         <div className="flex items-center mb-2">
           <Building2 className="mr-2 text-[#556B2F]" size={20} />
-          <h3 className="font-bold text-xl text-[#2F4F4F]">Organizations</h3>
+          <h3 className="font-bold text-lg md:text-xl text-[#2F4F4F]">
+            Organizations
+          </h3>
         </div>
-        <p className="text-4xl font-black text-[#556B2F]">
+        <p className="text-3xl md:text-4xl font-black text-[#556B2F]">
           {stats.totalOrganizations}
         </p>
       </div>
 
-      <div className="bg-[#E8EDE1] p-6 border-4 border-[#556B2F] shadow-brutal">
+      <div className="bg-[#E8EDE1] p-4 md:p-6 border-2 md:border-4 border-[#556B2F] shadow-brutal">
         <div className="flex items-center mb-2">
           <Clock className="mr-2 text-[#556B2F]" size={20} />
-          <h3 className="font-bold text-xl text-[#2F4F4F]">Pending Apps</h3>
+          <h3 className="font-bold text-lg md:text-xl text-[#2F4F4F]">
+            Pending Apps
+          </h3>
         </div>
-        <p className="text-4xl font-black text-[#556B2F]">
+        <p className="text-3xl md:text-4xl font-black text-[#556B2F]">
           {stats.pendingApplications}
         </p>
       </div>

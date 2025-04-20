@@ -85,15 +85,20 @@ export const EnhancedDocumentCard = ({
 
       // Validate document ID
       const docId = doc.documentId.toString();
+      console.log(`Fetching document details for ID: ${docId}`);
 
+      // Add timeout to the request to prevent hanging
       const response = await axios.get(
         `/api/documents/${docId}/secure-details`,
         {
           headers: {
             Authorization: `Bearer ${idToken}`,
           },
+          timeout: 15000, // 15 second timeout
         }
       );
+
+      console.log('Document details response:', response.status, response.data);
 
       if (!response.data || !response.data.decryptedFile) {
         throw new Error('Invalid document data received from server');
@@ -106,6 +111,14 @@ export const EnhancedDocumentCard = ({
       setShowDocument(true);
     } catch (error) {
       console.error('Error viewing document:', error);
+      // More detailed error logging
+      if (axios.isAxiosError(error)) {
+        console.error('Axios error details:', {
+          status: error.response?.status,
+          data: error.response?.data,
+          message: error.message,
+        });
+      }
       setToastMessage({
         type: 'error',
         message:

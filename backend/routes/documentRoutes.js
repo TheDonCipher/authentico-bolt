@@ -503,15 +503,22 @@ router.get('/:documentId', verifyToken, async (req, res) => {
 router.get('/:documentId/secure-details', verifyToken, async (req, res) => {
   try {
     const { documentId } = req.params;
+    console.log(
+      `Secure document details requested for ID: ${documentId} by user: ${req.user.uid}`
+    );
 
     // Get document from Firestore
     const docSnapshot = await documentsCollection.doc(documentId).get();
 
     if (!docSnapshot.exists) {
+      console.log(`Document ${documentId} not found in Firestore`);
       return res.status(404).json({ error: 'Document not found' });
     }
 
     const docData = docSnapshot.data();
+    console.log(
+      `Document ${documentId} found. Owner: ${docData.ownerUid}, VerifyingOrg: ${docData.verifyingOrgId}`
+    );
 
     // Check if user is authorized to access this document
     // Either the document owner or the verifying organization can access
@@ -519,10 +526,20 @@ router.get('/:documentId/secure-details', verifyToken, async (req, res) => {
       docData.ownerUid !== req.user.uid &&
       docData.verifyingOrgId !== req.user.uid
     ) {
+      console.log(
+        `User ${req.user.uid} not authorized to access document ${documentId}`
+      );
+      console.log(
+        `Document owner: ${docData.ownerUid}, Verifying org: ${docData.verifyingOrgId}`
+      );
       return res.status(403).json({
         error: 'Unauthorized access to document',
       });
     }
+
+    console.log(
+      `User ${req.user.uid} authorized to access document ${documentId}. Proceeding with decryption.`
+    );
 
     // For verifying organizations, check if they are verified
     if (

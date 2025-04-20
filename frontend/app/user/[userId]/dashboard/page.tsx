@@ -581,7 +581,7 @@ export default function IndividualDashboardPage() {
                 </div>
               </div>
 
-              <div className="bg-soft-sage border-2 sm:border-4 border-deep-moss p-3 sm:p-4 md:p-6 shadow-brutal-sm sm:shadow-brutal">
+              <div className="bg-soft-sage border-2 sm:border-4 border-deep-moss p-3 sm:p-4 md:p-6 shadow-brutal-sm sm:shadow-brutal overflow-x-auto">
                 {isLoading ? (
                   <div className="flex justify-center items-center py-6 sm:py-8">
                     <Loader text="Loading documents..." />
@@ -598,7 +598,7 @@ export default function IndividualDashboardPage() {
                         </p>
                       </div>
                     ) : viewMode === 'grid' ? (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6">
+                      <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6">
                         {documents.map((doc) => (
                           <EnhancedDocumentCard
                             key={doc.documentId}
@@ -639,30 +639,33 @@ export default function IndividualDashboardPage() {
                         ))}
                       </div>
                     ) : (
-                      <DocumentTable
-                        documents={documents}
-                        orgNames={orgNames}
-                        onShare={(document) => {
-                          // Only allow sharing verified documents
-                          if (
-                            document.status === 'Verified' ||
-                            document.status === '2'
-                          ) {
-                            setSharingDocument({
-                              id: document.documentId,
-                              name: document.documentName,
-                              status: document.status,
-                            });
-                            setIsShareDialogOpen(true);
-                          } else {
-                            setToastMessage({
-                              type: 'warning',
-                              message: 'Only verified documents can be shared',
-                            });
-                          }
-                        }}
-                        onReupload={handleReupload}
-                      />
+                      <div className="-mx-3 sm:mx-0 overflow-x-auto pb-2">
+                        <DocumentTable
+                          documents={documents}
+                          orgNames={orgNames}
+                          onShare={(document) => {
+                            // Only allow sharing verified documents
+                            if (
+                              document.status === 'Verified' ||
+                              document.status === '2'
+                            ) {
+                              setSharingDocument({
+                                id: document.documentId,
+                                name: document.documentName,
+                                status: document.status,
+                              });
+                              setIsShareDialogOpen(true);
+                            } else {
+                              setToastMessage({
+                                type: 'warning',
+                                message:
+                                  'Only verified documents can be shared',
+                              });
+                            }
+                          }}
+                          onReupload={handleReupload}
+                        />
+                      </div>
                     )}
                   </>
                 )}

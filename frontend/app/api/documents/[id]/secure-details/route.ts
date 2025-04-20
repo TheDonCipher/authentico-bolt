@@ -4,6 +4,7 @@ import axios from 'axios';
 
 // Get the API URL from environment variables
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
+console.log('Using API URL for document secure-details:', API_URL);
 
 export async function GET(
   request: NextRequest,

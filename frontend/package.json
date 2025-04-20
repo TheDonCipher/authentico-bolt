@@ -16,6 +16,8 @@
     "@radix-ui/react-tabs": "^1.1.4",
     "axios": "^1.7.7",
     "ethers": "5.7.2",
+    "firebase": "^11.6.0",
+    "firebase-admin": "^13.2.0",
     "framer-motion": "^11.11.8",
     "hexoid": "^2.0.0",
     "lucide-react": "^0.428.0",

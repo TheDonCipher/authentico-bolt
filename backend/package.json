@@ -19,6 +19,7 @@
   "scripts": {
     "start:dev": "nodemon index.js",
     "start": "node index.js",
+    "build": "echo 'Build step completed'",
     "migrate": "node migrations/run-migrations.js"
   }
 }

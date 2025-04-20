@@ -52,10 +52,14 @@ export default function IndividualDashboardPage() {
   const [activeTab, setActiveTab] = useState('documents');
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('table');
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
+  const [reuploadDocument, setReuploadDocument] = useState<Document | null>(
+    null
+  );
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
   const [sharingDocument, setSharingDocument] = useState<{
     id: string | number;
     name: string;
+    status?: string;
   } | null>(null);
   const [documents, setDocuments] = useState<Document[]>([]);
   const [orgNames, setOrgNames] = useState<Record<string, string>>({});
@@ -122,7 +126,9 @@ export default function IndividualDashboardPage() {
                 ? data.updatedAt.toDate().toISOString()
                 : new Date().toISOString(),
               data.ownerUid || userId,
-              data.verifyingOrgId || data.verifier || ''
+              data.verifyingOrgId || data.verifier || '',
+              undefined, // sharedWith
+              data.rejectionReason // Add rejection reason
             );
 
             // Log the processed document data
@@ -225,7 +231,9 @@ export default function IndividualDashboardPage() {
                 ? data.updatedAt.toDate().toISOString()
                 : new Date().toISOString(),
               data.ownerUid || userId,
-              data.verifyingOrgId || data.verifier || ''
+              data.verifyingOrgId || data.verifier || '',
+              undefined, // sharedWith
+              data.rejectionReason // Add rejection reason
             );
 
             fetchedDocuments.push(documentData);
@@ -362,10 +370,17 @@ export default function IndividualDashboardPage() {
   // Handle document upload success
   const handleUploadSuccess = () => {
     setIsUploadDialogOpen(false);
+    setReuploadDocument(null);
     setToastMessage({
       type: 'success',
       message: 'Document uploaded successfully!',
     });
+  };
+
+  // Handle re-upload action
+  const handleReupload = (doc: Document) => {
+    setReuploadDocument(doc);
+    setIsUploadDialogOpen(true);
   };
 
   // Toggle activity pane
@@ -599,12 +614,26 @@ export default function IndividualDashboardPage() {
                             createdAt={doc.createdAt}
                             updatedAt={doc.updatedAt}
                             onShare={(document) => {
-                              setSharingDocument({
-                                id: document.documentId,
-                                name: document.documentName,
-                              });
-                              setIsShareDialogOpen(true);
+                              // Only allow sharing verified documents
+                              if (
+                                document.status === 'Verified' ||
+                                document.status === '2'
+                              ) {
+                                setSharingDocument({
+                                  id: document.documentId,
+                                  name: document.documentName,
+                                  status: document.status,
+                                });
+                                setIsShareDialogOpen(true);
+                              } else {
+                                setToastMessage({
+                                  type: 'warning',
+                                  message:
+                                    'Only verified documents can be shared',
+                                });
+                              }
                             }}
+                            onReupload={handleReupload}
                           />
                         ))}
                       </div>
@@ -613,12 +642,25 @@ export default function IndividualDashboardPage() {
                         documents={documents}
                         orgNames={orgNames}
                         onShare={(document) => {
-                          setSharingDocument({
-                            id: document.documentId,
-                            name: document.documentName,
-                          });
-                          setIsShareDialogOpen(true);
+                          // Only allow sharing verified documents
+                          if (
+                            document.status === 'Verified' ||
+                            document.status === '2'
+                          ) {
+                            setSharingDocument({
+                              id: document.documentId,
+                              name: document.documentName,
+                              status: document.status,
+                            });
+                            setIsShareDialogOpen(true);
+                          } else {
+                            setToastMessage({
+                              type: 'warning',
+                              message: 'Only verified documents can be shared',
+                            });
+                          }
                         }}
+                        onReupload={handleReupload}
                       />
                     )}
                   </>
@@ -726,8 +768,12 @@ export default function IndividualDashboardPage() {
       {isUploadDialogOpen && (
         <DocumentUploadDialog
           isOpen={isUploadDialogOpen}
-          onClose={() => setIsUploadDialogOpen(false)}
+          onClose={() => {
+            setIsUploadDialogOpen(false);
+            setReuploadDocument(null);
+          }}
           onSuccess={handleUploadSuccess}
+          documentToReupload={reuploadDocument}
         />
       )}
 
@@ -737,6 +783,7 @@ export default function IndividualDashboardPage() {
           isOpen={isShareDialogOpen}
           documentId={sharingDocument.id ? sharingDocument.id.toString() : ''}
           documentName={sharingDocument.name || 'Document'}
+          documentStatus={sharingDocument.status}
           onClose={() => {
             setIsShareDialogOpen(false);
             setSharingDocument(null);

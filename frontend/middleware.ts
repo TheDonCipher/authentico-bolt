@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 // Define protected routes patterns
-const individualProtectedRoutes = ['/individual-dashboard']; // Individual dashboard
-const organizationProtectedRoutes = ['/organization-dashboard']; // Organization dashboard
+// Note: The base routes are demo pages and should be accessible without authentication
+// Only the sub-routes of these paths are protected
+const individualProtectedRoutes = ['/individual-dashboard/']; // Individual dashboard sub-routes
+const organizationProtectedRoutes = ['/organization-dashboard/']; // Organization dashboard sub-routes
 const userSpecificRoutes = [
   '/user/:userId/dashboard',
   '/user/:userId/documents',
@@ -66,13 +68,19 @@ export async function middleware(request: NextRequest) {
   };
 
   // Check if the current path is a protected route
-  const isIndividualProtected = individualProtectedRoutes.some(
-    (route) => pathname === route || pathname.startsWith(`${route}/`)
+  // For individual and organization dashboards, only protect sub-routes, not the main demo pages
+  const isIndividualProtected = individualProtectedRoutes.some((route) =>
+    pathname.startsWith(route)
   );
 
-  const isOrganizationProtected = organizationProtectedRoutes.some(
-    (route) => pathname === route || pathname.startsWith(`${route}/`)
+  const isOrganizationProtected = organizationProtectedRoutes.some((route) =>
+    pathname.startsWith(route)
   );
+
+  // Check if the path is a demo page that should be accessible without authentication
+  const isDemoPage =
+    pathname === '/individual-dashboard' ||
+    pathname === '/organization-dashboard';
 
   const isUserSpecificRoute = userSpecificRoutes.some((pattern) =>
     matchesPattern(pathname, pattern)
@@ -109,15 +117,22 @@ export async function middleware(request: NextRequest) {
   // Redirect logic
   if (!isAuthenticated) {
     // If not authenticated and trying to access protected route, redirect to login
+    // But allow access to demo pages without authentication
     if (
       isUserSpecificRoute ||
       isOrgSpecificRoute ||
       isAdminProtected ||
-      isIndividualProtected ||
-      isOrganizationProtected
+      (isIndividualProtected && !isDemoPage) ||
+      (isOrganizationProtected && !isDemoPage)
     ) {
       console.log('Redirecting unauthenticated user to home page');
       return NextResponse.redirect(new URL('/', request.url));
+    }
+
+    // Allow access to demo pages without authentication
+    if (isDemoPage) {
+      console.log('Allowing access to demo page without authentication');
+      return NextResponse.next();
     }
   } else {
     // User is authenticated, check for proper authorization
@@ -207,7 +222,9 @@ export async function middleware(request: NextRequest) {
 // Configure the middleware to run on specific paths
 export const config = {
   matcher: [
+    '/individual-dashboard',
     '/individual-dashboard/:path*',
+    '/organization-dashboard',
     '/organization-dashboard/:path*',
     '/admin-dashboard/:path*',
     '/user/:path*',

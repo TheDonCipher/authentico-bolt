@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Shield, X, Clock, AlertTriangle, Calendar, User } from 'lucide-react';
 import axios from 'axios';
 import { getAuthToken } from '../../../lib/token-util';
+import { API_ENDPOINTS } from '../../../lib/constants';
 import { Toast } from '../../components/ui/Toast';
 import { OrganizationVerificationStatus } from '../../types/user';
 import { VerificationAuditLogEntry } from '../../types/organization';
@@ -31,7 +32,7 @@ export const VerificationAuditLog: React.FC = () => {
         throw new Error('Not authenticated');
       }
 
-      const response = await axios.get('/api/admin/audit-logs', {
+      const response = await axios.get(API_ENDPOINTS.ADMIN.AUDIT_LOGS, {
         headers: {
           Authorization: `Bearer ${idToken}`,
         },
@@ -139,9 +140,12 @@ export const VerificationAuditLog: React.FC = () => {
 
       {auditLogs.length === 0 ? (
         <div className="bg-white p-6 border-2 border-deep-moss text-center">
-          <p className="text-lg font-bold text-deep-moss">No audit logs found</p>
+          <p className="text-lg font-bold text-deep-moss">
+            No audit logs found
+          </p>
           <p className="text-deep-moss">
-            When organization verification statuses change, they will be recorded here.
+            When organization verification statuses change, they will be
+            recorded here.
           </p>
         </div>
       ) : (
@@ -151,7 +155,9 @@ export const VerificationAuditLog: React.FC = () => {
               <tr className="bg-deep-moss text-ivory">
                 <th className="p-2 text-left">Organization</th>
                 <th className="p-2 text-left">Status Change</th>
-                <th className="p-2 text-left hidden md:table-cell">Updated By</th>
+                <th className="p-2 text-left hidden md:table-cell">
+                  Updated By
+                </th>
                 <th className="p-2 text-left">Date</th>
                 <th className="p-2 text-left hidden sm:table-cell">Notes</th>
               </tr>
@@ -187,9 +193,7 @@ export const VerificationAuditLog: React.FC = () => {
                     </div>
                   </td>
                   <td className="p-2 hidden sm:table-cell">
-                    <div className="max-w-xs truncate">
-                      {log.notes || '-'}
-                    </div>
+                    <div className="max-w-xs truncate">{log.notes || '-'}</div>
                   </td>
                 </tr>
               ))}

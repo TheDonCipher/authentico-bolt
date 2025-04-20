@@ -9,21 +9,21 @@ export const VERIFICATION_COLLECTION = 'verifications';
 export const USER_TYPE = {
   INDIVIDUAL: 'individual',
   ORGANIZATION: 'organization',
-  ADMIN: 'admin'
+  ADMIN: 'admin',
 };
 
 // Document status
 export const DOCUMENT_STATUS = {
   PENDING: 'pending',
   VERIFIED: 'verified',
-  REJECTED: 'rejected'
+  REJECTED: 'rejected',
 };
 
 // Organization status
 export const ORGANIZATION_STATUS = {
   PENDING: 'pending',
   VERIFIED: 'verified',
-  REJECTED: 'rejected'
+  REJECTED: 'rejected',
 };
 
 // API endpoints
@@ -35,20 +35,22 @@ export const API_ENDPOINTS = {
     ME: '/api/auth/me',
     VALIDATE: '/api/auth/validate',
     SET_COOKIES: '/api/auth/set-cookies',
-    CLEAR_COOKIES: '/api/auth/clear-cookies'
+    CLEAR_COOKIES: '/api/auth/clear-cookies',
   },
   DOCUMENTS: {
     BASE: '/api/documents',
     UPLOAD: '/api/documents/upload',
     VERIFY: '/api/documents/verify',
-    SHARE: '/api/documents/share'
+    SHARE: '/api/documents/share',
   },
   ORGANIZATIONS: {
     BASE: '/api/organizations',
     APPLICATIONS: '/api/organizations/applications',
-    VERIFY: '/api/organizations/verify'
+    VERIFY: '/api/organizations/verify',
   },
   ADMIN: {
-    STATS: '/api/admin/stats'
-  }
+    STATS: '/api/admin/stats',
+    AUDIT_LOGS: '/api/admin/audit-logs',
+    USERS: '/api/admin/users',
+  },
 };

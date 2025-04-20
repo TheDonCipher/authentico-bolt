@@ -17,10 +17,13 @@ import {
   ExternalLink,
   Shield,
   Lock,
+  Upload,
+  Paperclip,
 } from 'lucide-react';
 import { getDocumentTypeName } from '../../constants/documentTypes';
 import { Toast } from '../../components/ui/Toast';
 import { DocumentViewer } from '../../components/document/DocumentViewer';
+import { DocumentSeal } from '../../components/document/DocumentSeal';
 import axios from 'axios';
 import { getAuthToken } from '../../../lib/token-util';
 import { Tooltip } from '../../components/ui/Tooltip';
@@ -29,6 +32,7 @@ interface EnhancedDocumentCardProps {
   doc: Document;
   onShare: (doc: Document) => void;
   onAction?: (doc: Document) => void;
+  onReupload?: (doc: Document) => void; // New prop for re-upload action
   documentName?: string;
   verifyingOrgName?: string;
   transactionHash?: string;
@@ -42,6 +46,7 @@ export const EnhancedDocumentCard = ({
   doc,
   onShare,
   onAction = () => {},
+  onReupload = () => {}, // Default empty function
   documentName,
   verifyingOrgName,
   transactionHash,
@@ -71,6 +76,12 @@ export const EnhancedDocumentCard = ({
   const explorerUrl = transactionHash
     ? `https://sepolia.etherscan.io/tx/${transactionHash}`
     : null;
+
+  // Check if document is verified (status = 'Verified' or '2')
+  const isVerified = doc.status === 'Verified' || doc.status === '2';
+
+  // Check if document is rejected (status = 'Rejected' or '3')
+  const isRejected = doc.status === 'Rejected' || doc.status === '3';
 
   // Function to fetch and view the document
   const viewDocument = async (downloadOnly: boolean = false) => {
@@ -199,8 +210,10 @@ export const EnhancedDocumentCard = ({
 
   return (
     <div className="bg-ivory p-4 border-2 border-deep-moss hover:shadow-[4px_4px_0px_0px_rgba(27,67,50,0.8)] transition-all flex flex-col h-full relative overflow-hidden">
-      {/* Document-like styling */}
-      <div className="absolute top-0 right-0 w-12 h-12 bg-soft-sage border-b border-l border-deep-moss transform rotate-[-10deg] translate-x-[8px] translate-y-[-8px]"></div>
+      {/* Paper clip styling */}
+      <div className="absolute top-0 right-0 transform translate-x-[-8px] translate-y-[-2px] rotate-[20deg] text-deep-moss">
+        <Paperclip size={28} strokeWidth={2.5} />
+      </div>
 
       {/* Header with document name and status */}
       <div className="flex justify-between items-start mb-3">
@@ -222,6 +235,21 @@ export const EnhancedDocumentCard = ({
 
       {/* Document details - more compact */}
       <div className="mb-3 flex-grow">
+        {isRejected && (
+          <div className="mb-3 p-2 bg-burnt-sienna bg-opacity-20 border border-deep-moss text-xs">
+            <p className="font-medium text-deep-moss">
+              This document was rejected. Please re-upload with correct
+              information.
+            </p>
+            <button
+              onClick={() => onReupload(doc)}
+              className="mt-2 bg-forest-green text-ivory px-2 py-1 text-xs border border-deep-moss hover:shadow-[1px_1px_0px_0px_rgba(27,67,50,0.8)] transition-all font-medium flex items-center justify-center w-full"
+            >
+              <Upload size={12} className="mr-1" />
+              Re-upload Document
+            </button>
+          </div>
+        )}
         <div className="flex flex-col gap-1.5 text-xs">
           {/* Verifying Organization */}
           <div className="flex items-center justify-between">
@@ -351,12 +379,25 @@ export const EnhancedDocumentCard = ({
                         target="_blank"
                         rel="noopener noreferrer"
                         className="ml-1 text-deep-moss hover:text-forest-green flex-shrink-0"
-                        title="View on blockchain explorer"
+                        title="View on Etherscan"
                       >
                         <ExternalLink size={12} />
                       </a>
                     )}
                   </div>
+                  {explorerUrl && (
+                    <div className="mt-1 text-xs text-gray-600">
+                      <a
+                        href={explorerUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-forest-green hover:underline flex items-center"
+                      >
+                        View on Etherscan{' '}
+                        <ExternalLink size={10} className="ml-1" />
+                      </a>
+                    </div>
+                  )}
                 </div>
 
                 {/* Block Number */}
@@ -456,13 +497,29 @@ export const EnhancedDocumentCard = ({
           QR Code
         </button>
 
-        {/* Share Button */}
+        {/* Share Button - Only enabled for verified documents */}
         <button
           type="button"
           key="share-button"
-          className="bg-ivory px-2 py-1 text-xs border border-deep-moss hover:shadow-[1px_1px_0px_0px_rgba(27,67,50,0.8)] transition-all font-medium flex items-center justify-center flex-1"
-          onClick={() => onShare(doc)}
-          disabled={isLoading}
+          className={`${
+            isVerified ? 'bg-ivory' : 'bg-gray-200'
+          } px-2 py-1 text-xs border border-deep-moss hover:shadow-[1px_1px_0px_0px_rgba(27,67,50,0.8)] transition-all font-medium flex items-center justify-center flex-1`}
+          onClick={() => {
+            if (isVerified) {
+              onShare(doc);
+            } else {
+              setToastMessage({
+                type: 'warning',
+                message: 'Only verified documents can be shared',
+              });
+            }
+          }}
+          disabled={isLoading || !isVerified}
+          title={
+            isVerified
+              ? 'Share document'
+              : 'Only verified documents can be shared'
+          }
         >
           <Share2 size={12} className="mr-1" />
           Share
@@ -565,6 +622,8 @@ export const EnhancedDocumentCard = ({
                 documentData={documentData.data}
                 mimeType={documentData.mimeType}
                 fileName={documentData.name}
+                status={doc.status}
+                updatedAt={updatedAt || Date.now()}
               />
             </div>
           </div>

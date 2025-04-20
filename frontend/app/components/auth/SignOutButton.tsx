@@ -60,7 +60,7 @@ export const SignOutButton: React.FC<SignOutButtonProps> = ({
       {loading ? (
         <>
           <LoadingSpinner size={16} className="animate-spin" />
-          <span>Signing Out...</span>
+          <span>Securely Signing Out...</span>
         </>
       ) : (
         <>

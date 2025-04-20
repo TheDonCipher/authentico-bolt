@@ -29,9 +29,14 @@ export async function GET(
     const uid = decodedToken.uid;
 
     console.log(`Getting secure document details for ${id} for user ${uid}`);
+    console.log('User token claims:', decodedToken);
 
     // Forward the request to the backend
     try {
+      console.log(
+        `Making request to backend: ${API_URL}/documents/${id}/secure-details`
+      );
+
       const response = await axios.get(
         `${API_URL}/documents/${id}/secure-details`,
         {
@@ -42,6 +47,8 @@ export async function GET(
       );
 
       console.log('Backend secure document details response received');
+      console.log('Response status:', response.status);
+      console.log('Response data keys:', Object.keys(response.data));
 
       return NextResponse.json(response.data);
     } catch (error: any) {
@@ -49,6 +56,17 @@ export async function GET(
         'Error forwarding secure document details request to backend:',
         error.message
       );
+
+      // Log more detailed error information
+      if (error.response) {
+        console.error('Error response status:', error.response.status);
+        console.error('Error response data:', error.response.data);
+      } else if (error.request) {
+        console.error('No response received, request was:', error.request);
+      } else {
+        console.error('Error setting up request:', error.message);
+      }
+      console.error('Error config:', error.config);
 
       // Return the error from the backend
       return NextResponse.json(

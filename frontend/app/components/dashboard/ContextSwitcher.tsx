@@ -21,7 +21,15 @@ export const ContextSwitcher: React.FC = () => {
   const switchToIndividual = () => {
     setActiveContext('individual');
     if (user) {
-      router.push(`/user/${user.uid}/dashboard`);
+      // Check if the user has an individual account
+      if (user.userType === 'individual') {
+        router.push(`/user/${user.uid}/dashboard`);
+      } else {
+        // Organization user without individual account
+        router.push('/individual-dashboard'); // Redirect to demo page
+        // Show toast or alert in the destination page
+        sessionStorage.setItem('showIndividualAccountMessage', 'true');
+      }
     } else {
       router.push('/individual-dashboard'); // Fallback to demo page
     }

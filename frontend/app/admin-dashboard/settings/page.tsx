@@ -35,33 +35,7 @@ export default function SettingsPage() {
   const [toastMessage, setToastMessage] = useState<ToastMessage | null>(null);
 
   // Settings state
-  const [adminWalletAddress, setAdminWalletAddress] = useState(
-    process.env.NEXT_PUBLIC_ADMIN_WALLET_ADDRESS || ''
-  );
   const [isSaving, setIsSaving] = useState(false);
-
-  const handleSaveSettings = async () => {
-    try {
-      setIsSaving(true);
-
-      // In a real implementation, you would save these settings to your backend
-      // For now, we'll just simulate a successful save
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      setToastMessage({
-        type: 'success',
-        message: 'Settings saved successfully',
-      });
-    } catch (error) {
-      console.error('Error saving settings:', error);
-      setToastMessage({
-        type: 'error',
-        message: 'Failed to save settings',
-      });
-    } finally {
-      setIsSaving(false);
-    }
-  };
 
   if (!user) {
     return <Loader />;
@@ -182,61 +156,6 @@ export default function SettingsPage() {
                 <p className="text-deep-moss mb-6">
                   Configure system-wide settings for the Authentico platform.
                 </p>
-
-                <div className="bg-white p-6 border-2 border-deep-moss mb-6">
-                  <h4 className="text-xl font-bold mb-4 text-deep-moss">
-                    Admin Configuration
-                  </h4>
-
-                  <div className="mb-4">
-                    <label className="block text-deep-moss font-bold mb-2">
-                      Admin Wallet Address
-                    </label>
-                    <input
-                      type="text"
-                      value={adminWalletAddress}
-                      onChange={(e) => setAdminWalletAddress(e.target.value)}
-                      className="w-full p-3 border-2 border-deep-moss focus:border-forest-green focus:outline-none font-mono"
-                      placeholder="0x..."
-                    />
-                    <p className="text-sm text-gray-500 mt-1">
-                      This wallet address will have admin privileges in the
-                      system.
-                    </p>
-                  </div>
-
-                  <div className="flex justify-end space-x-3 mt-6">
-                    <button
-                      onClick={() =>
-                        setAdminWalletAddress(
-                          process.env.NEXT_PUBLIC_ADMIN_WALLET_ADDRESS || ''
-                        )
-                      }
-                      className="bg-soft-sage text-deep-moss px-4 py-2 font-bold border-2 border-deep-moss hover:shadow-[2px_2px_0px_0px_rgba(27,67,50,0.8)] transition-all flex items-center"
-                      disabled={isSaving}
-                    >
-                      <RefreshCw size={16} className="mr-2" />
-                      Reset
-                    </button>
-                    <button
-                      onClick={handleSaveSettings}
-                      className="bg-forest-green text-white px-4 py-2 font-bold border-2 border-deep-moss hover:shadow-[2px_2px_0px_0px_rgba(27,67,50,0.8)] transition-all flex items-center"
-                      disabled={isSaving}
-                    >
-                      {isSaving ? (
-                        <>
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                          Saving...
-                        </>
-                      ) : (
-                        <>
-                          <Save size={16} className="mr-2" />
-                          Save Settings
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </div>
 
                 <div className="bg-white p-6 border-2 border-deep-moss">
                   <h4 className="text-xl font-bold mb-4 text-deep-moss">

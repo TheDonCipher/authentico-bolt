@@ -12,6 +12,7 @@ import {
   ExternalLink,
   Copy,
   X,
+  Upload,
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { StatusBadge } from '../../components/dashboard/StatusBadge';
@@ -27,6 +28,7 @@ interface DocumentTableProps {
   orgNames?: Record<string, string>;
   onShare: (doc: Document) => void;
   onAction?: (doc: Document) => void;
+  onReupload?: (doc: Document) => void; // New prop for re-upload action
 }
 
 export const DocumentTable = ({
@@ -34,8 +36,9 @@ export const DocumentTable = ({
   orgNames = {},
   onShare,
   onAction = () => {},
+  onReupload = () => {}, // Default empty function
 }: DocumentTableProps) => {
-  const [showDocument, setShowDocument] = useState(false);
+  const [showDocument, setShowDocument] = useState<string | null>(null);
   const [documentData, setDocumentData] = useState<{
     data: string;
     mimeType: string;
@@ -64,6 +67,21 @@ export const DocumentTable = ({
         });
       }
     );
+  };
+
+  // Check if document is verified (status = 'Verified' or '2')
+  const isDocumentVerified = (doc: Document) => {
+    return doc.status === 'Verified' || doc.status === '2';
+  };
+
+  // Check if document is rejected (status = 'Rejected' or '3')
+  const isDocumentRejected = (doc: Document) => {
+    return doc.status === 'Rejected' || doc.status === '3';
+  };
+
+  // Get Etherscan URL for transaction hash
+  const getEtherscanUrl = (transactionHash: string) => {
+    return `https://sepolia.etherscan.io/tx/${transactionHash}`;
   };
 
   // Function to fetch and view the document
@@ -147,7 +165,7 @@ export const DocumentTable = ({
             mimeType: mimeType,
             name: documentName,
           });
-          setShowDocument(true);
+          setShowDocument(docId);
         }
       } else {
         throw new Error('Invalid document data received from server');
@@ -340,10 +358,25 @@ export const DocumentTable = ({
 
                   <button
                     key={`share-${doc.documentId}`}
-                    onClick={() => onShare(doc)}
-                    className="p-2 bg-ivory text-deep-moss border border-deep-moss rounded-sm hover:bg-soft-sage transition-all"
-                    title="Share"
-                    disabled={isLoading}
+                    onClick={() => {
+                      if (isDocumentVerified(doc)) {
+                        onShare(doc);
+                      } else {
+                        setToastMessage({
+                          type: 'warning',
+                          message: 'Only verified documents can be shared',
+                        });
+                      }
+                    }}
+                    className={`p-2 ${
+                      isDocumentVerified(doc) ? 'bg-ivory' : 'bg-gray-200'
+                    } text-deep-moss border border-deep-moss rounded-sm hover:bg-soft-sage transition-all`}
+                    title={
+                      isDocumentVerified(doc)
+                        ? 'Share'
+                        : 'Only verified documents can be shared'
+                    }
+                    disabled={isLoading || !isDocumentVerified(doc)}
                   >
                     <Share2 size={16} />
                   </button>
@@ -409,35 +442,65 @@ export const DocumentTable = ({
 
             <div className="mb-3">
               <p className="text-xs text-gray-600">Document Hash:</p>
-              <div className="flex items-center bg-soft-sage bg-opacity-50 p-1.5 rounded overflow-hidden">
-                <p className="font-mono text-xs truncate">
-                  {doc.metadataHash
-                    ? `${doc.metadataHash.slice(
-                        0,
-                        15
-                      )}...${doc.metadataHash.slice(-4)}`
-                    : 'No hash available'}
-                </p>
-                <button
-                  onClick={() =>
-                    doc.metadataHash
-                      ? copyToClipboard(
-                          doc.metadataHash,
-                          'Hash copied to clipboard!'
-                        )
-                      : setToastMessage({
-                          type: 'error',
-                          message: 'No hash available to copy',
-                        })
-                  }
-                  className="ml-1 text-deep-moss hover:text-forest-green flex-shrink-0"
-                  title="Copy hash"
-                >
-                  <Copy size={14} />
-                </button>
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center bg-soft-sage bg-opacity-50 p-1.5 rounded overflow-hidden">
+                  <p className="font-mono text-xs truncate">
+                    {doc.metadataHash
+                      ? `${doc.metadataHash.slice(
+                          0,
+                          15
+                        )}...${doc.metadataHash.slice(-4)}`
+                      : 'No hash available'}
+                  </p>
+                  <button
+                    onClick={() =>
+                      doc.metadataHash
+                        ? copyToClipboard(
+                            doc.metadataHash,
+                            'Hash copied to clipboard!'
+                          )
+                        : setToastMessage({
+                            type: 'error',
+                            message: 'No hash available to copy',
+                          })
+                    }
+                    className="ml-1 text-deep-moss hover:text-forest-green flex-shrink-0"
+                    title="Copy hash"
+                  >
+                    <Copy size={14} />
+                  </button>
+                </div>
+                {doc.transactionHash && (
+                  <div className="text-xs text-gray-600 mt-1">
+                    <a
+                      href={getEtherscanUrl(doc.transactionHash)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-forest-green hover:underline flex items-center"
+                    >
+                      View on Etherscan{' '}
+                      <ExternalLink size={10} className="ml-1" />
+                    </a>
+                  </div>
+                )}
               </div>
             </div>
 
+            {isDocumentRejected(doc) && (
+              <div className="mb-3 p-2 bg-burnt-sienna bg-opacity-20 border border-deep-moss text-xs">
+                <p className="font-medium text-deep-moss">
+                  This document was rejected. Please re-upload with correct
+                  information.
+                </p>
+                <button
+                  onClick={() => onReupload(doc)}
+                  className="mt-2 bg-forest-green text-ivory px-2 py-1 text-xs border border-deep-moss hover:shadow-[1px_1px_0px_0px_rgba(27,67,50,0.8)] transition-all font-medium flex items-center justify-center w-full"
+                >
+                  <Upload size={12} className="mr-1" />
+                  Re-upload Document
+                </button>
+              </div>
+            )}
             <div className="grid grid-cols-5 gap-1">
               <button
                 key={`mobile-view-${doc.documentId}`}
@@ -498,10 +561,25 @@ export const DocumentTable = ({
 
               <button
                 key={`mobile-share-${doc.documentId}`}
-                onClick={() => onShare(doc)}
-                className="p-2 bg-ivory text-deep-moss border border-deep-moss rounded-sm hover:bg-soft-sage transition-all flex items-center justify-center"
-                title="Share"
-                disabled={isLoading}
+                onClick={() => {
+                  if (isDocumentVerified(doc)) {
+                    onShare(doc);
+                  } else {
+                    setToastMessage({
+                      type: 'warning',
+                      message: 'Only verified documents can be shared',
+                    });
+                  }
+                }}
+                className={`p-2 ${
+                  isDocumentVerified(doc) ? 'bg-ivory' : 'bg-gray-200'
+                } text-deep-moss border border-deep-moss rounded-sm hover:bg-soft-sage transition-all flex items-center justify-center`}
+                title={
+                  isDocumentVerified(doc)
+                    ? 'Share'
+                    : 'Only verified documents can be shared'
+                }
+                disabled={isLoading || !isDocumentVerified(doc)}
               >
                 <Share2 size={16} />
               </button>
@@ -511,7 +589,7 @@ export const DocumentTable = ({
       </div>
 
       {/* Document Viewer Modal */}
-      {showDocument && documentData && (
+      {showDocument !== null && documentData && (
         <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4">
           <div className="bg-ivory p-6 border-4 border-deep-moss max-w-4xl w-full max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
@@ -528,7 +606,7 @@ export const DocumentTable = ({
                   <Download size={20} />
                 </a>
                 <button
-                  onClick={() => setShowDocument(false)}
+                  onClick={() => setShowDocument(null)}
                   className="p-1 hover:bg-soft-sage rounded-full"
                 >
                   <X size={24} />
@@ -540,6 +618,13 @@ export const DocumentTable = ({
               documentData={documentData.data}
               mimeType={documentData.mimeType}
               fileName={documentData.name}
+              status={
+                documents.find((d) => d.documentId === showDocument)?.status
+              }
+              updatedAt={
+                documents.find((d) => d.documentId === showDocument)
+                  ?.updatedAt || Date.now()
+              }
             />
           </div>
         </div>

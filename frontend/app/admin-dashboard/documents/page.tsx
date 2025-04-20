@@ -23,6 +23,7 @@ import {
   XCircle,
   Search,
   User,
+  Eye,
 } from 'lucide-react';
 import {
   collection,
@@ -33,6 +34,9 @@ import {
   Timestamp,
 } from 'firebase/firestore';
 import { db } from '../../../lib/firebase';
+import { getAuthToken } from '../../../lib/token-util';
+import { API_ENDPOINTS } from '../../../lib/constants';
+import axios from 'axios';
 import { getDocumentTypeName } from '../../constants/documentTypes';
 
 interface ToastMessage {
@@ -112,49 +116,71 @@ export default function DocumentsPage() {
     try {
       setLoading(true);
 
-      const documentsQuery = query(
-        collection(db, 'documents'),
-        orderBy('createdAt', 'desc')
-      );
+      // Get auth token
+      const token = await getAuthToken();
+      if (!token) {
+        throw new Error('Not authenticated');
+      }
 
-      const documentsSnapshot = await getDocs(documentsQuery);
-      const documentsData = documentsSnapshot.docs.map((doc) => {
-        const data = doc.data();
-        console.log('Document data from Firestore:', doc.id, data);
-        return {
-          id: doc.id,
-          documentId: data.documentId || doc.id,
-          documentType: data.documentType || 'Unknown',
-          documentName: data.documentName || data.name || 'Unnamed Document',
-          status: data.status || 'Pending Verification',
-          createdAt:
-            data.createdAt instanceof Timestamp
-              ? data.createdAt.toDate()
-              : new Date(),
-          updatedAt:
-            data.updatedAt instanceof Timestamp
-              ? data.updatedAt.toDate()
-              : null,
-          publicAddress: data.publicAddress || data.userWalletAddress || '',
-          verifyingOrgId: data.verifyingOrgId || '',
-          verifyingOrgName: data.verifyingOrgName || 'Unknown Organization',
-          verifiedAt:
-            data.verifiedAt instanceof Timestamp
-              ? data.verifiedAt.toDate()
-              : null,
-          rejectedAt:
-            data.rejectedAt instanceof Timestamp
-              ? data.rejectedAt.toDate()
-              : null,
-          rejectionReason: data.rejectionReason || '',
-          ownerUid: data.ownerUid || '',
-          ownerName: data.ownerName || 'Unknown User',
-        };
-      });
+      try {
+        // Try to fetch documents from API first
+        const response = await axios.get('/api/admin/documents', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
 
-      console.log('Processed documents data:', documentsData);
-      setDocuments(documentsData);
-      setFilteredDocuments(documentsData);
+        console.log('Fetched documents from API:', response.data);
+        setDocuments(response.data);
+        setFilteredDocuments(response.data);
+      } catch (apiError) {
+        console.error('API error, falling back to Firestore:', apiError);
+
+        // Fallback to direct Firestore query
+        const documentsQuery = query(
+          collection(db, 'documents'),
+          orderBy('createdAt', 'desc')
+        );
+
+        const documentsSnapshot = await getDocs(documentsQuery);
+        const documentsData = documentsSnapshot.docs.map((doc) => {
+          const data = doc.data();
+          console.log('Document data from Firestore:', doc.id, data);
+          return {
+            id: doc.id,
+            documentId: data.documentId || doc.id,
+            documentType: data.documentType || 'Unknown',
+            documentName: data.documentName || data.name || 'Unnamed Document',
+            status: data.status || 'Pending Verification',
+            createdAt:
+              data.createdAt instanceof Timestamp
+                ? data.createdAt.toDate()
+                : new Date(),
+            updatedAt:
+              data.updatedAt instanceof Timestamp
+                ? data.updatedAt.toDate()
+                : null,
+            publicAddress: data.publicAddress || data.userWalletAddress || '',
+            verifyingOrgId: data.verifyingOrgId || '',
+            verifyingOrgName: data.verifyingOrgName || 'Unknown Organization',
+            verifiedAt:
+              data.verifiedAt instanceof Timestamp
+                ? data.verifiedAt.toDate()
+                : null,
+            rejectedAt:
+              data.rejectedAt instanceof Timestamp
+                ? data.rejectedAt.toDate()
+                : null,
+            rejectionReason: data.rejectionReason || '',
+            ownerUid: data.ownerUid || '',
+            ownerName: data.ownerName || 'Unknown User',
+          };
+        });
+
+        console.log('Processed documents data:', documentsData);
+        setDocuments(documentsData);
+        setFilteredDocuments(documentsData);
+      }
     } catch (error) {
       console.error('Error fetching documents:', error);
       setToastMessage({
@@ -520,21 +546,40 @@ export default function DocumentsPage() {
                                   className="bg-soft-sage text-deep-moss p-2 border border-deep-moss hover:shadow-[1px_1px_0px_0px_rgba(27,67,50,0.8)] transition-all"
                                   title="View Document"
                                 >
-                                  <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    width="16"
-                                    height="16"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeWidth="2"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                  >
-                                    <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path>
-                                    <circle cx="12" cy="12" r="3"></circle>
-                                  </svg>
+                                  <Eye size={16} />
                                 </Link>
+                                {doc.status === 'Pending Verification' && (
+                                  <>
+                                    <button
+                                      className="bg-green-100 text-green-900 p-2 border border-green-300 hover:shadow-[1px_1px_0px_0px_rgba(27,67,50,0.8)] transition-all"
+                                      title="Verify Document"
+                                      onClick={() => {
+                                        setToastMessage({
+                                          type: 'info',
+                                          message: `Verifying document ${
+                                            doc.documentName || doc.documentId
+                                          }...`,
+                                        });
+                                      }}
+                                    >
+                                      <CheckCircle size={16} />
+                                    </button>
+                                    <button
+                                      className="bg-red-100 text-red-900 p-2 border border-red-300 hover:shadow-[1px_1px_0px_0px_rgba(27,67,50,0.8)] transition-all"
+                                      title="Reject Document"
+                                      onClick={() => {
+                                        setToastMessage({
+                                          type: 'info',
+                                          message: `Rejecting document ${
+                                            doc.documentName || doc.documentId
+                                          }...`,
+                                        });
+                                      }}
+                                    >
+                                      <XCircle size={16} />
+                                    </button>
+                                  </>
+                                )}
                               </div>
                             </td>
                           </tr>
@@ -672,6 +717,40 @@ export default function DocumentsPage() {
                         >
                           View Verification Page
                         </Link>
+                        {viewingDoc.status === 'Pending Verification' && (
+                          <>
+                            <button
+                              onClick={() => {
+                                setToastMessage({
+                                  type: 'info',
+                                  message: `Verifying document ${
+                                    viewingDoc.documentName ||
+                                    viewingDoc.documentId
+                                  }...`,
+                                });
+                                setViewingDoc(null);
+                              }}
+                              className="bg-green-100 text-green-900 px-4 py-2 font-bold border-2 border-deep-moss hover:shadow-[2px_2px_0px_0px_rgba(27,67,50,0.8)] transition-all"
+                            >
+                              Verify Document
+                            </button>
+                            <button
+                              onClick={() => {
+                                setToastMessage({
+                                  type: 'info',
+                                  message: `Rejecting document ${
+                                    viewingDoc.documentName ||
+                                    viewingDoc.documentId
+                                  }...`,
+                                });
+                                setViewingDoc(null);
+                              }}
+                              className="bg-red-100 text-red-900 px-4 py-2 font-bold border-2 border-deep-moss hover:shadow-[2px_2px_0px_0px_rgba(27,67,50,0.8)] transition-all"
+                            >
+                              Reject Document
+                            </button>
+                          </>
+                        )}
                         <button
                           onClick={() => setViewingDoc(null)}
                           className="bg-soft-sage text-deep-moss px-4 py-2 font-bold border-2 border-deep-moss hover:shadow-[2px_2px_0px_0px_rgba(27,67,50,0.8)] transition-all"

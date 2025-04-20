@@ -5,6 +5,7 @@ interface LoaderProps {
   color?: string;
   fullScreen?: boolean;
   text?: string;
+  className?: string;
 }
 
 export const Loader: React.FC<LoaderProps> = ({
@@ -12,6 +13,7 @@ export const Loader: React.FC<LoaderProps> = ({
   color = '#556B2F',
   fullScreen = false,
   text,
+  className,
 }) => {
   // Size mapping
   const sizeMap = {
@@ -43,7 +45,7 @@ export const Loader: React.FC<LoaderProps> = ({
 
   const containerClasses = fullScreen
     ? 'fixed inset-0 flex items-center justify-center bg-ivory bg-opacity-80 z-50'
-    : 'flex items-center justify-center';
+    : `flex items-center justify-center ${className || ''}`;
 
   return (
     <div className={containerClasses}>

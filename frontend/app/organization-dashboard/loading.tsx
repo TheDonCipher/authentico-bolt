@@ -3,5 +3,10 @@
 import { NeubrutalistLoading } from '../components/ui/NeubrutalistLoading';
 
 export default function Loading() {
-  return <NeubrutalistLoading message="Loading Organization Dashboard" fullScreen={true} />;
+  return (
+    <NeubrutalistLoading
+      message="Loading Organization Dashboard"
+      fullScreen={true}
+    />
+  );
 }

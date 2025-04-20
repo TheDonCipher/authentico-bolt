@@ -32,9 +32,19 @@ interface Document {
   createdAt: Date;
   ownerName: string;
   ownerUid: string;
+  ownerEmail?: string;
+  email?: string;
 }
 
-const DocumentReception: React.FC = () => {
+interface DocumentReceptionProps {
+  orgId?: string;
+  onVerificationStatusChange?: () => void;
+}
+
+const DocumentReception: React.FC<DocumentReceptionProps> = ({
+  orgId,
+  onVerificationStatusChange,
+}) => {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
@@ -43,6 +53,13 @@ const DocumentReception: React.FC = () => {
     type: 'success' | 'error';
     message: string;
   } | null>(null);
+  const [showRevokeConfirmation, setShowRevokeConfirmation] = useState(false);
+  const [documentToRevoke, setDocumentToRevoke] = useState<string | null>(null);
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
+  const [totalPages, setTotalPages] = useState(1);
   const { user } = useAuth();
   const router = useRouter();
 
@@ -73,7 +90,7 @@ const DocumentReception: React.FC = () => {
     const documentsRef = collection(db, 'documents');
     const q = query(
       documentsRef,
-      where('verifyingOrgId', '==', user.uid),
+      where('verifyingOrgId', '==', orgId || user.uid),
       orderBy('createdAt', 'desc')
     );
 
@@ -82,6 +99,7 @@ const DocumentReception: React.FC = () => {
       (snapshot) => {
         const docs = snapshot.docs.map((doc) => {
           const data = doc.data();
+          console.log('Document data:', data);
           return {
             id: doc.id,
             documentName: data.documentName || 'Unnamed Document',
@@ -91,9 +109,11 @@ const DocumentReception: React.FC = () => {
             createdAt: data.createdAt ? data.createdAt.toDate() : new Date(),
             ownerName: data.ownerName || 'Unknown User',
             ownerUid: data.ownerUid || '',
+            ownerEmail: data.ownerEmail || data.email || '',
           };
         });
         setDocuments(docs);
+        setTotalPages(Math.ceil(docs.length / itemsPerPage));
         setLoading(false);
       },
       (error) => {
@@ -136,7 +156,7 @@ const DocumentReception: React.FC = () => {
       unsubscribe();
       notificationUnsubscribe();
     };
-  }, [user]);
+  }, [user, orgId]);
 
   const handleDownloadDocument = async (documentId: string) => {
     try {
@@ -213,6 +233,7 @@ const DocumentReception: React.FC = () => {
             type: 'error',
             message: 'Rejection reason is required',
           });
+          setIsLoading(false);
           return;
         }
       }
@@ -228,6 +249,10 @@ const DocumentReception: React.FC = () => {
 
       // Normalize status to lowercase for consistency
       const normalizedStatus = action === 'Verified' ? 'verified' : 'rejected';
+
+      console.log(
+        `Updating document ${documentId} status to ${normalizedStatus}`
+      );
 
       // Update the document status in Firestore directly
       await updateDoc(docRef, {
@@ -245,7 +270,7 @@ const DocumentReception: React.FC = () => {
       });
 
       // Call API to verify/reject document (for blockchain anchoring)
-      await axios.post(
+      const response = await axios.post(
         `/api/documents/${documentId}/verify`,
         {
           status: normalizedStatus,
@@ -258,6 +283,30 @@ const DocumentReception: React.FC = () => {
           },
         }
       );
+
+      console.log('Blockchain verification response:', response.data);
+
+      // Update local state to remove the document from the pending list
+      // and update its status in the documents list
+      setDocuments((prevDocuments) =>
+        prevDocuments.map((doc) => {
+          if (doc.id === documentId) {
+            return {
+              ...doc,
+              status: normalizedStatus,
+            };
+          }
+          return doc;
+        })
+      );
+
+      // Close document viewer if open
+      setViewingDocument(null);
+
+      // Notify parent component that verification status has changed
+      if (onVerificationStatusChange) {
+        onVerificationStatusChange();
+      }
 
       setToastMessage({
         type: 'success',
@@ -282,6 +331,28 @@ const DocumentReception: React.FC = () => {
       hour: '2-digit',
       minute: '2-digit',
     });
+  };
+
+  // Get current documents for pagination
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentDocuments = documents.slice(indexOfFirstItem, indexOfLastItem);
+
+  // Change page
+  const paginate = (pageNumber: number) => setCurrentPage(pageNumber);
+
+  // Go to previous page
+  const goToPreviousPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+
+  // Go to next page
+  const goToNextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
+    }
   };
 
   const getStatusBadge = (status: string) => {
@@ -323,14 +394,14 @@ const DocumentReception: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="bg-[#E8EDE1] border-4 border-[#556B2F] p-6 shadow-brutal">
-        <h2 className="text-2xl font-bold mb-6 text-[#2F4F4F]">
+      <div className="bg-soft-sage border-2 md:border-4 border-deep-moss p-4 md:p-6 shadow-brutal">
+        <h2 className="text-2xl font-bold mb-6 text-deep-moss">
           Document Reception
         </h2>
         <div className="animate-pulse">
-          <div className="h-8 bg-[#D2E3C8] w-1/3 mb-4"></div>
-          <div className="h-24 bg-[#D2E3C8] w-full mb-4"></div>
-          <div className="h-24 bg-[#D2E3C8] w-full mb-4"></div>
+          <div className="h-8 bg-ivory w-1/3 mb-4"></div>
+          <div className="h-24 bg-ivory w-full mb-4"></div>
+          <div className="h-24 bg-ivory w-full mb-4"></div>
         </div>
       </div>
     );
@@ -338,12 +409,12 @@ const DocumentReception: React.FC = () => {
 
   if (!user?.isVerified) {
     return (
-      <div className="bg-[#E8EDE1] border-4 border-[#556B2F] p-6 shadow-brutal">
-        <h2 className="text-2xl font-bold mb-4 text-[#2F4F4F]">
+      <div className="bg-soft-sage border-2 md:border-4 border-deep-moss p-4 md:p-6 shadow-brutal">
+        <h2 className="text-2xl font-bold mb-4 text-deep-moss">
           Document Reception
         </h2>
-        <div className="bg-yellow-50 border-2 border-yellow-200 p-4 mb-6">
-          <p className="text-yellow-800">
+        <div className="bg-ivory border-2 border-deep-moss p-4 mb-6">
+          <p className="text-deep-moss">
             Your organization needs to be verified before you can receive
             documents for verification. Please complete the verification
             process.
@@ -354,62 +425,62 @@ const DocumentReception: React.FC = () => {
   }
 
   return (
-    <div className="bg-[#E8EDE1] border-4 border-[#556B2F] p-6 shadow-brutal">
+    <div className="bg-soft-sage border-2 md:border-4 border-deep-moss p-4 md:p-6 shadow-brutal">
       <h2
-        className="text-2xl font-bold mb-6 text-[#2F4F4F]"
+        className="text-2xl font-bold mb-6 text-deep-moss"
         id="document-reception"
       >
         Document Reception
       </h2>
 
       {documents.length === 0 ? (
-        <div className="bg-white p-6 border-2 border-[#556B2F] text-center">
-          <FileText size={48} className="mx-auto mb-4 text-[#556B2F]" />
-          <p className="text-lg font-bold text-[#2F4F4F]">
+        <div className="bg-ivory p-6 border-2 border-deep-moss text-center">
+          <FileText size={48} className="mx-auto mb-4 text-deep-moss" />
+          <p className="text-lg font-bold text-deep-moss">
             No documents received yet
           </p>
-          <p className="text-[#2F4F4F]">
+          <p className="text-deep-moss">
             When users submit documents for your organization to verify, they
             will appear here.
           </p>
         </div>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full bg-white border-2 border-[#556B2F]">
+        <div className="overflow-x-auto -mx-4 md:mx-0 px-4 md:px-0">
+          <table className="w-full bg-ivory border-2 border-deep-moss">
             <thead>
-              <tr className="bg-[#D2E3C8]">
-                <th className="p-3 text-left font-bold text-[#2F4F4F] border-b-2 border-[#556B2F]">
+              <tr className="bg-soft-sage">
+                <th className="p-3 text-left font-bold text-deep-moss border-b-2 border-deep-moss">
                   Document Name
                 </th>
-                <th className="p-3 text-left font-bold text-[#2F4F4F] border-b-2 border-[#556B2F]">
+                <th className="p-3 text-left font-bold text-deep-moss border-b-2 border-deep-moss">
                   Type
                 </th>
-                <th className="p-3 text-left font-bold text-[#2F4F4F] border-b-2 border-[#556B2F]">
+                <th className="p-3 text-left font-bold text-deep-moss border-b-2 border-deep-moss">
                   Submitted By
                 </th>
-                <th className="p-3 text-left font-bold text-[#2F4F4F] border-b-2 border-[#556B2F]">
+                <th className="p-3 text-left font-bold text-deep-moss border-b-2 border-deep-moss">
                   Date
                 </th>
-                <th className="p-3 text-left font-bold text-[#2F4F4F] border-b-2 border-[#556B2F]">
+                <th className="p-3 text-left font-bold text-deep-moss border-b-2 border-deep-moss">
                   Status
                 </th>
-                <th className="p-3 text-left font-bold text-[#2F4F4F] border-b-2 border-[#556B2F]">
+                <th className="p-3 text-left font-bold text-deep-moss border-b-2 border-deep-moss">
                   Actions
                 </th>
               </tr>
             </thead>
             <tbody>
-              {documents.map((doc) => (
+              {currentDocuments.map((doc) => (
                 <tr
                   key={doc.id}
-                  className="border-b border-[#556B2F] hover:bg-[#F5F7F2]"
+                  className="border-b border-deep-moss hover:bg-soft-sage hover:bg-opacity-30"
                 >
-                  <td className="p-3 text-[#2F4F4F] font-medium">
+                  <td className="p-3 text-deep-moss font-medium">
                     {doc.documentName}
                   </td>
-                  <td className="p-3 text-[#2F4F4F]">{doc.documentTypeName}</td>
-                  <td className="p-3 text-[#2F4F4F]">{doc.ownerName}</td>
-                  <td className="p-3 text-[#2F4F4F]">
+                  <td className="p-3 text-deep-moss">{doc.documentTypeName}</td>
+                  <td className="p-3 text-deep-moss">{doc.ownerName}</td>
+                  <td className="p-3 text-deep-moss">
                     {formatDate(doc.createdAt)}
                   </td>
                   <td className="p-3">{getStatusBadge(doc.status)}</td>
@@ -417,7 +488,7 @@ const DocumentReception: React.FC = () => {
                     <div className="flex space-x-2">
                       <button
                         onClick={() => setViewingDocument(doc.id)}
-                        className="bg-[#D2E3C8] text-[#2F4F4F] p-2 border border-[#556B2F] hover:shadow-[1px_1px_0px_0px_rgba(85,107,47,0.8)] transition-all"
+                        className="bg-soft-sage text-deep-moss p-2 border border-deep-moss hover:shadow-[1px_1px_0px_0px_rgba(27,67,50,0.8)] transition-all"
                         title="View Document"
                       >
                         <Eye size={16} />
@@ -425,7 +496,7 @@ const DocumentReception: React.FC = () => {
                       <button
                         onClick={() => handleDownloadDocument(doc.id)}
                         disabled={isLoading}
-                        className="bg-[#D2E3C8] text-[#2F4F4F] p-2 border border-[#556B2F] hover:shadow-[1px_1px_0px_0px_rgba(85,107,47,0.8)] transition-all"
+                        className="bg-soft-sage text-deep-moss p-2 border border-deep-moss hover:shadow-[1px_1px_0px_0px_rgba(27,67,50,0.8)] transition-all"
                         title="Download Document"
                       >
                         <Download size={16} />
@@ -436,7 +507,7 @@ const DocumentReception: React.FC = () => {
                             onClick={() =>
                               handleVerifyDocument(doc.id, 'Verified')
                             }
-                            className="bg-[#698B69] text-white p-2 border border-[#556B2F] hover:shadow-[1px_1px_0px_0px_rgba(85,107,47,0.8)] transition-all"
+                            className="bg-forest-green text-ivory p-2 border border-deep-moss hover:shadow-[1px_1px_0px_0px_rgba(27,67,50,0.8)] transition-all"
                             title="Verify Document"
                           >
                             <Check size={16} />
@@ -445,7 +516,7 @@ const DocumentReception: React.FC = () => {
                             onClick={() =>
                               handleVerifyDocument(doc.id, 'Rejected')
                             }
-                            className="bg-[#E6B8AF] text-[#2F4F4F] p-2 border border-[#556B2F] hover:shadow-[1px_1px_0px_0px_rgba(85,107,47,0.8)] transition-all"
+                            className="bg-burnt-sienna bg-opacity-20 text-deep-moss p-2 border border-deep-moss hover:shadow-[1px_1px_0px_0px_rgba(27,67,50,0.8)] transition-all"
                             title="Reject Document"
                           >
                             <X size={16} />
@@ -454,10 +525,11 @@ const DocumentReception: React.FC = () => {
                       )}
                       {doc.status === 'Verified' && (
                         <button
-                          onClick={() =>
-                            handleVerifyDocument(doc.id, 'Rejected')
-                          }
-                          className="bg-[#E6B8AF] text-[#2F4F4F] p-2 border border-[#556B2F] hover:shadow-[1px_1px_0px_0px_rgba(85,107,47,0.8)] transition-all"
+                          onClick={() => {
+                            setDocumentToRevoke(doc.id);
+                            setShowRevokeConfirmation(true);
+                          }}
+                          className="bg-burnt-sienna bg-opacity-20 text-deep-moss p-2 border border-deep-moss hover:shadow-[1px_1px_0px_0px_rgba(27,67,50,0.8)] transition-all"
                           title="Revoke Verification"
                         >
                           <X size={16} />
@@ -468,7 +540,7 @@ const DocumentReception: React.FC = () => {
                           onClick={() =>
                             handleVerifyDocument(doc.id, 'Verified')
                           }
-                          className="bg-[#698B69] text-white p-2 border border-[#556B2F] hover:shadow-[1px_1px_0px_0px_rgba(85,107,47,0.8)] transition-all"
+                          className="bg-forest-green text-ivory p-2 border border-deep-moss hover:shadow-[1px_1px_0px_0px_rgba(27,67,50,0.8)] transition-all"
                           title="Approve Document"
                         >
                           <Check size={16} />
@@ -480,6 +552,51 @@ const DocumentReception: React.FC = () => {
               ))}
             </tbody>
           </table>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex justify-center items-center mt-6 gap-2">
+              <button
+                onClick={goToPreviousPage}
+                disabled={currentPage === 1}
+                className={`px-3 py-1 border-2 border-deep-moss ${
+                  currentPage === 1
+                    ? 'bg-gray-200 cursor-not-allowed'
+                    : 'bg-soft-sage hover:shadow-[1px_1px_0px_0px_rgba(27,67,50,0.8)]'
+                } transition-all`}
+              >
+                Previous
+              </button>
+
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                (number) => (
+                  <button
+                    key={number}
+                    onClick={() => paginate(number)}
+                    className={`px-3 py-1 border-2 border-deep-moss ${
+                      currentPage === number
+                        ? 'bg-forest-green text-white'
+                        : 'bg-soft-sage'
+                    } hover:shadow-[1px_1px_0px_0px_rgba(27,67,50,0.8)] transition-all`}
+                  >
+                    {number}
+                  </button>
+                )
+              )}
+
+              <button
+                onClick={goToNextPage}
+                disabled={currentPage === totalPages}
+                className={`px-3 py-1 border-2 border-deep-moss ${
+                  currentPage === totalPages
+                    ? 'bg-gray-200 cursor-not-allowed'
+                    : 'bg-soft-sage hover:shadow-[1px_1px_0px_0px_rgba(27,67,50,0.8)]'
+                } transition-all`}
+              >
+                Next
+              </button>
+            </div>
+          )}
         </div>
       )}
 
@@ -489,6 +606,44 @@ const DocumentReception: React.FC = () => {
           documentId={viewingDocument}
           onClose={() => setViewingDocument(null)}
         />
+      )}
+
+      {/* Revoke Verification Confirmation Dialog */}
+      {showRevokeConfirmation && (
+        <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4">
+          <div className="bg-ivory p-6 border-4 border-deep-moss max-w-md w-full">
+            <h3 className="text-xl font-bold text-deep-moss mb-4">
+              Confirm Revocation
+            </h3>
+            <p className="text-deep-moss mb-6">
+              Are you sure you want to revoke verification for this document?
+              This action cannot be undone.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 justify-end">
+              <button
+                onClick={() => {
+                  setShowRevokeConfirmation(false);
+                  setDocumentToRevoke(null);
+                }}
+                className="bg-soft-sage px-4 py-2 text-deep-moss font-bold border-2 border-deep-moss hover:shadow-[2px_2px_0px_0px_rgba(27,67,50,0.8)] transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  if (documentToRevoke) {
+                    handleVerifyDocument(documentToRevoke, 'Rejected');
+                    setShowRevokeConfirmation(false);
+                    setDocumentToRevoke(null);
+                  }
+                }}
+                className="bg-burnt-sienna px-4 py-2 text-white font-bold border-2 border-deep-moss hover:shadow-[2px_2px_0px_0px_rgba(27,67,50,0.8)] transition-all"
+              >
+                Revoke Verification
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Toast Notifications */}

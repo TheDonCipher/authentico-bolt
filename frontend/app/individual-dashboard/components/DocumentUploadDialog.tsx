@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { X, Upload, AlertCircle } from 'lucide-react';
+import { X, Upload, AlertCircle, RefreshCw } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import axios from 'axios';
 import { getAuthToken } from '../../../lib/token-util';
@@ -10,17 +10,20 @@ import {
   uploadDocument,
 } from '../../../lib/api-client';
 import { getDocumentTypeName } from '../../constants/documentTypes';
+import { Document } from '../../models/Document';
 
 interface DocumentUploadDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  documentToReupload?: Document | null; // Optional document to re-upload
 }
 
 export const DocumentUploadDialog = ({
   isOpen,
   onClose,
   onSuccess,
+  documentToReupload = null,
 }: DocumentUploadDialogProps) => {
   const [documentName, setDocumentName] = useState('');
   const [documentType, setDocumentType] = useState('identity');
@@ -35,15 +38,25 @@ export const DocumentUploadDialog = ({
   useEffect(() => {
     // Reset form when dialog opens
     if (isOpen) {
-      setDocumentName('');
-      setDocumentType('identity');
+      // If we have a document to re-upload, pre-fill the form
+      if (documentToReupload) {
+        setDocumentName(documentToReupload.documentName || '');
+        setDocumentType(documentToReupload.documentType || 'identity');
+        setSelectedOrganization(documentToReupload.verifyingOrgId || '');
+      } else {
+        // Otherwise reset the form
+        setDocumentName('');
+        setDocumentType('identity');
+        setSelectedOrganization('');
+      }
+
+      // Always reset these fields
       setSelectedFile(null);
-      setSelectedOrganization('');
       setError(null);
       setUploadProgress(0);
       fetchVerifyingOrganizations();
     }
-  }, [isOpen]);
+  }, [isOpen, documentToReupload]);
 
   const fetchVerifyingOrganizations = async () => {
     try {
@@ -249,7 +262,16 @@ export const DocumentUploadDialog = ({
     <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4">
       <div className="bg-ivory border-4 border-deep-moss p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-2xl font-bold text-deep-moss">Upload Document</h2>
+          <h2 className="text-2xl font-bold text-deep-moss">
+            {documentToReupload ? (
+              <span className="flex items-center">
+                <RefreshCw size={20} className="mr-2" />
+                Re-upload Document
+              </span>
+            ) : (
+              'Upload Document'
+            )}
+          </h2>
           <button
             onClick={onClose}
             className="p-1 hover:bg-soft-sage rounded-full"
@@ -266,6 +288,28 @@ export const DocumentUploadDialog = ({
               size={18}
             />
             <p className="text-deep-moss">{error}</p>
+          </div>
+        )}
+
+        {documentToReupload && documentToReupload.status === 'Rejected' && (
+          <div className="bg-soft-sage bg-opacity-50 p-4 mb-4 border-2 border-deep-moss">
+            <h3 className="font-bold text-deep-moss mb-2">
+              Re-uploading Rejected Document
+            </h3>
+            <p className="text-deep-moss text-sm mb-2">
+              Your document was rejected. Please make the necessary corrections
+              before re-uploading.
+            </p>
+            {documentToReupload.rejectionReason && (
+              <div className="mt-2 p-2 bg-ivory border border-deep-moss">
+                <p className="text-sm font-medium text-deep-moss">
+                  Rejection reason:
+                </p>
+                <p className="text-sm text-deep-moss">
+                  {documentToReupload.rejectionReason}
+                </p>
+              </div>
+            )}
           </div>
         )}
 

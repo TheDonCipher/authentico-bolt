@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../contexts/AuthContext';
 import { AuthGuard } from '../../components/auth/AuthGuard';
@@ -10,6 +10,9 @@ import { Loader } from '../../components/ui/Loader';
 import { Toast } from '../../components/ui/Toast';
 import Link from 'next/link';
 import { SignOutButton } from '../../components/auth/SignOutButton';
+import { getAuthToken } from '../../../lib/token-util';
+import { API_ENDPOINTS } from '../../../lib/constants';
+import axios from 'axios';
 import {
   Home,
   Users,
@@ -20,12 +23,35 @@ import {
   Menu,
   X,
   User,
+  CheckCircle,
+  XCircle,
+  Clock,
+  AlertCircle,
+  Search,
+  RefreshCw,
+  Eye,
+  Check,
 } from 'lucide-react';
 import OrganizationApplications from '../components/OrganizationApplications';
 
 interface ToastMessage {
   type: 'success' | 'error' | 'info';
   message: string;
+}
+
+interface Organization {
+  id: string;
+  name: string;
+  organizationName: string;
+  contactEmail: string;
+  walletAddress: string;
+  status: string;
+  verificationStatus: string;
+  createdAt: any;
+  updatedAt: any;
+  industry?: string;
+  website?: string;
+  description?: string;
 }
 
 export default function OrganizationsPage() {
@@ -36,6 +62,202 @@ export default function OrganizationsPage() {
   const [activeTab, setActiveTab] = useState<'organizations' | 'applications'>(
     'applications'
   );
+  const [organizations, setOrganizations] = useState<Organization[]>([]);
+  const [filteredOrgs, setFilteredOrgs] = useState<Organization[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [viewingOrg, setViewingOrg] = useState<Organization | null>(null);
+
+  // Fetch organizations
+  useEffect(() => {
+    if (!user || !isAdmin) return;
+
+    const fetchOrganizations = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        // Get auth token
+        const token = await getAuthToken();
+        if (!token) {
+          throw new Error('Not authenticated');
+        }
+
+        // Fetch organizations from Firestore
+        const response = await axios.get('/api/admin/organizations', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        setOrganizations(response.data);
+        setFilteredOrgs(response.data);
+      } catch (error) {
+        console.error('Error fetching organizations:', error);
+        setError(error instanceof Error ? error.message : 'Unknown error');
+        setToastMessage({
+          type: 'error',
+          message: 'Failed to load organizations',
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchOrganizations();
+  }, [user, isAdmin]);
+
+  // Filter organizations when search term or filter changes
+  useEffect(() => {
+    if (!organizations.length) {
+      setFilteredOrgs([]);
+      return;
+    }
+
+    let filtered = [...organizations];
+
+    // Apply status filter
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter(
+        (org) =>
+          org.verificationStatus === statusFilter || org.status === statusFilter
+      );
+    }
+
+    // Apply search filter
+    if (searchTerm.trim()) {
+      const search = searchTerm.toLowerCase();
+      filtered = filtered.filter(
+        (org) =>
+          (org.organizationName &&
+            org.organizationName.toLowerCase().includes(search)) ||
+          (org.name && org.name.toLowerCase().includes(search)) ||
+          (org.contactEmail &&
+            org.contactEmail.toLowerCase().includes(search)) ||
+          (org.industry && org.industry.toLowerCase().includes(search))
+      );
+    }
+
+    setFilteredOrgs(filtered);
+  }, [organizations, statusFilter, searchTerm]);
+
+  // Format date
+  const formatDate = (timestamp: any) => {
+    if (!timestamp) return 'N/A';
+
+    try {
+      // Handle Firestore Timestamp
+      if (timestamp.toDate) {
+        return timestamp.toDate().toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+        });
+      }
+
+      // Handle string timestamp
+      return new Date(timestamp).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+      });
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return 'Invalid date';
+    }
+  };
+
+  // Get status badge
+  const getStatusBadge = (status: string) => {
+    switch (status.toLowerCase()) {
+      case 'verified':
+        return (
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-900 border border-green-300">
+            <CheckCircle className="inline-block mr-1" size={12} />
+            Verified
+          </span>
+        );
+      case 'rejected':
+        return (
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-900 border border-red-300">
+            <XCircle className="inline-block mr-1" size={12} />
+            Rejected
+          </span>
+        );
+      case 'pending':
+        return (
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-yellow-100 text-yellow-900 border border-yellow-300">
+            <Clock className="inline-block mr-1" size={12} />
+            Pending
+          </span>
+        );
+      default:
+        return (
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-gray-100 text-gray-900 border border-gray-300">
+            {status}
+          </span>
+        );
+    }
+  };
+
+  // Handle organization verification
+  const handleVerifyOrg = async (
+    orgId: string,
+    action: 'approve' | 'reject'
+  ) => {
+    try {
+      setToastMessage({
+        type: 'info',
+        message: `Processing ${
+          action === 'approve' ? 'approval' : 'rejection'
+        }...`,
+      });
+
+      const token = await getAuthToken();
+      if (!token) {
+        throw new Error('Not authenticated');
+      }
+
+      const response = await axios.put(
+        `${API_ENDPOINTS.ORGANIZATIONS.APPLICATIONS}/${orgId}`,
+        {
+          status: action === 'approve' ? 'approved' : 'rejected',
+          notes:
+            action === 'approve' ? 'Approved by admin' : 'Rejected by admin',
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      // Update local state
+      setOrganizations((prevOrgs) =>
+        prevOrgs.map((org) =>
+          org.id === orgId
+            ? { ...org, status: action === 'approve' ? 'verified' : 'rejected' }
+            : org
+        )
+      );
+
+      setToastMessage({
+        type: 'success',
+        message: `Organization ${
+          action === 'approve' ? 'approved' : 'rejected'
+        } successfully`,
+      });
+    } catch (error) {
+      console.error(`Error ${action}ing organization:`, error);
+      setToastMessage({
+        type: 'error',
+        message: `Failed to ${action} organization`,
+      });
+    }
+  };
 
   if (!user) {
     return <Loader />;
@@ -188,18 +410,371 @@ export default function OrganizationsPage() {
 
             {activeTab === 'organizations' ? (
               <section className="bg-soft-sage border-2 md:border-4 border-deep-moss p-4 md:p-6 shadow-brutal">
-                <h3 className="text-2xl font-bold mb-4 text-deep-moss">
-                  Verified Organizations
-                </h3>
-                <p className="text-deep-moss mb-4">
-                  This section will display all verified organizations in the
-                  system.
-                </p>
-                <div className="bg-white p-6 border-2 border-deep-moss text-center">
-                  <p className="text-lg font-bold text-deep-moss">
-                    Organization management features coming soon
-                  </p>
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-2xl font-bold text-deep-moss">
+                    Organizations
+                  </h3>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setStatusFilter('all')}
+                      className={`px-3 py-1 text-sm font-bold transition-all ${
+                        statusFilter === 'all'
+                          ? 'bg-forest-green text-ivory border-2 border-deep-moss shadow-brutal'
+                          : 'bg-ivory border-2 border-deep-moss hover:bg-soft-sage'
+                      }`}
+                    >
+                      All
+                    </button>
+                    <button
+                      onClick={() => setStatusFilter('verified')}
+                      className={`px-3 py-1 text-sm font-bold transition-all ${
+                        statusFilter === 'verified'
+                          ? 'bg-forest-green text-ivory border-2 border-deep-moss shadow-brutal'
+                          : 'bg-ivory border-2 border-deep-moss hover:bg-soft-sage'
+                      }`}
+                    >
+                      Verified
+                    </button>
+                    <button
+                      onClick={() => setStatusFilter('pending')}
+                      className={`px-3 py-1 text-sm font-bold transition-all ${
+                        statusFilter === 'pending'
+                          ? 'bg-forest-green text-ivory border-2 border-deep-moss shadow-brutal'
+                          : 'bg-ivory border-2 border-deep-moss hover:bg-soft-sage'
+                      }`}
+                    >
+                      Pending
+                    </button>
+                    <button
+                      onClick={() => setStatusFilter('rejected')}
+                      className={`px-3 py-1 text-sm font-bold transition-all ${
+                        statusFilter === 'rejected'
+                          ? 'bg-forest-green text-ivory border-2 border-deep-moss shadow-brutal'
+                          : 'bg-ivory border-2 border-deep-moss hover:bg-soft-sage'
+                      }`}
+                    >
+                      Rejected
+                    </button>
+                  </div>
                 </div>
+
+                <div className="mb-4">
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder="Search organizations..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="w-full p-3 pl-10 border-2 border-deep-moss focus:outline-none"
+                    />
+                    <Search
+                      size={18}
+                      className="absolute left-3 top-1/2 transform -translate-y-1/2 text-deep-moss"
+                    />
+                  </div>
+                </div>
+
+                {loading ? (
+                  <div className="bg-white p-6 border-2 border-deep-moss text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-deep-moss mx-auto mb-4"></div>
+                    <p className="text-deep-moss">Loading organizations...</p>
+                  </div>
+                ) : error ? (
+                  <div className="bg-white p-6 border-2 border-deep-moss text-center">
+                    <AlertCircle
+                      size={48}
+                      className="mx-auto mb-4 text-red-600"
+                    />
+                    <p className="text-lg font-bold text-deep-moss">
+                      Failed to load organizations
+                    </p>
+                    <p className="text-deep-moss mb-4">{error}</p>
+                    <button
+                      onClick={() => window.location.reload()}
+                      className="px-4 py-2 bg-forest-green text-ivory font-bold border-2 border-deep-moss hover:shadow-brutal hover:-translate-y-0.5 transition-all"
+                    >
+                      Retry
+                    </button>
+                  </div>
+                ) : filteredOrgs.length === 0 ? (
+                  <div className="bg-white p-6 border-2 border-deep-moss text-center">
+                    <Building
+                      size={48}
+                      className="mx-auto mb-4 text-deep-moss"
+                    />
+                    <p className="text-lg font-bold text-deep-moss">
+                      No organizations found
+                    </p>
+                    <p className="text-deep-moss">
+                      {searchTerm || statusFilter !== 'all'
+                        ? 'Try adjusting your search or filter criteria'
+                        : 'There are no organizations in the system yet'}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full bg-white border-2 border-deep-moss">
+                      <thead>
+                        <tr className="bg-soft-sage">
+                          <th className="p-3 text-left font-bold text-deep-moss border-b-2 border-deep-moss">
+                            Organization
+                          </th>
+                          <th className="p-3 text-left font-bold text-deep-moss border-b-2 border-deep-moss">
+                            Contact Email
+                          </th>
+                          <th className="p-3 text-left font-bold text-deep-moss border-b-2 border-deep-moss">
+                            Industry
+                          </th>
+                          <th className="p-3 text-left font-bold text-deep-moss border-b-2 border-deep-moss">
+                            Status
+                          </th>
+                          <th className="p-3 text-left font-bold text-deep-moss border-b-2 border-deep-moss">
+                            Created
+                          </th>
+                          <th className="p-3 text-left font-bold text-deep-moss border-b-2 border-deep-moss">
+                            Actions
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredOrgs.map((org) => (
+                          <tr
+                            key={org.id}
+                            className="border-b border-deep-moss hover:bg-soft-sage hover:bg-opacity-30"
+                          >
+                            <td className="p-3 text-deep-moss font-medium">
+                              {org.organizationName ||
+                                org.name ||
+                                'Unnamed Organization'}
+                            </td>
+                            <td className="p-3 text-deep-moss">
+                              {org.contactEmail || 'No email'}
+                            </td>
+                            <td className="p-3 text-deep-moss">
+                              {org.industry || 'Not specified'}
+                            </td>
+                            <td className="p-3">
+                              {getStatusBadge(
+                                org.verificationStatus ||
+                                  org.status ||
+                                  'pending'
+                              )}
+                            </td>
+                            <td className="p-3 text-deep-moss">
+                              {formatDate(org.createdAt)}
+                            </td>
+                            <td className="p-3">
+                              <div className="flex space-x-2">
+                                <button
+                                  className="bg-soft-sage text-deep-moss p-2 border border-deep-moss hover:shadow-[1px_1px_0px_0px_rgba(27,67,50,0.8)] transition-all"
+                                  title="View Details"
+                                  onClick={() => setViewingOrg(org)}
+                                >
+                                  <Eye size={16} />
+                                </button>
+                                {(org.verificationStatus === 'pending' ||
+                                  org.status === 'pending') && (
+                                  <>
+                                    <button
+                                      className="bg-green-100 text-green-900 p-2 border border-green-300 hover:shadow-[1px_1px_0px_0px_rgba(27,67,50,0.8)] transition-all"
+                                      title="Approve"
+                                      onClick={() =>
+                                        handleVerifyOrg(org.id, 'approve')
+                                      }
+                                    >
+                                      <Check size={16} />
+                                    </button>
+                                    <button
+                                      className="bg-red-100 text-red-900 p-2 border border-red-300 hover:shadow-[1px_1px_0px_0px_rgba(27,67,50,0.8)] transition-all"
+                                      title="Reject"
+                                      onClick={() =>
+                                        handleVerifyOrg(org.id, 'reject')
+                                      }
+                                    >
+                                      <X size={16} />
+                                    </button>
+                                  </>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                {/* Organization Details Modal */}
+                {viewingOrg && (
+                  <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4">
+                    <div className="bg-white p-6 border-4 border-deep-moss max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+                      <div className="flex justify-between items-start mb-4">
+                        <h3 className="text-xl font-bold text-deep-moss">
+                          {viewingOrg.organizationName ||
+                            viewingOrg.name ||
+                            'Organization Details'}
+                          <span className="ml-3">
+                            {getStatusBadge(
+                              viewingOrg.verificationStatus ||
+                                viewingOrg.status ||
+                                'pending'
+                            )}
+                          </span>
+                        </h3>
+                        <button
+                          onClick={() => setViewingOrg(null)}
+                          className="bg-burnt-sienna bg-opacity-20 text-deep-moss p-2 border-2 border-deep-moss hover:shadow-[2px_2px_0px_0px_rgba(27,67,50,0.8)] transition-all"
+                        >
+                          <X size={16} />
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div className="bg-white p-4 border-2 border-deep-moss">
+                          <h4 className="font-bold mb-3 text-deep-moss">
+                            Organization Information
+                          </h4>
+                          <div className="space-y-2">
+                            <div>
+                              <p className="text-sm font-bold text-gray-500">
+                                Organization ID
+                              </p>
+                              <p className="font-mono">{viewingOrg.id}</p>
+                            </div>
+                            <div>
+                              <p className="text-sm font-bold text-gray-500">
+                                Organization Name
+                              </p>
+                              <p>
+                                {viewingOrg.organizationName ||
+                                  viewingOrg.name ||
+                                  'Not specified'}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-sm font-bold text-gray-500">
+                                Contact Email
+                              </p>
+                              <p>
+                                {viewingOrg.contactEmail || 'Not specified'}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-sm font-bold text-gray-500">
+                                Industry
+                              </p>
+                              <p>{viewingOrg.industry || 'Not specified'}</p>
+                            </div>
+                            <div>
+                              <p className="text-sm font-bold text-gray-500">
+                                Website
+                              </p>
+                              <p>
+                                {viewingOrg.website ? (
+                                  <a
+                                    href={viewingOrg.website}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-forest-green hover:underline"
+                                  >
+                                    {viewingOrg.website}
+                                  </a>
+                                ) : (
+                                  'Not specified'
+                                )}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="bg-white p-4 border-2 border-deep-moss">
+                          <h4 className="font-bold mb-3 text-deep-moss">
+                            Verification Information
+                          </h4>
+                          <div className="space-y-2">
+                            <div>
+                              <p className="text-sm font-bold text-gray-500">
+                                Status
+                              </p>
+                              <p>
+                                {getStatusBadge(
+                                  viewingOrg.verificationStatus ||
+                                    viewingOrg.status ||
+                                    'pending'
+                                )}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-sm font-bold text-gray-500">
+                                Wallet Address
+                              </p>
+                              <p className="font-mono">
+                                {viewingOrg.walletAddress || 'Not specified'}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-sm font-bold text-gray-500">
+                                Created At
+                              </p>
+                              <p>{formatDate(viewingOrg.createdAt)}</p>
+                            </div>
+                            {viewingOrg.updatedAt && (
+                              <div>
+                                <p className="text-sm font-bold text-gray-500">
+                                  Updated At
+                                </p>
+                                <p>{formatDate(viewingOrg.updatedAt)}</p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {viewingOrg.description && (
+                        <div className="bg-white p-4 border-2 border-deep-moss mb-6">
+                          <h4 className="font-bold mb-3 text-deep-moss">
+                            Description
+                          </h4>
+                          <p className="text-deep-moss whitespace-pre-wrap">
+                            {viewingOrg.description}
+                          </p>
+                        </div>
+                      )}
+
+                      <div className="flex justify-end space-x-3 mt-6">
+                        {(viewingOrg.verificationStatus === 'pending' ||
+                          viewingOrg.status === 'pending') && (
+                          <>
+                            <button
+                              onClick={() => {
+                                handleVerifyOrg(viewingOrg.id, 'approve');
+                                setViewingOrg(null);
+                              }}
+                              className="bg-green-100 text-green-900 px-4 py-2 font-bold border-2 border-deep-moss hover:shadow-[2px_2px_0px_0px_rgba(27,67,50,0.8)] transition-all"
+                            >
+                              Approve
+                            </button>
+                            <button
+                              onClick={() => {
+                                handleVerifyOrg(viewingOrg.id, 'reject');
+                                setViewingOrg(null);
+                              }}
+                              className="bg-red-100 text-red-900 px-4 py-2 font-bold border-2 border-deep-moss hover:shadow-[2px_2px_0px_0px_rgba(27,67,50,0.8)] transition-all"
+                            >
+                              Reject
+                            </button>
+                          </>
+                        )}
+                        <button
+                          onClick={() => setViewingOrg(null)}
+                          className="bg-soft-sage text-deep-moss px-4 py-2 font-bold border-2 border-deep-moss hover:shadow-[2px_2px_0px_0px_rgba(27,67,50,0.8)] transition-all"
+                        >
+                          Close
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </section>
             ) : (
               <section className="bg-soft-sage border-2 md:border-4 border-deep-moss p-4 md:p-6 shadow-brutal">

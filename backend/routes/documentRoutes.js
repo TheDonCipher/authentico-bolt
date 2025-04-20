@@ -524,15 +524,30 @@ router.get('/:documentId/secure-details', verifyToken, async (req, res) => {
       });
     }
 
-    // For verifying organizations, document must be in 'Pending Verification' status
+    // For verifying organizations, check if they are verified
     if (
       docData.verifyingOrgId === req.user.uid &&
-      docData.ownerUid !== req.user.uid &&
-      docData.status !== 'Pending Verification'
+      docData.ownerUid !== req.user.uid
     ) {
-      return res.status(403).json({
-        error: 'Document is not pending verification',
-      });
+      // Get organization data to check verification status
+      const orgSnapshot = await usersCollection.doc(req.user.uid).get();
+
+      if (!orgSnapshot.exists) {
+        return res.status(403).json({
+          error: 'Organization not found',
+        });
+      }
+
+      const orgData = orgSnapshot.data();
+
+      // Only verified organizations can view documents
+      if (!orgData.isVerified) {
+        return res.status(403).json({
+          error: 'Only verified organizations can view documents',
+        });
+      }
+
+      // Allow viewing documents in any status (verified, rejected, pending)
     }
 
     // Get the encrypted file from IPFS

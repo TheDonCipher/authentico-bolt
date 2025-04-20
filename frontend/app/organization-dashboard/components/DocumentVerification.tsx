@@ -132,9 +132,15 @@ const DocumentVerification: React.FC<DocumentVerificationProps> = ({
     }
   };
 
-  const handleViewDocument = () => {
-    // Implement document viewing logic
-    window.open(`/documents/${request.documentId}`, '_blank');
+  const handleViewDocument = async () => {
+    try {
+      // Open the document in a new tab using the verify page
+      // This is a public page that doesn't require authentication
+      window.open(`/verify/${request.documentId}`, '_blank');
+    } catch (error) {
+      console.error('Error opening document:', error);
+      setError('Failed to open document for viewing');
+    }
   };
 
   // Check the document status to determine which actions to show

@@ -176,18 +176,18 @@ const Settings = () => {
       <SidebarNavigation />
       <main className="flex-1 p-8">
         <div className="max-w-7xl mx-auto">
-          <h1 className="text-5xl font-black mb-8 border-b-4 border-[#4A5043] pb-4 text-[#2C3639]">
+          <h1 className="text-5xl font-black mb-8 border-b-4 border-[#4A5043] pb-4 text-[#1A2023]">
             Settings
           </h1>
 
           <div className="grid grid-cols-1 gap-8">
             <section className="bg-[#E6E5DD] border-4 border-[#4A5043] p-6 shadow-brutal">
-              <h2 className="text-2xl font-black mb-6 text-[#2C3639]">
+              <h2 className="text-2xl font-black mb-6 text-[#1A2023]">
                 Organization Details
               </h2>
               <div className="space-y-6">
                 <div>
-                  <label className="block font-bold mb-2 text-[#2C3639]">
+                  <label className="block font-bold mb-2 text-[#1A2023]">
                     Organization Name
                   </label>
                   <input
@@ -197,11 +197,11 @@ const Settings = () => {
                     onChange={(e) => handleSetName(e)}
                     required
                     type="text"
-                    className="w-full p-3 border-2 border-[#4A5043] bg-[#F5F5F0]"
+                    className="w-full p-3 border-2 border-[#4A5043] bg-[#F5F5F0] text-[#1A2023] placeholder-[#4A5043]"
                   />
                 </div>
                 <div>
-                  <label className="block font-bold mb-2 text-[#2C3639]">
+                  <label className="block font-bold mb-2 text-[#1A2023]">
                     Email
                   </label>
                   <input
@@ -211,11 +211,11 @@ const Settings = () => {
                     placeholder="Enter your email"
                     onChange={(e) => handleSetEmail(e)}
                     required
-                    className="w-full p-3 border-2 border-[#4A5043] bg-[#F5F5F0]"
+                    className="w-full p-3 border-2 border-[#4A5043] bg-[#F5F5F0] text-[#1A2023] placeholder-[#4A5043]"
                   />
                 </div>
                 <div>
-                  <label className="block font-bold mb-2 text-[#2C3639]">
+                  <label className="block font-bold mb-2 text-[#1A2023]">
                     Webhook URL
                   </label>
                   <input
@@ -225,13 +225,13 @@ const Settings = () => {
                     id="webhook"
                     required
                     onChange={(e) => handleSetPassword(e)}
-                    className="w-full p-3 border-2 border-[#4A5043] bg-[#F5F5F0]"
+                    className="w-full p-3 border-2 border-[#4A5043] bg-[#F5F5F0] text-[#1A2023] placeholder-[#4A5043]"
                   />
                 </div>
                 <button
                   onClick={handleSubmit}
                   type="submit"
-                  className="bg-[#4A5043] text-white px-6 py-3 font-bold hover:bg-[#5A6053]"
+                  className="bg-[#4A5043] text-white px-6 py-3 font-bold hover:bg-[#5A6053] border-2 border-[#2C3639]"
                 >
                   Save Changes
                 </button>
@@ -239,39 +239,39 @@ const Settings = () => {
             </section>
 
             <section className="bg-[#E6E5DD] border-4 border-[#4A5043] p-6 shadow-brutal">
-              <h2 className="text-2xl font-black mb-6 text-[#2C3639]">
+              <h2 className="text-2xl font-black mb-6 text-[#1A2023]">
                 Security Settings
               </h2>
               <div className="space-y-4">
                 <div className="flex items-center justify-between p-4 border-2 border-[#4A5043] bg-[#F5F5F0]">
                   <div>
-                    <p className="font-bold text-[#2C3639]">
+                    <p className="font-bold text-[#1A2023]">
                       Two-Factor Authentication
                     </p>
-                    <p className="text-sm text-[#4A5043]">
+                    <p className="text-sm text-[#2C3639] font-medium">
                       Add an extra layer of security
                     </p>
                   </div>
-                  <button className="px-4 py-2 bg-[#4A6741]/20 text-[#4A6741] border-2 border-[#4A6741]">
+                  <button className="px-4 py-2 bg-[#4A6741]/30 text-[#2C3639] font-bold border-2 border-[#4A6741]">
                     Enable
                   </button>
                 </div>
                 <div className="flex items-center justify-between p-4 border-2 border-[#4A5043] bg-[#F5F5F0]">
                   <div>
-                    <p className="font-bold text-[#2C3639]">Session Timeout</p>
-                    <p className="text-sm text-[#4A5043]">
+                    <p className="font-bold text-[#1A2023]">Session Timeout</p>
+                    <p className="text-sm text-[#2C3639] font-medium">
                       Automatically log out after inactivity
                     </p>
                   </div>
                   <label
                     htmlFor="session-timeout"
-                    className="block font-bold text-[#2C3639]"
+                    className="block font-bold text-[#1A2023] mr-2"
                   >
                     Session Timeout Duration
                   </label>
                   <select
                     id="session-timeout"
-                    className="p-2 border-2 border-[#4A5043] bg-[#F5F5F0]"
+                    className="p-2 border-2 border-[#4A5043] bg-[#F5F5F0] text-[#1A2023] font-medium"
                   >
                     <option>30 minutes</option>
                     <option>1 hour</option>

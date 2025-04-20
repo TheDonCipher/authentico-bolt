@@ -12,6 +12,7 @@ import {
   FileText,
   Send,
 } from 'lucide-react';
+import { DocumentSeal } from '../document/DocumentSeal';
 import { getDocumentTypeName } from '../../constants/documentTypes';
 import { Toast } from '../ui/Toast';
 import { DocumentViewer } from '../document/DocumentViewer';
@@ -135,19 +136,19 @@ export const DocumentCard = ({
         <div className="absolute top-[-20px] md:top-[-30px] right-[-20px] md:right-[-30px] w-0 h-0 border-b-[18px] md:border-b-[28px] border-l-[18px] md:border-l-[28px] border-b-soft-sage border-l-soft-sage"></div>
       </div>
 
-      {/* Document stamp - only for verified documents */}
-      {doc.status === 'Verified' && (
-        <div className="absolute top-2 right-8 transform rotate-12 opacity-80">
-          <div className="w-16 h-16 md:w-20 md:h-20 rounded-full border-2 border-deep-moss bg-sap-green bg-opacity-20 flex items-center justify-center">
-            <div className="text-center transform -rotate-12">
-              <div className="text-xs md:text-sm font-bold text-deep-moss">
-                VERIFIED
-              </div>
-              <div className="text-[8px] md:text-[10px] text-deep-moss">
-                {new Date(doc.updatedAt || Date.now()).toLocaleDateString()}
-              </div>
-            </div>
-          </div>
+      {/* Document seal - for verified and rejected documents */}
+      {(doc.status === 'Verified' ||
+        doc.status === '0' ||
+        doc.status === '2' ||
+        doc.status === 'Rejected' ||
+        doc.status === '3') && (
+        <div className="absolute top-2 right-10 z-10">
+          <DocumentSeal
+            status={doc.status}
+            date={doc.updatedAt || Date.now()}
+            size="medium"
+            className="shadow-lg"
+          />
         </div>
       )}
       {/* Header with document name and status */}
@@ -355,6 +356,8 @@ export const DocumentCard = ({
               documentData={documentData.data}
               mimeType={documentData.mimeType}
               fileName={documentName || `document-${doc.documentId}`}
+              status={doc.status}
+              updatedAt={doc.updatedAt}
             />
           </div>
         </div>

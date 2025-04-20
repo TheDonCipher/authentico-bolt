@@ -56,6 +56,7 @@ export default function VerificationPage() {
         const token = await getAuthToken();
         if (!token) return;
 
+        console.log('Fetching organization verification status...');
         const response = await axios.get(
           '/api/organizations/application/status',
           {
@@ -65,9 +66,20 @@ export default function VerificationPage() {
           }
         );
 
+        console.log('Verification status response:', response.data);
         setVerificationStatus(response.data.status);
+
+        // If status is not set or undefined, set a default
+        if (!response.data.status) {
+          console.log(
+            'No status found in response, defaulting to not_verified'
+          );
+          setVerificationStatus('not_verified');
+        }
       } catch (err) {
         console.error('Error fetching verification status:', err);
+        // Set a default status in case of error
+        setVerificationStatus('not_verified');
       }
     };
 
@@ -80,58 +92,185 @@ export default function VerificationPage() {
 
     try {
       setLoading(true);
+      console.log(`Fetching verification requests for organization: ${orgId}`);
 
+      // First try the verificationRequests collection
       try {
+        // Use a simpler query that doesn't require a composite index
         const requestsQuery = query(
           collection(db, 'verificationRequests'),
-          where('verifyingOrgId', '==', orgId),
-          orderBy('createdAt', 'desc')
+          where('verifyingOrgId', '==', orgId)
         );
 
         const requestsSnapshot = await getDocs(requestsQuery);
-        const requests = requestsSnapshot.docs.map((doc) => {
-          const data = doc.data();
-          return {
-            id: doc.id,
-            documentId: data.documentId,
-            documentName: data.documentName || 'Unnamed Document',
-            documentType: data.documentType || 'Unknown Type',
-            status: data.status,
-            createdAt: data.createdAt?.toDate() || new Date(),
-            updatedAt: data.updatedAt?.toDate(),
-            ownerId: data.ownerId,
-            ownerName: data.ownerName || 'Unknown User',
-            verifyingOrgId: data.verifyingOrgId,
-          };
-        });
+        console.log(
+          `Found ${requestsSnapshot.docs.length} verification requests in verificationRequests collection`
+        );
 
-        setVerificationRequests(requests);
-        setError(null);
-      } catch (firestoreError) {
+        if (!requestsSnapshot.empty) {
+          const requests = requestsSnapshot.docs.map((doc) => {
+            const data = doc.data();
+            return {
+              id: doc.id,
+              documentId: data.documentId,
+              documentName: data.documentName || 'Unnamed Document',
+              documentType: data.documentType || 'Unknown Type',
+              status: (data.status || 'pending') as
+                | 'pending'
+                | 'verified'
+                | 'rejected',
+              createdAt: data.createdAt?.toDate() || new Date(),
+              updatedAt: data.updatedAt?.toDate(),
+              ownerId: data.ownerId,
+              ownerName: data.ownerName || 'Unknown User',
+              verifyingOrgId: data.verifyingOrgId,
+            };
+          });
+
+          // Sort manually by createdAt in descending order (newest first)
+          const sortedRequests = [...requests].sort((a, b) => {
+            return b.createdAt.getTime() - a.createdAt.getTime();
+          });
+
+          setVerificationRequests(sortedRequests);
+          setError(null);
+          setLoading(false);
+          return; // Exit early if we found requests
+        }
+      } catch (verificationRequestsError) {
         console.error(
           'Error accessing verificationRequests collection:',
-          firestoreError
+          verificationRequestsError
         );
-        // Set empty array if there's a permissions error
-        setVerificationRequests([]);
-
-        // If this is a permissions error, we'll show a more user-friendly message
-        if (firestoreError.toString().includes('permission')) {
-          console.log(
-            'Permission error accessing verificationRequests. Using empty array instead.'
-          );
-          setError(
-            'Verification requests are not available at this time. Please try again later.'
-          );
-        } else {
-          // Re-throw if it's not a permissions error
-          throw firestoreError;
-        }
+        // Continue to try the documents collection
       }
+
+      // If we get here, try the documents collection as a fallback
+      try {
+        console.log(
+          'Checking documents collection for pending verification requests'
+        );
+
+        // First try with 'in' operator if supported
+        try {
+          const documentsQuery = query(
+            collection(db, 'documents'),
+            where('verifyingOrgId', '==', orgId),
+            where('status', 'in', [
+              'pending',
+              'Pending',
+              'pending verification',
+              'Pending Verification',
+            ])
+          );
+
+          const documentsSnapshot = await getDocs(documentsQuery);
+          console.log(
+            `Found ${documentsSnapshot.docs.length} pending documents in documents collection using 'in' operator`
+          );
+
+          if (!documentsSnapshot.empty) {
+            const pendingDocs = documentsSnapshot.docs.map((doc) => {
+              const data = doc.data();
+              return {
+                id: doc.id,
+                documentId: doc.id,
+                documentName:
+                  data.documentName || data.name || 'Unnamed Document',
+                documentType:
+                  data.documentType || data.documentTypeName || 'Unknown Type',
+                status: 'pending' as 'pending' | 'verified' | 'rejected',
+                createdAt:
+                  data.createdAt?.toDate() ||
+                  data.uploadedAt?.toDate() ||
+                  new Date(),
+                updatedAt: data.updatedAt?.toDate(),
+                ownerId: data.uploadedBy || data.ownerUid || '',
+                ownerName: data.ownerName || 'Document Owner',
+                verifyingOrgId: data.verifyingOrgId,
+              };
+            });
+
+            // Sort by date
+            const sortedDocs = [...pendingDocs].sort((a, b) => {
+              return b.createdAt.getTime() - a.createdAt.getTime();
+            });
+
+            setVerificationRequests(sortedDocs);
+            setError(null);
+            setLoading(false);
+            return;
+          }
+        } catch (inOperatorError) {
+          console.error(
+            'Error using in operator, falling back to simpler query:',
+            inOperatorError
+          );
+        }
+
+        // If 'in' operator failed or returned no results, try with just the orgId
+        const documentsQuery = query(
+          collection(db, 'documents'),
+          where('verifyingOrgId', '==', orgId)
+        );
+
+        const documentsSnapshot = await getDocs(documentsQuery);
+        console.log(
+          `Found ${documentsSnapshot.docs.length} total documents in documents collection`
+        );
+
+        if (!documentsSnapshot.empty) {
+          // Filter for pending documents in memory since we're not using the 'in' operator
+          const pendingDocs = documentsSnapshot.docs
+            .filter((doc) => {
+              const data = doc.data();
+              const status = (data.status || '').toLowerCase();
+              return status.includes('pending') || status === '';
+            })
+            .map((doc) => {
+              const data = doc.data();
+              return {
+                id: doc.id,
+                documentId: doc.id,
+                documentName:
+                  data.documentName || data.name || 'Unnamed Document',
+                documentType:
+                  data.documentType || data.documentTypeName || 'Unknown Type',
+                status: 'pending' as 'pending' | 'verified' | 'rejected',
+                createdAt:
+                  data.createdAt?.toDate() ||
+                  data.uploadedAt?.toDate() ||
+                  new Date(),
+                updatedAt: data.updatedAt?.toDate(),
+                ownerId: data.uploadedBy || data.ownerUid || '',
+                ownerName: data.ownerName || 'Document Owner',
+                verifyingOrgId: data.verifyingOrgId,
+              };
+            });
+
+          console.log(`Filtered to ${pendingDocs.length} pending documents`);
+
+          // Sort by date
+          const sortedDocs = [...pendingDocs].sort((a, b) => {
+            return b.createdAt.getTime() - a.createdAt.getTime();
+          });
+
+          setVerificationRequests(sortedDocs);
+          setError(null);
+          setLoading(false);
+          return;
+        }
+      } catch (documentsError) {
+        console.error('Error accessing documents collection:', documentsError);
+      }
+
+      // If we get here, we didn't find any verification requests
+      console.log('No verification requests found in either collection');
+      setVerificationRequests([]);
+      setError(null);
     } catch (err) {
       console.error('Error fetching verification requests:', err);
       setError('Failed to load verification requests');
-      // Set empty array as fallback
       setVerificationRequests([]);
     } finally {
       setLoading(false);
@@ -227,29 +366,33 @@ export default function VerificationPage() {
         {/* Verification Status Banner */}
         {verificationStatus && (
           <div
-            className={`mb-8 p-4 border-2 border-deep-moss ${
+            className={`mb-8 p-6 border-4 border-deep-moss shadow-brutal ${
               verificationStatus === 'verified'
-                ? 'bg-forest-green bg-opacity-10'
-                : 'bg-burnt-sienna bg-opacity-10'
+                ? 'bg-forest-green bg-opacity-20'
+                : verificationStatus === 'pending'
+                ? 'bg-amber-100'
+                : 'bg-burnt-sienna bg-opacity-20'
             }`}
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center">
                 {verificationStatus === 'verified' ? (
-                  <Check className="mr-3 text-forest-green" size={24} />
+                  <Check className="mr-4 text-forest-green" size={32} />
                 ) : verificationStatus === 'pending' ? (
-                  <Clock className="mr-3 text-amber-500" size={24} />
+                  <Clock className="mr-4 text-amber-700" size={32} />
                 ) : (
-                  <AlertTriangle className="mr-3 text-burnt-sienna" size={24} />
+                  <AlertTriangle className="mr-4 text-burnt-sienna" size={32} />
                 )}
                 <div>
-                  <h2 className="font-bold text-lg text-deep-moss">
+                  <h2 className="font-bold text-xl text-deep-moss mb-2">
                     Organization Verification Status:{' '}
-                    {verificationStatus.charAt(0).toUpperCase() +
-                      verificationStatus.slice(1)}
+                    <span className="font-black">
+                      {verificationStatus.charAt(0).toUpperCase() +
+                        verificationStatus.slice(1)}
+                    </span>
                   </h2>
                   {verificationStatus !== 'verified' && (
-                    <p className="text-sm text-deep-moss">
+                    <p className="text-base text-deep-moss font-medium">
                       {verificationStatus === 'pending'
                         ? 'Your verification application is being reviewed. You will be notified when it is approved or rejected.'
                         : verificationStatus === 'rejected'
@@ -263,14 +406,14 @@ export default function VerificationPage() {
               {verificationStatus === 'verified' ? (
                 <button
                   onClick={() => setShowVerificationInfo(!showVerificationInfo)}
-                  className="text-deep-moss underline text-sm"
+                  className="px-4 py-2 bg-deep-moss text-ivory font-bold border-2 border-forest-green hover:shadow-[4px_4px_0px_0px_rgba(27,67,50,0.8)] transition-all"
                 >
                   {showVerificationInfo ? 'Hide Info' : 'Show Info'}
                 </button>
               ) : verificationStatus === 'not_verified' ? (
                 <Link
                   href={`/org/${orgId}/dashboard`}
-                  className="px-4 py-2 bg-forest-green text-ivory border-2 border-deep-moss hover:shadow-[4px_4px_0px_0px_rgba(27,67,50,0.8)] transition-all text-sm"
+                  className="px-4 py-2 bg-forest-green text-ivory font-bold border-2 border-deep-moss hover:shadow-[4px_4px_0px_0px_rgba(27,67,50,0.8)] transition-all"
                 >
                   Apply for Verification
                 </Link>
@@ -278,21 +421,26 @@ export default function VerificationPage() {
             </div>
 
             {showVerificationInfo && verificationStatus === 'verified' && (
-              <div className="mt-4 p-4 bg-ivory border-2 border-deep-moss">
-                <p className="mb-2">
+              <div className="mt-6 p-6 bg-ivory border-4 border-deep-moss shadow-brutal">
+                <h3 className="text-xl font-bold text-deep-moss mb-3">
+                  Verification Information
+                </h3>
+                <p className="mb-3 text-deep-moss font-medium text-base">
                   As a verified organization, you can verify documents submitted
                   by users. When a user selects your organization during
                   document upload, you'll receive a verification request.
                 </p>
-                <p>You can view and manage all verification requests below.</p>
+                <p className="text-deep-moss font-medium text-base">
+                  You can view and manage all verification requests below.
+                </p>
               </div>
             )}
           </div>
         )}
 
         {/* Verification Requests */}
-        <div className="bg-soft-sage border-2 border-deep-moss p-4 md:p-6">
-          <h2 className="text-2xl font-bold text-deep-moss mb-4">
+        <div className="bg-soft-sage border-4 border-deep-moss p-6 md:p-8 shadow-brutal">
+          <h2 className="text-3xl font-black text-deep-moss mb-6">
             Verification Requests
           </h2>
 
@@ -322,11 +470,19 @@ export default function VerificationPage() {
               <table className="w-full border-collapse">
                 <thead>
                   <tr className="bg-deep-moss text-ivory">
-                    <th className="p-3 text-left">Document</th>
-                    <th className="p-3 text-left">Submitted By</th>
-                    <th className="p-3 text-left">Date</th>
-                    <th className="p-3 text-left">Status</th>
-                    <th className="p-3 text-left">Actions</th>
+                    <th className="p-3 text-left font-bold text-base">
+                      Document
+                    </th>
+                    <th className="p-3 text-left font-bold text-base">
+                      Submitted By
+                    </th>
+                    <th className="p-3 text-left font-bold text-base">Date</th>
+                    <th className="p-3 text-left font-bold text-base">
+                      Status
+                    </th>
+                    <th className="p-3 text-left font-bold text-base">
+                      Actions
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -336,26 +492,30 @@ export default function VerificationPage() {
                       className="border-b-2 border-deep-moss hover:bg-ivory"
                     >
                       <td className="p-3">
-                        <div className="font-bold">{request.documentName}</div>
-                        <div className="text-sm text-gray-600">
+                        <div className="font-bold text-deep-moss">
+                          {request.documentName}
+                        </div>
+                        <div className="text-sm text-deep-moss">
                           {request.documentType}
                         </div>
                       </td>
-                      <td className="p-3">{request.ownerName}</td>
-                      <td className="p-3">
+                      <td className="p-3 text-deep-moss font-medium">
+                        {request.ownerName}
+                      </td>
+                      <td className="p-3 text-deep-moss">
                         {request.createdAt.toLocaleDateString()}
                       </td>
                       <td className="p-3">
                         {request.status === 'pending' ? (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 border border-amber-800">
                             Pending
                           </span>
                         ) : request.status === 'verified' ? (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-800">
                             Verified
                           </span>
                         ) : (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 border border-red-800">
                             Rejected
                           </span>
                         )}
@@ -376,7 +536,7 @@ export default function VerificationPage() {
                             }}
                           />
                         ) : (
-                          <span className="text-sm text-gray-500">
+                          <span className="text-sm text-deep-moss">
                             {request.updatedAt
                               ? `Updated ${request.updatedAt.toLocaleDateString()}`
                               : 'No update date'}

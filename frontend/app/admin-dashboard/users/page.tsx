@@ -11,6 +11,7 @@ import { Loader } from '../../components/ui/Loader';
 import { Toast } from '../../components/ui/Toast';
 import { getAuthToken } from '../../../lib/token-util';
 import { API_ENDPOINTS } from '../../../lib/constants';
+import axios from 'axios';
 import {
   Home,
   Users,
@@ -84,19 +85,14 @@ export default function UsersPage() {
         }
 
         // Fetch users from API
-        const response = await fetch('/api/admin/users', {
+        const response = await axios.get(API_ENDPOINTS.ADMIN.USERS, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         });
 
-        if (!response.ok) {
-          throw new Error('Failed to fetch users');
-        }
-
-        const data = await response.json();
-        setUsers(data);
-        setFilteredUsers(data);
+        setUsers(response.data);
+        setFilteredUsers(response.data);
       } catch (error) {
         console.error('Error fetching users:', error);
         setError(error instanceof Error ? error.message : 'Unknown error');
@@ -432,12 +428,12 @@ export default function UsersPage() {
                           </td>
                           <td className="p-3 text-deep-moss">
                             <span
-                              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold ${
                                 user.userType === 'organization'
-                                  ? 'bg-blue-100 text-blue-800'
+                                  ? 'bg-blue-100 text-blue-900 border border-blue-300'
                                   : user.userType === 'admin'
-                                  ? 'bg-red-100 text-red-800'
-                                  : 'bg-green-100 text-green-800'
+                                  ? 'bg-red-100 text-red-900 border border-red-300'
+                                  : 'bg-green-100 text-green-900 border border-green-300'
                               }`}
                             >
                               {user.userType}
@@ -445,12 +441,12 @@ export default function UsersPage() {
                           </td>
                           <td className="p-3">
                             {user.isVerified ? (
-                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-900 border border-green-300">
                                 <UserCheck size={12} className="mr-1" />
                                 Verified
                               </span>
                             ) : (
-                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-yellow-100 text-yellow-900 border border-yellow-300">
                                 <UserX size={12} className="mr-1" />
                                 Unverified
                               </span>
@@ -464,6 +460,15 @@ export default function UsersPage() {
                               <button
                                 className="bg-soft-sage text-deep-moss p-2 border border-deep-moss hover:shadow-[1px_1px_0px_0px_rgba(27,67,50,0.8)] transition-all"
                                 title="View Details"
+                                onClick={() => {
+                                  // View user details
+                                  setToastMessage({
+                                    type: 'info',
+                                    message: `Viewing details for ${
+                                      user.name || 'user'
+                                    }`,
+                                  });
+                                }}
                               >
                                 <svg
                                   xmlns="http://www.w3.org/2000/svg"
@@ -480,6 +485,19 @@ export default function UsersPage() {
                                   <circle cx="12" cy="12" r="3"></circle>
                                 </svg>
                               </button>
+                              {user.userType === 'organization' && (
+                                <button
+                                  className="bg-forest-green text-white p-2 border border-deep-moss hover:shadow-[1px_1px_0px_0px_rgba(27,67,50,0.8)] transition-all"
+                                  title="Manage Organization"
+                                  onClick={() => {
+                                    router.push(
+                                      `/admin-dashboard/organizations?id=${user.uid}`
+                                    );
+                                  }}
+                                >
+                                  <Building size={16} />
+                                </button>
+                              )}
                             </div>
                           </td>
                         </tr>

@@ -162,7 +162,7 @@ export const ProfileCard = () => {
           {loading || authLoading ? (
             <div className="flex items-center justify-center px-4 py-2 text-white">
               <LoadingSpinner size={16} className="mr-2 animate-spin" />
-              <span className="text-sm">Loading...</span>
+              <span className="text-sm">Securely Signing Out...</span>
             </div>
           ) : (
             <ConnectButton

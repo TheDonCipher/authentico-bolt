@@ -15,7 +15,8 @@ export class Document {
     public updatedAt?: string,
     public ownerUid?: string,
     public verifyingOrgId?: string,
-    public sharedWith?: Record<string, boolean>
+    public sharedWith?: Record<string, boolean>,
+    public rejectionReason?: string // Reason for rejection if status is 'Rejected'
   ) {
     // Ensure verifier and verifyingOrgId are in sync
     if (verifyingOrgId && !verifier) {

@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '../../contexts/AuthContext';
 import { AuthGuard } from '../../components/auth/AuthGuard';
 import { OrganizationVerificationCheck } from '../../components/auth/OrganizationVerificationCheck';
@@ -25,7 +25,8 @@ export default function OrganizationLayout({
   children: React.ReactNode;
 }) {
   const params = useParams();
-  const { isAdmin } = useAuth();
+  const router = useRouter();
+  const { user, isAdmin } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const orgId = params?.orgId as string;
@@ -132,15 +133,6 @@ export default function OrganizationLayout({
                     </div>
                   </Link>
                 )}
-
-                {/* Individual dashboard link */}
-                <Link href="/individual-dashboard">
-                  <div className="flex items-center gap-3 px-4 py-3 border-2 border-transparent hover:bg-ivory hover:border-deep-moss hover:shadow-brutal hover:-translate-y-0.5 transition-all">
-                    <span className="font-bold text-deep-moss">
-                      Individual Dashboard
-                    </span>
-                  </div>
-                </Link>
               </nav>
 
               {/* Sign out button */}

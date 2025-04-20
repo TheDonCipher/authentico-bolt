@@ -31,6 +31,8 @@ const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
     data: string;
     mimeType: string;
     name: string;
+    status?: string;
+    updatedAt?: string | number | Date;
   } | null>(null);
 
   useEffect(() => {
@@ -65,29 +67,18 @@ const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
           throw new Error('User not authenticated');
         }
 
-        // Check if the current user is the verifying organization for this document
-        const verifyingOrgId = docData.verifyingOrgId || docData.verifier;
-        const userOrg = await getDocs(
-          query(
-            collection(db, 'users'),
-            where('userType', '==', 'organization'),
-            where('uid', '==', currentUser.uid)
-          )
+        // Log information for debugging
+        console.log(`Current user ID: ${currentUser.uid}`);
+        console.log(
+          `Document verifying org ID: ${
+            docData.verifyingOrgId || docData.verifier
+          }`
         );
+        console.log(`Document owner ID: ${docData.ownerUid}`);
 
+        // For organizations, we'll let the backend API handle the verification status check
+        // For document owners, we'll check access here
         let hasAccess = false;
-        if (!userOrg.empty) {
-          const orgData = userOrg.docs[0].data();
-          console.log('User organization data:', orgData);
-
-          // Check if this organization is the verifying organization for the document
-          if (
-            orgData.id === verifyingOrgId ||
-            userOrg.docs[0].id === verifyingOrgId
-          ) {
-            hasAccess = true;
-          }
-        }
 
         // If the user is the document owner, they have access
         if (
@@ -102,6 +93,14 @@ const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
           hasAccess = true;
         }
 
+        // For organizations, we'll let the backend handle the verification check
+        if (
+          docData.verifyingOrgId === currentUser.uid ||
+          docData.verifier === currentUser.uid
+        ) {
+          hasAccess = true;
+        }
+
         if (!hasAccess) {
           throw new Error('You do not have permission to view this document');
         }
@@ -109,31 +108,48 @@ const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
         // Now fetch the secure details from the API
         console.log(`Fetching secure details for document ID: ${documentId}`);
 
-        const response = await axios.get(
-          `/api/documents/${documentId}/secure-details`,
-          {
-            headers: {
-              Authorization: `Bearer ${idToken}`,
-            },
+        try {
+          const response = await axios.get(
+            `/api/documents/${documentId}/secure-details`,
+            {
+              headers: {
+                Authorization: `Bearer ${idToken}`,
+              },
+            }
+          );
+
+          console.log('Secure details response:', response.status);
+          console.log('Response data keys:', Object.keys(response.data));
+
+          if (!response.data) {
+            throw new Error('Empty response data received');
           }
-        );
 
-        console.log('Secure details response:', response.status, response.data);
+          if (response.data.decryptedFile) {
+            const documentName =
+              response.data.documentName || docData.documentName || 'Document';
+            const mimeType =
+              response.data.mimeType || 'application/octet-stream';
 
-        if (response.data && response.data.decryptedFile) {
-          const documentName =
-            response.data.documentName || docData.documentName || 'Document';
-          const mimeType = response.data.mimeType || 'application/octet-stream';
+            console.log(`Document found: ${documentName}, type: ${mimeType}`);
 
-          console.log(`Document found: ${documentName}, type: ${mimeType}`);
-
-          setDocumentData({
-            data: response.data.decryptedFile,
-            mimeType: mimeType,
-            name: documentName,
-          });
-        } else {
-          throw new Error('Invalid document data received from server');
+            setDocumentData({
+              data: response.data.decryptedFile,
+              mimeType: mimeType,
+              name: documentName,
+              status: docData.status,
+              updatedAt: docData.updatedAt,
+            });
+          } else {
+            throw new Error('Invalid document data received from server');
+          }
+        } catch (apiError) {
+          console.error('API error fetching secure details:', apiError);
+          throw new Error(
+            apiError instanceof Error
+              ? apiError.message
+              : 'Failed to fetch document details from API'
+          );
         }
       } catch (error) {
         console.error('Error fetching document:', error);
@@ -215,6 +231,8 @@ const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
             documentData={documentData.data}
             mimeType={documentData.mimeType}
             fileName={documentData.name}
+            status={documentData.status}
+            updatedAt={documentData.updatedAt}
           />
         ) : (
           <div className="bg-burnt-sienna bg-opacity-20 p-4 border-2 border-deep-moss">

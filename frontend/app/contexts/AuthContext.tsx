@@ -416,6 +416,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   // Function to set active context
   const setActiveContext = useCallback(
     (context: 'individual' | 'organization', orgId?: string) => {
+      // Check if user is trying to switch to individual context but is an organization user
+      if (
+        context === 'individual' &&
+        user &&
+        user.userType === 'organization'
+      ) {
+        // We'll still set the context, but the ContextSwitcher will handle the redirection
+        console.log('Organization user trying to switch to individual context');
+      }
+
       setActiveContextState(context);
       if (context === 'organization' && orgId) {
         setActiveOrgId(orgId);
@@ -423,7 +433,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         setActiveOrgId(null);
       }
     },
-    []
+    [user]
   );
 
   // Navigate to the appropriate dashboard based on context
@@ -511,6 +521,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
               <p className="text-[#2F4F4F] font-bold">
                 {isInitializing
                   ? 'Loading Authentico...'
+                  : loading && !user
+                  ? 'Securely Signing Out...'
                   : error && error !== 'Authenticating with your wallet...'
                   ? error
                   : 'Authenticating with your wallet...'}

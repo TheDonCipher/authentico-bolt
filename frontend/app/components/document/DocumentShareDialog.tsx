@@ -10,6 +10,7 @@ interface DocumentShareDialogProps {
   onClose: () => void;
   documentId: string | number;
   documentName: string;
+  documentStatus?: string; // Optional status to check if document is verified
 }
 
 export const DocumentShareDialog = ({
@@ -17,7 +18,10 @@ export const DocumentShareDialog = ({
   onClose,
   documentId,
   documentName,
+  documentStatus = 'Verified', // Default to verified if not provided
 }: DocumentShareDialogProps) => {
+  // Check if document is verified
+  const isVerified = documentStatus === 'Verified' || documentStatus === '2';
   const [toastMessage, setToastMessage] = useState<{
     type: 'success' | 'error' | 'warning';
     message: string;
@@ -89,6 +93,14 @@ export const DocumentShareDialog = ({
         </div>
 
         <div className="bg-soft-sage border-2 border-deep-moss p-4 mb-6">
+          {!isVerified && (
+            <div className="mb-4 p-2 bg-burnt-sienna bg-opacity-20 border border-deep-moss">
+              <p className="text-deep-moss text-sm font-medium">
+                Warning: This document has not been verified yet. The
+                verification link will show the current status of your document.
+              </p>
+            </div>
+          )}
           <p className="text-deep-moss mb-4">
             Share this verification link or QR code to allow others to verify
             the authenticity of your document.

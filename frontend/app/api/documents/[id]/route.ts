@@ -28,55 +28,120 @@ export async function GET(
 
     console.log(`Getting document ${id} for user ${uid}`);
 
-    // Forward the request to the backend
+    // Try to get the document from Firestore first
     try {
-      const response = await axios.get(`${API_URL}/documents/${id}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      // Get the document from Firestore
+      const doc = await db.collection('documents').doc(id).get();
 
-      console.log('Backend response:', response.data);
+      if (!doc.exists) {
+        return NextResponse.json(
+          { error: 'Document not found' },
+          { status: 404 }
+        );
+      }
 
-      return NextResponse.json(response.data);
-    } catch (error: any) {
-      console.error('Error forwarding get document to backend:', error.message);
+      const documentData = doc.data();
+      console.log('Document data from Firestore:', documentData);
+      console.log(`User ID: ${uid}`);
 
-      // If the backend is not available, create a mock response
-      if (error.code === 'ECONNREFUSED' || !error.response) {
-        console.log('Backend not available, creating mock response');
+      // Check if the document belongs to the user or if the user is the verifying organization
+      // Support both uploadedBy and ownerUid fields for backward compatibility
+      const isOwner =
+        documentData?.uploadedBy?.toLowerCase() === uid.toLowerCase() ||
+        documentData?.ownerUid?.toLowerCase() === uid.toLowerCase();
+      const isVerifyingOrg =
+        documentData?.verifyingOrgId?.toLowerCase() === uid.toLowerCase();
+      const isAdmin =
+        uid.toLowerCase() ===
+        '0x4Ca717EAAC6Ec3917Cb6E23557e1CEa7267E2A1c'.toLowerCase();
 
-        // Get the document from Firestore
-        const doc = await db.collection('documents').doc(id).get();
+      console.log(
+        `Access check - isOwner: ${isOwner}, isVerifyingOrg: ${isVerifyingOrg}, isAdmin: ${isAdmin}`
+      );
 
-        if (!doc.exists) {
-          return NextResponse.json(
-            { error: 'Document not found' },
-            { status: 404 }
-          );
-        }
+      // Log more details for debugging
+      console.log(`Document owner: ${documentData?.ownerUid}`);
+      console.log(`Document verifying org: ${documentData?.verifyingOrgId}`);
+      console.log(`Current user: ${uid}`);
 
-        const documentData = doc.data();
+      if (!isOwner && !isVerifyingOrg && !isAdmin) {
+        console.log(
+          'Access denied: User is not owner, verifying org, or admin'
+        );
+        return NextResponse.json(
+          {
+            error: 'Unauthorized',
+            details: 'You do not have permission to access this document',
+          },
+          { status: 403 }
+        );
+      }
 
-        // Check if the document belongs to the user
-        if (documentData?.uploadedBy !== uid) {
-          return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
-        }
+      console.log('Document found in Firestore, returning data');
 
+      // Try to forward the request to the backend
+      try {
+        const response = await axios.get(`${API_URL}/documents/${id}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        console.log('Backend response:', response.data);
+
+        return NextResponse.json(response.data);
+      } catch (backendError: any) {
+        console.error(
+          'Error forwarding get document to backend:',
+          backendError.message
+        );
+        console.log('Falling back to Firestore data');
+
+        // Return the Firestore data as fallback
         return NextResponse.json({
           id: doc.id,
           ...documentData,
         });
       }
-
-      // Return the error from the backend
-      return NextResponse.json(
-        { error: error.response?.data || 'Failed to get document' },
-        { status: error.response?.status || 500 }
+    } catch (firestoreError: any) {
+      console.error(
+        'Error getting document from Firestore:',
+        firestoreError.message
       );
+
+      // Try the backend as a fallback
+      try {
+        const response = await axios.get(`${API_URL}/documents/${id}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        console.log('Backend response after Firestore failure:', response.data);
+
+        return NextResponse.json(response.data);
+      } catch (backendError: any) {
+        console.error(
+          'Both Firestore and backend failed:',
+          backendError.message
+        );
+        return NextResponse.json(
+          {
+            error:
+              'Failed to retrieve document from both Firestore and backend',
+          },
+          { status: 500 }
+        );
+      }
     }
   } catch (error: any) {
     console.error('Error in get document API route:', error);
-    return NextResponse.json({ error: 'Something broke!' }, { status: 500 });
+    return NextResponse.json(
+      {
+        error: 'Internal server error',
+        details: error.message,
+      },
+      { status: 500 }
+    );
   }
 }

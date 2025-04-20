@@ -79,7 +79,7 @@ const NeubrutalistLanding = () => {
 
       <NavBar toogleShow={toogleShow} openForm={() => {}} />
 
-      <main className="w-screen flex flex-col flex-1 pt-24">
+      <main className="w-full flex flex-col flex-1 pt-16 sm:pt-20 md:pt-24 overflow-hidden">
         {/* Hero Section */}
         <HeroSection toogleShow={toogleShow} />
 

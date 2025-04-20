@@ -421,22 +421,22 @@ export default function IndividualDashboardPage() {
   return (
     <div className="min-h-screen bg-ivory text-deep-moss flex flex-col md:flex-row font-archivo">
       {/* Sidebar - now becomes a bottom nav on mobile */}
-      <aside className="fixed bottom-0 left-0 right-0 md:static w-full md:w-80 bg-soft-sage p-3 md:p-6 border-t-4 md:border-r-4 md:border-t-0 border-deep-moss flex md:flex-col h-auto md:h-screen md:sticky md:top-0 z-30">
-        <h1 className="hidden md:block text-2xl font-black mb-8 text-deep-moss bg-soft-sage p-2 border-4 border-deep-moss inline-block">
+      <aside className="fixed bottom-0 left-0 right-0 md:static w-full md:w-80 bg-soft-sage p-2 sm:p-3 md:p-6 border-t-2 sm:border-t-4 md:border-r-4 md:border-t-0 border-deep-moss flex md:flex-col h-auto md:h-screen md:sticky md:top-0 z-30 shadow-[0_-2px_10px_rgba(0,0,0,0.1)] md:shadow-none">
+        <h1 className="hidden md:block text-xl sm:text-2xl font-black mb-6 sm:mb-8 text-deep-moss bg-soft-sage p-2 border-2 sm:border-4 border-deep-moss inline-block shadow-brutal-sm sm:shadow-brutal">
           AUTHENTICO
         </h1>
 
         {/* Navigation */}
         <nav className="flex-1 flex justify-around md:block">
-          <ul className="flex md:flex-col w-full gap-2 md:gap-4">
+          <ul className="flex md:flex-col w-full gap-1 sm:gap-2 md:gap-4">
             <li className="w-full">
               <button
                 onClick={() => setActiveTab('documents')}
-                className={`w-full text-center md:text-left p-2 md:p-3 border-2 md:border-4 border-deep-moss font-bold text-sm md:text-base ${
+                className={`w-full text-center md:text-left p-1.5 sm:p-2 md:p-3 border-2 md:border-4 border-deep-moss font-bold text-xs sm:text-sm md:text-base ${
                   activeTab === 'documents'
                     ? 'bg-forest-green text-ivory'
-                    : 'bg-ivory text-deep-moss hover:bg-soft-sage hover:shadow-[2px_2px_0px_0px_rgba(27,67,50,0.8)] md:hover:shadow-[4px_4px_0px_0px_rgba(27,67,50,0.8)]'
-                }`}
+                    : 'bg-ivory text-deep-moss hover:bg-soft-sage hover:shadow-brutal-sm md:hover:shadow-brutal'
+                } touch-target`}
               >
                 <span className="hidden md:inline">My Documents</span>
                 <span className="md:hidden">Docs</span>
@@ -445,11 +445,11 @@ export default function IndividualDashboardPage() {
             <li className="w-full">
               <button
                 onClick={() => setActiveTab('activity')}
-                className={`w-full text-center md:text-left p-2 md:p-3 border-2 md:border-4 border-deep-moss font-bold text-sm md:text-base ${
+                className={`w-full text-center md:text-left p-1.5 sm:p-2 md:p-3 border-2 md:border-4 border-deep-moss font-bold text-xs sm:text-sm md:text-base ${
                   activeTab === 'activity'
                     ? 'bg-forest-green text-ivory'
-                    : 'bg-ivory text-deep-moss hover:bg-soft-sage hover:shadow-[2px_2px_0px_0px_rgba(27,67,50,0.8)] md:hover:shadow-[4px_4px_0px_0px_rgba(27,67,50,0.8)]'
-                }`}
+                    : 'bg-ivory text-deep-moss hover:bg-soft-sage hover:shadow-brutal-sm md:hover:shadow-brutal'
+                } touch-target`}
               >
                 <span className="hidden md:inline">Activity</span>
                 <span className="md:hidden">Activity</span>
@@ -458,11 +458,11 @@ export default function IndividualDashboardPage() {
             <li className="w-full">
               <button
                 onClick={() => setActiveTab('settings')}
-                className={`w-full text-center md:text-left p-2 md:p-3 border-2 md:border-4 border-deep-moss font-bold text-sm md:text-base ${
+                className={`w-full text-center md:text-left p-1.5 sm:p-2 md:p-3 border-2 md:border-4 border-deep-moss font-bold text-xs sm:text-sm md:text-base ${
                   activeTab === 'settings'
                     ? 'bg-forest-green text-ivory'
-                    : 'bg-ivory text-deep-moss hover:bg-soft-sage hover:shadow-[2px_2px_0px_0px_rgba(27,67,50,0.8)] md:hover:shadow-[4px_4px_0px_0px_rgba(27,67,50,0.8)]'
-                }`}
+                    : 'bg-ivory text-deep-moss hover:bg-soft-sage hover:shadow-brutal-sm md:hover:shadow-brutal'
+                } touch-target`}
               >
                 <span className="hidden md:inline">Settings</span>
                 <span className="md:hidden">Settings</span>
@@ -476,7 +476,7 @@ export default function IndividualDashboardPage() {
                 <li className="w-full">
                   <Link
                     href="/admin-dashboard"
-                    className={`w-full text-center md:text-left p-2 md:p-3 border-2 md:border-4 border-deep-moss font-bold text-sm md:text-base bg-sunflower-yellow bg-opacity-20 hover:bg-sunflower-yellow hover:shadow-[2px_2px_0px_0px_rgba(27,67,50,0.8)] md:hover:shadow-[4px_4px_0px_0px_rgba(27,67,50,0.8)] block`}
+                    className={`w-full text-center md:text-left p-1.5 sm:p-2 md:p-3 border-2 md:border-4 border-deep-moss font-bold text-xs sm:text-sm md:text-base bg-sunflower-yellow bg-opacity-20 hover:bg-sunflower-yellow hover:shadow-brutal-sm md:hover:shadow-brutal block touch-target`}
                   >
                     <span className="hidden md:inline">Admin Dashboard</span>
                     <span className="md:hidden">Admin</span>
@@ -487,23 +487,23 @@ export default function IndividualDashboardPage() {
         </nav>
 
         {/* Sign Out Button */}
-        <div className="hidden md:block mt-4 pt-6">
-          <SignOutButton className="w-full px-4 py-3 border-2 border-deep-moss bg-burnt-sienna bg-opacity-20 text-deep-moss hover:shadow-brutal hover:-translate-y-0.5 transition-all" />
+        <div className="hidden md:block mt-3 sm:mt-4 pt-4 sm:pt-6">
+          <SignOutButton className="w-full px-3 sm:px-4 py-2 sm:py-3 border-2 border-deep-moss bg-burnt-sienna bg-opacity-20 text-deep-moss hover:shadow-brutal-sm sm:hover:shadow-brutal hover:-translate-y-0.5 transition-all text-sm sm:text-base touch-target" />
         </div>
       </aside>
 
       {/* Main Content Container */}
       <div className="flex-1 flex flex-col min-h-screen pb-20 md:pb-0">
         {/* Header */}
-        <header className="bg-soft-sage border-b-4 border-deep-moss sticky top-0 z-20">
-          <div className="max-w-7xl mx-auto px-4 md:px-8 py-4 md:h-20 flex flex-col md:flex-row gap-4 md:gap-0 md:items-center justify-between">
+        <header className="bg-soft-sage border-b-2 sm:border-b-4 border-deep-moss sticky top-0 z-20">
+          <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-8 py-3 sm:py-4 md:h-20 flex flex-col md:flex-row gap-3 sm:gap-4 md:gap-0 md:items-center justify-between">
             <div className="flex items-center">
-              <h2 className="text-xl font-bold text-deep-moss mr-4">
+              <h2 className="text-lg sm:text-xl font-bold text-deep-moss mr-2 sm:mr-4">
                 Individual Dashboard
               </h2>
               {userOrganizations.length > 0 && <ContextSwitcher />}
             </div>
-            <div className="flex items-center gap-4 md:gap-6">
+            <div className="flex items-center gap-3 sm:gap-4 md:gap-6">
               <NotificationBell
                 count={activities.filter((activity) => !activity.read).length}
                 onClick={() => {
@@ -517,7 +517,7 @@ export default function IndividualDashboardPage() {
         </header>
 
         {/* Main Content */}
-        <main className="flex-1 p-4 md:p-8">
+        <main className="flex-1 p-3 sm:p-4 md:p-8">
           {activeTab === 'documents' && (
             <div className="max-w-7xl mx-auto space-y-6 md:space-y-8">
               <Stats documents={documents} />
@@ -541,63 +541,64 @@ export default function IndividualDashboardPage() {
                   </div>
                 )}
 
-              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <h3 className="text-2xl font-bold text-deep-moss">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
+                <h3 className="text-xl sm:text-2xl font-bold text-deep-moss">
                   My Documents
                 </h3>
                 <div className="flex items-center gap-2">
-                  <div className="flex border-2 border-deep-moss">
+                  <div className="flex border-2 border-deep-moss shadow-brutal-sm">
                     <button
                       onClick={() => setViewMode('grid')}
-                      className={`p-2 ${
+                      className={`p-1.5 sm:p-2 touch-target ${
                         viewMode === 'grid'
                           ? 'bg-forest-green text-ivory'
                           : 'bg-soft-sage'
                       }`}
                       aria-label="Grid view"
                     >
-                      <Grid size={20} />
+                      <Grid size={16} className="sm:w-5 sm:h-5" />
                     </button>
                     <button
                       onClick={() => setViewMode('table')}
-                      className={`p-2 ${
+                      className={`p-1.5 sm:p-2 touch-target ${
                         viewMode === 'table'
                           ? 'bg-forest-green text-ivory'
                           : 'bg-soft-sage'
                       }`}
                       aria-label="Table view"
                     >
-                      <List size={20} />
+                      <List size={16} className="sm:w-5 sm:h-5" />
                     </button>
                   </div>
                   <button
                     onClick={() => setIsUploadDialogOpen(true)}
-                    className="bg-forest-green text-ivory p-2 md:px-4 md:py-2 font-bold border-2 border-deep-moss hover:shadow-[2px_2px_0px_0px_rgba(27,67,50,0.8)] transition-all flex items-center gap-2"
+                    className="bg-forest-green text-ivory p-1.5 sm:p-2 md:px-4 md:py-2 font-bold border-2 border-deep-moss hover:shadow-brutal-sm sm:hover:shadow-brutal transition-all flex items-center gap-1 sm:gap-2 touch-target text-xs sm:text-sm md:text-base"
                   >
-                    <Plus size={20} />
-                    <span className="hidden md:inline">Upload Document</span>
+                    <Plus size={16} className="sm:w-5 sm:h-5" />
+                    <span className="xs:inline">Upload</span>
+                    <span className="hidden md:inline">Document</span>
                   </button>
                 </div>
               </div>
 
-              <div className="bg-soft-sage border-2 md:border-4 border-deep-moss p-4 md:p-6 shadow-brutal">
+              <div className="bg-soft-sage border-2 sm:border-4 border-deep-moss p-3 sm:p-4 md:p-6 shadow-brutal-sm sm:shadow-brutal">
                 {isLoading ? (
-                  <div className="flex justify-center items-center py-8">
+                  <div className="flex justify-center items-center py-6 sm:py-8">
                     <Loader text="Loading documents..." />
                   </div>
                 ) : (
                   <>
                     {documents.length === 0 ? (
-                      <div className="bg-ivory p-6 border-2 border-deep-moss text-center">
-                        <p className="text-lg font-bold text-deep-moss">
+                      <div className="bg-ivory p-4 sm:p-6 border-2 border-deep-moss text-center">
+                        <p className="text-base sm:text-lg font-bold text-deep-moss">
                           No documents found
                         </p>
-                        <p className="text-deep-moss">
+                        <p className="text-sm sm:text-base text-deep-moss mt-2">
                           Upload your first document using the + button above
                         </p>
                       </div>
                     ) : viewMode === 'grid' ? (
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6">
                         {documents.map((doc) => (
                           <EnhancedDocumentCard
                             key={doc.documentId}
@@ -725,36 +726,42 @@ export default function IndividualDashboardPage() {
         <div className="fixed inset-0 bg-black bg-opacity-50 z-40 flex justify-end">
           <div
             ref={activityPaneRef}
-            className="bg-ivory w-full max-w-md h-full overflow-y-auto p-4 md:p-6"
+            className="bg-ivory w-full max-w-[90vw] sm:max-w-md h-full overflow-y-auto p-3 sm:p-4 md:p-6 shadow-[-5px_0_15px_rgba(0,0,0,0.1)]"
           >
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-bold text-deep-moss">
+            <div className="flex justify-between items-center mb-4 sm:mb-6">
+              <h3 className="text-lg sm:text-xl font-bold text-deep-moss">
                 Recent Activity
               </h3>
               <button
                 onClick={() => setShowActivityPane(false)}
-                className="p-2 hover:bg-soft-sage rounded-full"
+                className="p-2 hover:bg-soft-sage rounded-full touch-target"
               >
-                <X size={24} />
+                <X size={20} className="sm:w-6 sm:h-6" />
               </button>
             </div>
             {activities.length === 0 ? (
-              <div className="bg-soft-sage p-6 border-2 border-deep-moss text-center">
-                <p className="text-deep-moss">No recent activity</p>
+              <div className="bg-soft-sage p-4 sm:p-6 border-2 border-deep-moss text-center">
+                <p className="text-sm sm:text-base text-deep-moss">
+                  No recent activity
+                </p>
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4">
                 {activities.map((activity) => (
                   <div
                     key={activity.id}
-                    className="bg-soft-sage p-4 border-2 border-deep-moss flex items-start gap-3"
+                    className="bg-soft-sage p-3 sm:p-4 border-2 border-deep-moss flex items-start gap-2 sm:gap-3 rounded-sm shadow-brutal-sm"
                   >
-                    <div className="bg-ivory p-2 border-2 border-deep-moss">
+                    <div className="bg-ivory p-1.5 sm:p-2 border-2 border-deep-moss">
                       {activity.icon}
                     </div>
                     <div className="flex-1">
-                      <p className="text-deep-moss">{activity.text}</p>
-                      <p className="text-sm text-gray-500">{activity.date}</p>
+                      <p className="text-sm sm:text-base text-deep-moss">
+                        {activity.text}
+                      </p>
+                      <p className="text-xs sm:text-sm text-gray-500">
+                        {activity.date}
+                      </p>
                     </div>
                   </div>
                 ))}

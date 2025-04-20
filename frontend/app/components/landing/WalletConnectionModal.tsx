@@ -119,13 +119,13 @@ export const WalletConnectionModal: React.FC<WalletConnectionModalProps> = ({
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       onClick={handleBackdropClick}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 cursor-pointer"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 cursor-pointer p-3 sm:p-4"
     >
       <motion.div
         initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.95, opacity: 0 }}
-        className="bg-ivory p-8 border-4 border-deep-moss shadow-[8px_8px_0px_0px_rgba(27,67,50,0.8)] w-full max-w-md m-4 cursor-default"
+        className="bg-ivory p-4 sm:p-6 md:p-8 border-2 sm:border-4 border-deep-moss shadow-brutal sm:shadow-[8px_8px_0px_0px_rgba(27,67,50,0.8)] w-full max-w-md cursor-default overflow-y-auto max-h-[90vh]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Toast Notifications */}
@@ -139,24 +139,24 @@ export const WalletConnectionModal: React.FC<WalletConnectionModalProps> = ({
             />
           )}
         </AnimatePresence>
-        <div className="flex justify-between items-center mb-6">
-          <h3 className="text-2xl font-bold text-[#2C3E50]">
+        <div className="flex justify-between items-center mb-4 sm:mb-6">
+          <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-[#2C3E50]">
             Get Started with Authentico
           </h3>
           <button
             onClick={handleClose}
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            className="p-2 hover:bg-gray-100 rounded-full transition-colors touch-target"
             aria-label="Close modal"
           >
-            <X size={20} />
+            <X size={18} sm:size={20} />
           </button>
         </div>
 
-        <div className="mb-6">
-          <p className="font-bold text-lg text-[#1E3A8A] mb-4">
+        <div className="mb-4 sm:mb-6">
+          <p className="font-bold text-base sm:text-lg text-[#1E3A8A] mb-2 sm:mb-4">
             Follow these steps:
           </p>
-          <ol className="list-decimal list-inside space-y-2 text-gray-600">
+          <ol className="list-decimal list-inside space-y-1 sm:space-y-2 text-sm sm:text-base text-gray-600">
             <li>Connect your wallet using the button below</li>
             <li>
               Sign in if you&apos;re a returning user, or sign up if you&apos;re
@@ -165,7 +165,7 @@ export const WalletConnectionModal: React.FC<WalletConnectionModalProps> = ({
           </ol>
         </div>
 
-        <div className="mb-6">
+        <div className="mb-4 sm:mb-6">
           <ConnectButton
             client={client}
             wallets={wallets}
@@ -189,18 +189,20 @@ export const WalletConnectionModal: React.FC<WalletConnectionModalProps> = ({
         </div>
 
         {account && (
-          <div className="mb-6 p-3 bg-soft-sage border-2 border-deep-moss rounded">
-            <p className="text-sm font-medium text-deep-moss">
+          <div className="mb-4 sm:mb-6 p-2 sm:p-3 bg-soft-sage border-2 border-deep-moss rounded">
+            <p className="text-xs sm:text-sm font-medium text-deep-moss">
               Connected Wallet:
             </p>
-            <p className="font-mono text-sm truncate">{account.address}</p>
-            <p className="text-sap-green font-bold mt-2">
+            <p className="font-mono text-xs sm:text-sm truncate">
+              {account.address}
+            </p>
+            <p className="text-sap-green text-xs sm:text-sm font-bold mt-1 sm:mt-2">
               Wallet connected successfully!
             </p>
           </div>
         )}
 
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-4">
           {account ? (
             <div className="flex flex-col gap-2">
               <motion.button
@@ -208,7 +210,7 @@ export const WalletConnectionModal: React.FC<WalletConnectionModalProps> = ({
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 disabled={isLoading}
-                className="w-full bg-forest-green text-ivory text-lg font-bold py-3 px-6 rounded-lg border-2 border-deep-moss hover:bg-deep-moss transition duration-300 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full bg-forest-green text-ivory text-base sm:text-lg font-bold py-2 sm:py-3 px-4 sm:px-6 rounded-lg border-2 border-deep-moss hover:bg-deep-moss transition duration-300 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed touch-target"
               >
                 {isLoading ? (
                   <>
@@ -217,7 +219,11 @@ export const WalletConnectionModal: React.FC<WalletConnectionModalProps> = ({
                   </>
                 ) : (
                   <>
-                    <Wallet className="inline-block mr-2" />
+                    <Wallet
+                      className="inline-block mr-2"
+                      size={16}
+                      sm:size={20}
+                    />
                     <span>Sign In</span>
                   </>
                 )}
@@ -227,17 +233,17 @@ export const WalletConnectionModal: React.FC<WalletConnectionModalProps> = ({
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 disabled={isLoading}
-                className="w-full bg-soft-sage text-deep-moss text-lg font-bold py-3 px-6 rounded-lg border-2 border-deep-moss hover:bg-forest-green hover:text-ivory transition duration-300"
+                className="w-full bg-soft-sage text-deep-moss text-base sm:text-lg font-bold py-2 sm:py-3 px-4 sm:px-6 rounded-lg border-2 border-deep-moss hover:bg-forest-green hover:text-ivory transition duration-300 touch-target"
               >
                 Register New Account
               </motion.button>
             </div>
           ) : (
-            <div className="p-4 bg-soft-sage border-2 border-deep-moss rounded text-center">
-              <p className="text-deep-moss font-medium">
+            <div className="p-3 sm:p-4 bg-soft-sage border-2 border-deep-moss rounded text-center">
+              <p className="text-deep-moss text-sm sm:text-base font-medium">
                 Please connect your wallet first
               </p>
-              <p className="text-xs text-gray-600 mt-2">
+              <p className="text-xs text-gray-600 mt-1 sm:mt-2">
                 You need to connect your wallet to sign in or register
               </p>
             </div>

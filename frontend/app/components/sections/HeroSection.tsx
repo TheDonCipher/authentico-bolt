@@ -11,44 +11,58 @@ interface HeroSectionProps {
 export const HeroSection: React.FC<HeroSectionProps> = ({ toogleShow }) => (
   <div
     id="home"
-    className="bg-[#F0F4F8] p-8 flex flex-col items-center justify-center rounded-lg shadow-lg w-full"
+    className="bg-[#F0F4F8] p-4 sm:p-6 md:p-8 flex flex-col items-center justify-center rounded-lg shadow-lg w-full"
   >
-    <div className="flex flex-col gap-6 items-center">
+    <div className="flex flex-col gap-4 sm:gap-6 items-center">
       <div className="text-center">
-        <h1 className="font-bold text-4xl sm:text-6xl mb-4">
+        <h1 className="font-bold text-3xl sm:text-4xl md:text-5xl lg:text-6xl mb-2 sm:mb-4 text-deep-moss">
           Official Document Management
         </h1>
-        <h1 className="font-bold text-4xl sm:text-6xl">with Authentico</h1>
+        <h1 className="font-bold text-3xl sm:text-4xl md:text-5xl lg:text-6xl text-deep-moss">
+          with Authentico
+        </h1>
       </div>
-      <p className="text-center sm:w-3/4 lg:w-1/2 text-lg sm:text-xl">
+      <p className="text-center sm:w-3/4 lg:w-1/2 text-base sm:text-lg md:text-xl px-2 sm:px-0">
         Welcome to Authentico, your trusted partner in storing and sharing your
         official documentation. Our cutting-edge AI and blockchain technology
         offers the highest level of accuracy and efficiency in verifying the
         authenticity of your documents to others.
       </p>
-      <div className="flex flex-wrap justify-center gap-4 mt-6">
+      <div className="flex flex-wrap justify-center gap-3 sm:gap-4 mt-4 sm:mt-6">
         <button
           onClick={toogleShow}
-          className="border-black border-2 p-3 bg-[#fef29f] font-bold hover:bg-[#79F7FF] hover:shadow-[2px_2px_0px_rgba(0,0,0,1)] active:bg-[#00E1EF] rounded-md"
+          className="border-deep-moss border-2 p-2 sm:p-3 bg-forest-green text-ivory font-bold hover:bg-deep-moss hover:shadow-brutal-sm active:bg-deep-forest rounded-md touch-target text-sm sm:text-base"
         >
           Get Started 🚀
         </button>
         <Link
           href="/individual-dashboard"
-          className="border-black border-2 p-3 bg-[#E5DCC3] font-bold hover:bg-[#79F7FF] hover:shadow-[2px_2px_0px_rgba(0,0,0,1)] active:bg-[#00E1EF] rounded-md"
+          className="border-deep-moss border-2 p-2 sm:p-3 bg-soft-sage text-deep-moss font-bold hover:bg-forest-green hover:text-ivory hover:shadow-brutal-sm active:bg-deep-forest rounded-md touch-target text-sm sm:text-base"
         >
           Individual Demo
         </Link>
         <Link
           href="/organization-dashboard"
-          className="border-black border-2 p-3 bg-[#E5DCC3] font-bold hover:bg-[#79F7FF] hover:shadow-[2px_2px_0px_rgba(0,0,0,1)] active:bg-[#00E1EF] rounded-md"
+          className="border-deep-moss border-2 p-2 sm:p-3 bg-soft-sage text-deep-moss font-bold hover:bg-forest-green hover:text-ivory hover:shadow-brutal-sm active:bg-deep-forest rounded-md touch-target text-sm sm:text-base"
         >
           Organization Demo
         </Link>
       </div>
-      <div className="flex justify-between w-full mt-10 hidden sm:flex">
-        <Image width={323} height={323} src={reviewng} alt="users" />
-        <Image width={323} height={323} src={sittingreading} alt="users" />
+      <div className="flex justify-between w-full mt-6 sm:mt-10 hidden sm:flex">
+        <Image
+          width={200}
+          height={200}
+          src={reviewng}
+          alt="users"
+          className="sm:w-[250px] sm:h-[250px] md:w-[323px] md:h-[323px]"
+        />
+        <Image
+          width={200}
+          height={200}
+          src={sittingreading}
+          alt="users"
+          className="sm:w-[250px] sm:h-[250px] md:w-[323px] md:h-[323px]"
+        />
       </div>
     </div>
   </div>

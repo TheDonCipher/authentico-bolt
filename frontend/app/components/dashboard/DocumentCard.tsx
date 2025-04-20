@@ -130,7 +130,7 @@ export const DocumentCard = ({
   };
 
   return (
-    <div className="bg-ivory p-4 md:p-6 border-2 md:border-4 border-deep-moss hover:shadow-[4px_4px_0px_0px_rgba(27,67,50,0.8)] md:hover:shadow-[8px_8px_0px_0px_rgba(27,67,50,0.8)] transition-all flex flex-col h-full relative transform hover:-rotate-1">
+    <div className="bg-ivory p-3 sm:p-4 md:p-6 border-2 md:border-4 border-deep-moss hover:shadow-[4px_4px_0px_0px_rgba(27,67,50,0.8)] md:hover:shadow-[8px_8px_0px_0px_rgba(27,67,50,0.8)] transition-all flex flex-col h-full relative transform hover:-rotate-1">
       {/* Document corner fold */}
       <div className="absolute top-0 right-0 w-0 h-0 border-t-[20px] md:border-t-[30px] border-r-[20px] md:border-r-[30px] border-t-deep-moss border-r-deep-moss">
         <div className="absolute top-[-20px] md:top-[-30px] right-[-20px] md:right-[-30px] w-0 h-0 border-b-[18px] md:border-b-[28px] border-l-[18px] md:border-l-[28px] border-b-soft-sage border-l-soft-sage"></div>
@@ -284,22 +284,24 @@ export const DocumentCard = ({
 
         {/* QR Code Modal */}
         {showQR && (
-          <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4">
-            <div className="bg-ivory p-6 border-4 border-deep-moss max-w-md w-full">
+          <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-3 sm:p-4">
+            <div className="bg-ivory p-4 sm:p-6 border-2 sm:border-4 border-deep-moss max-w-md w-full max-h-[90vh] overflow-y-auto">
               <div className="flex justify-between items-center mb-4">
-                <h3 className="text-xl font-bold">Verification QR Code</h3>
+                <h3 className="text-lg sm:text-xl font-bold">
+                  Verification QR Code
+                </h3>
                 <button
                   onClick={() => setShowQR(false)}
-                  className="p-1 hover:bg-soft-sage rounded-full"
+                  className="p-1 hover:bg-soft-sage rounded-full touch-target"
                 >
-                  <X size={24} />
+                  <X size={20} sm:size={24} />
                 </button>
               </div>
 
               <div className="flex flex-col items-center">
                 <QRCodeSVG
                   value={verificationUrl}
-                  size={200}
+                  size={window.innerWidth < 480 ? 160 : 200}
                   style={{ background: '#ffffff', padding: '10px' }}
                   level={'H'}
                 />
@@ -312,7 +314,7 @@ export const DocumentCard = ({
                   <p className="text-xs text-gray-500 mb-1">
                     Verification URL:
                   </p>
-                  <div className="flex items-center">
+                  <div className="flex flex-col xs:flex-row items-center gap-2">
                     <input
                       type="text"
                       value={verificationUrl}
@@ -326,7 +328,7 @@ export const DocumentCard = ({
                           'Verification URL copied to clipboard!'
                         )
                       }
-                      className="ml-2 p-2 bg-soft-sage border border-deep-moss text-sm"
+                      className="w-full xs:w-auto p-2 bg-soft-sage border border-deep-moss text-sm touch-target"
                     >
                       Copy
                     </button>
@@ -340,15 +342,15 @@ export const DocumentCard = ({
 
       {/* Document Viewer Modal */}
       {showDocument && documentData && (
-        <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4">
-          <div className="bg-ivory p-6 border-4 border-deep-moss max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-bold">Document Viewer</h3>
+        <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-3 sm:p-4">
+          <div className="bg-ivory p-4 sm:p-6 border-2 sm:border-4 border-deep-moss max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-3 sm:mb-4">
+              <h3 className="text-lg sm:text-xl font-bold">Document Viewer</h3>
               <button
                 onClick={() => setShowDocument(false)}
-                className="p-1 hover:bg-soft-sage rounded-full"
+                className="p-1 hover:bg-soft-sage rounded-full touch-target"
               >
-                <X size={24} />
+                <X size={20} sm:size={24} />
               </button>
             </div>
 
@@ -377,14 +379,14 @@ export const DocumentCard = ({
 
       {/* Loading Indicator */}
       {isLoading && (
-        <div className="fixed inset-0 z-50 bg-black bg-opacity-30 flex items-center justify-center">
-          <div className="bg-ivory p-6 border-4 border-deep-moss shadow-[8px_8px_0px_0px_rgba(27,67,50,0.8)]">
+        <div className="fixed inset-0 z-50 bg-black bg-opacity-30 flex items-center justify-center p-3 sm:p-4">
+          <div className="bg-ivory p-4 sm:p-6 border-2 sm:border-4 border-deep-moss shadow-brutal sm:shadow-[8px_8px_0px_0px_rgba(27,67,50,0.8)]">
             <div className="flex flex-col items-center">
-              <div className="relative w-16 h-16">
+              <div className="relative w-12 h-12 sm:w-16 sm:h-16">
                 {[0, 1, 2].map((index) => (
                   <div
                     key={index}
-                    className="absolute top-0 left-0 w-full h-full border-4 border-deep-moss animate-pulse"
+                    className="absolute top-0 left-0 w-full h-full border-2 sm:border-4 border-deep-moss animate-pulse"
                     style={{
                       rotate: `${index * 15}deg`,
                       backgroundColor:
@@ -398,7 +400,7 @@ export const DocumentCard = ({
                   />
                 ))}
               </div>
-              <p className="mt-4 text-center font-bold text-deep-moss">
+              <p className="mt-3 sm:mt-4 text-center font-bold text-deep-moss text-sm sm:text-base">
                 Loading Document...
               </p>
             </div>

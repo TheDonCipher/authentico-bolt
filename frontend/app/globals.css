@@ -149,6 +149,10 @@ body {
     box-shadow: 4px 4px 0 0 var(--deep-moss);
   }
 
+  .shadow-brutal-sm {
+    box-shadow: 2px 2px 0 0 var(--deep-moss);
+  }
+
   .hover-brutal:hover {
     transform: translate(-2px, -2px);
     box-shadow: 6px 6px 0 0 var(--deep-moss);
@@ -157,5 +161,59 @@ body {
 
   .hover\:shadow-brutal:hover {
     box-shadow: 4px 4px 0 0 var(--deep-moss);
+  }
+
+  /* Responsive padding utility classes */
+  .p-responsive {
+    padding: 0.75rem;
+  }
+  @media (min-width: 640px) {
+    .p-responsive {
+      padding: 1rem;
+    }
+  }
+  @media (min-width: 768px) {
+    .p-responsive {
+      padding: 1.5rem;
+    }
+  }
+
+  /* Responsive margin utility classes */
+  .m-responsive {
+    margin: 0.75rem;
+  }
+  @media (min-width: 640px) {
+    .m-responsive {
+      margin: 1rem;
+    }
+  }
+  @media (min-width: 768px) {
+    .m-responsive {
+      margin: 1.5rem;
+    }
+  }
+
+  /* Responsive text size utility classes */
+  .text-responsive {
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+  }
+  @media (min-width: 640px) {
+    .text-responsive {
+      font-size: 1rem;
+      line-height: 1.5rem;
+    }
+  }
+  @media (min-width: 768px) {
+    .text-responsive {
+      font-size: 1.125rem;
+      line-height: 1.75rem;
+    }
+  }
+
+  /* Touch-friendly utility classes */
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
   }
 }

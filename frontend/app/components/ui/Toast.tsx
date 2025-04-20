@@ -74,39 +74,47 @@ export const Toast: React.FC<{
       animate={{ opacity: 1, y: 0, rotate: 0 }}
       exit={{ opacity: 0, y: 50, rotate: 2 }}
       transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-      className="fixed bottom-4 right-4 z-[100] max-w-md w-[calc(100%-2rem)] md:w-auto"
+      className="fixed bottom-3 sm:bottom-4 right-3 sm:right-4 z-[100] max-w-md w-[calc(100%-1.5rem)] sm:w-[calc(100%-2rem)] md:w-auto"
     >
       <div
         className={`
         ${styles.bgColor}
-        p-0 border-4 ${styles.borderColor}
-        shadow-[4px_4px_0px_0px_rgba(27,67,50,0.8)]
+        p-0 border-2 sm:border-4 ${styles.borderColor}
+        shadow-brutal-sm sm:shadow-[4px_4px_0px_0px_rgba(27,67,50,0.8)]
         overflow-hidden
       `}
       >
         {/* Top label bar */}
         <div
-          className={`${styles.iconColor} bg-deep-moss px-3 py-1 flex items-center justify-between`}
+          className={`${styles.iconColor} bg-deep-moss px-2 sm:px-3 py-1 flex items-center justify-between`}
         >
           <div className="flex items-center">
-            <span className="font-bold text-ivory text-sm">{styles.label}</span>
+            <span className="font-bold text-ivory text-xs sm:text-sm">
+              {styles.label}
+            </span>
           </div>
           {onClose && (
             <button
               onClick={onClose}
-              className="ml-2 p-1 text-ivory hover:text-soft-sage transition-colors flex-shrink-0"
+              className="ml-2 p-1 text-ivory hover:text-soft-sage transition-colors flex-shrink-0 touch-target"
               aria-label="Close notification"
             >
-              <X size={16} />
+              <X size={14} sm:size={16} />
             </button>
           )}
         </div>
 
         {/* Message content */}
-        <div className="p-3 flex items-start">
-          <div className={`mr-3 ${styles.iconColor}`}>{styles.icon}</div>
+        <div className="p-2 sm:p-3 flex items-start">
+          <div className={`mr-2 sm:mr-3 ${styles.iconColor}`}>
+            {React.cloneElement(styles.icon, {
+              size: window.innerWidth < 640 ? 16 : 20,
+            })}
+          </div>
           <div className="flex-1">
-            <p className="text-deep-moss font-medium line-clamp-3">{message}</p>
+            <p className="text-deep-moss text-sm sm:text-base font-medium line-clamp-3">
+              {message}
+            </p>
           </div>
         </div>
       </div>

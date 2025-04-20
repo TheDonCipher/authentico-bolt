@@ -13,7 +13,7 @@ const config: Config = {
   coverageDirectory: 'coverage',
   coverageReporters: ['json', 'text', 'lcov', 'clover'],
   moduleNameMapper: {
-    '^@/(.*)$': '<rootDir>/src/$1',
+    '^@/(.*)$': '<rootDir>/$1',
     '^@public/(.*)$': '<rootDir>/public/$1',
   },
   setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
@@ -24,7 +24,11 @@ const config: Config = {
   transformIgnorePatterns: [
     '/node_modules/(?!@passwordless-id/webauthn|thirdweb)',
   ],
-  testPathIgnorePatterns: ['<rootDir>/.next/', '<rootDir>/node_modules/', '<rootDir>/cypress/'],
+  testPathIgnorePatterns: [
+    '<rootDir>/.next/',
+    '<rootDir>/node_modules/',
+    '<rootDir>/cypress/',
+  ],
   extensionsToTreatAsEsm: ['.ts', '.tsx'],
 };
 

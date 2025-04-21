@@ -22,6 +22,10 @@ import { Toast } from '../ui/Toast';
 import { DocumentViewer } from '../document/DocumentViewer';
 import axios from 'axios';
 import { getAuthToken } from '../../../lib/token-util';
+import {
+  getVerificationUrl,
+  isDocumentVerified,
+} from '../../../lib/verification-util';
 import { Tooltip } from '../ui/Tooltip';
 
 interface EnhancedDocumentCardProps {
@@ -55,6 +59,7 @@ export const EnhancedDocumentCard = ({
   const [documentData, setDocumentData] = useState<{
     data: string;
     mimeType: string;
+    fallback?: boolean;
   } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [toastMessage, setToastMessage] = useState<{
@@ -63,7 +68,7 @@ export const EnhancedDocumentCard = ({
   } | null>(null);
 
   const verificationUrl = doc.documentId
-    ? `${window.location.origin}/verify/${doc.documentId}`
+    ? getVerificationUrl(doc.documentId)
     : `${window.location.origin}/verify`;
   const explorerUrl = transactionHash
     ? `https://sepolia.etherscan.io/tx/${transactionHash}`
@@ -87,28 +92,94 @@ export const EnhancedDocumentCard = ({
       const docId = doc.documentId.toString();
       console.log(`Fetching document details for ID: ${docId}`);
 
-      // Add timeout to the request to prevent hanging
-      const response = await axios.get(
-        `/api/documents/${docId}/secure-details`,
-        {
-          headers: {
-            Authorization: `Bearer ${idToken}`,
-          },
-          timeout: 15000, // 15 second timeout
+      try {
+        // First try the secure-details endpoint
+        console.log('Trying primary secure-details endpoint');
+        const response = await axios.get(
+          `/api/documents/${docId}/secure-details`,
+          {
+            headers: {
+              Authorization: `Bearer ${idToken}`,
+            },
+            timeout: 20000, // 20 second timeout
+          }
+        );
+
+        console.log(
+          'Document details response:',
+          response.status,
+          response.data
+        );
+
+        if (response.data && response.data.decryptedFile) {
+          setDocumentData({
+            data: response.data.decryptedFile,
+            mimeType: response.data.mimeType || 'application/octet-stream',
+          });
+          setShowDocument(true);
+          return;
+        } else if (response.data && response.data.fallback) {
+          // This is a fallback response without document content
+          setToastMessage({
+            type: 'warning',
+            message:
+              response.data.message ||
+              'Document content unavailable. Using fallback view.',
+          });
+
+          // Show the document viewer with placeholder content
+          setDocumentData({
+            data: '', // Empty content
+            mimeType: response.data.mimeType || 'application/octet-stream',
+            fallback: true,
+          });
+          setShowDocument(true);
+          return;
+        } else {
+          throw new Error('Invalid document data received from server');
         }
-      );
+      } catch (primaryError) {
+        console.error('Primary endpoint failed:', primaryError);
 
-      console.log('Document details response:', response.status, response.data);
+        // Try the direct-view endpoint as fallback
+        try {
+          console.log('Trying direct-view fallback endpoint');
+          const fallbackResponse = await axios.get(
+            `/api/documents/${docId}/direct-view`,
+            {
+              headers: {
+                Authorization: `Bearer ${idToken}`,
+              },
+              timeout: 15000,
+            }
+          );
 
-      if (!response.data || !response.data.decryptedFile) {
-        throw new Error('Invalid document data received from server');
+          if (fallbackResponse.data && fallbackResponse.data.directView) {
+            setToastMessage({
+              type: 'warning',
+              message:
+                'Using simplified document view. Some features may be limited.',
+            });
+
+            // Show the document viewer with placeholder content
+            setDocumentData({
+              data: '', // Empty content
+              mimeType:
+                fallbackResponse.data.mimeType || 'application/octet-stream',
+              fallback: true,
+            });
+            setShowDocument(true);
+            return;
+          }
+        } catch (fallbackError) {
+          console.error('Fallback endpoint also failed:', fallbackError);
+          // Continue to the main error handler
+          throw primaryError;
+        }
+
+        // If we get here, both endpoints failed
+        throw primaryError;
       }
-
-      setDocumentData({
-        data: response.data.decryptedFile,
-        mimeType: response.data.mimeType || 'application/octet-stream',
-      });
-      setShowDocument(true);
     } catch (error) {
       console.error('Error viewing document:', error);
       // More detailed error logging

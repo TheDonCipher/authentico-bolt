@@ -18,6 +18,10 @@ import { Toast } from '../ui/Toast';
 import { DocumentViewer } from '../document/DocumentViewer';
 import axios from 'axios';
 import { getAuthToken } from '../../../lib/token-util';
+import {
+  getVerificationUrl,
+  isDocumentVerified,
+} from '../../../lib/verification-util';
 
 interface DocumentCardProps {
   doc: Document;
@@ -46,7 +50,7 @@ export const DocumentCard = ({
     message: string;
   } | null>(null);
 
-  const verificationUrl = `${window.location.origin}/verify/${doc.documentId}`;
+  const verificationUrl = getVerificationUrl(doc.documentId);
 
   // Function to fetch and view the document
   const viewDocument = async () => {

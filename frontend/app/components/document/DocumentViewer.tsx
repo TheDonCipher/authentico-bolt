@@ -11,15 +11,18 @@ interface DocumentViewerProps {
   fileName?: string;
   status?: string;
   updatedAt?: string | number | Date;
+  fallback?: boolean;
 }
 
-export const DocumentViewer = ({
-  documentData,
-  mimeType,
-  fileName = 'document',
-  status,
-  updatedAt,
-}: DocumentViewerProps) => {
+export const DocumentViewer = (props: DocumentViewerProps) => {
+  const {
+    documentData,
+    mimeType,
+    fileName = 'document',
+    status,
+    updatedAt,
+    fallback,
+  } = props;
   const [error, setError] = useState<string | null>(null);
   const [animateStamp, setAnimateStamp] = useState(false);
 
@@ -35,6 +38,11 @@ export const DocumentViewer = ({
 
   // Validate document data before processing
   useEffect(() => {
+    // Skip validation for fallback mode
+    if (props.fallback) {
+      return;
+    }
+
     if (!documentData) {
       setError('Document data is missing. Please try again later.');
       return;
@@ -52,7 +60,7 @@ export const DocumentViewer = ({
         'The document data appears to be corrupted. Please try again or contact support.'
       );
     }
-  }, [documentData]);
+  }, [documentData, props.fallback]);
 
   // Create a blob URL for the document
   const createBlobUrl = () => {
@@ -114,6 +122,47 @@ export const DocumentViewer = ({
             <AlertCircle size={18} />
           </span>
           <p className="text-deep-moss">{error}</p>
+        </div>
+      );
+    }
+
+    // Handle fallback mode
+    if (props.fallback) {
+      return (
+        <div className="bg-soft-sage bg-opacity-30 p-6 border-2 border-deep-moss text-center relative">
+          <p className="text-deep-moss mb-4 font-bold">
+            Document Preview Unavailable
+          </p>
+          <p className="text-deep-moss mb-4">
+            The document content cannot be displayed at this time. Please try
+            again later or contact support.
+          </p>
+          <div className="p-4 bg-ivory border border-deep-moss inline-block">
+            <p className="text-sm text-deep-moss mb-2">Document Information:</p>
+            <p className="text-xs text-gray-600">Name: {fileName}</p>
+            <p className="text-xs text-gray-600">Type: {mimeType}</p>
+            <p className="text-xs text-gray-600">
+              Status: {status || 'Unknown'}
+            </p>
+          </div>
+          {status && (
+            <div
+              className={`stamp-container ${
+                animateStamp ? 'stamp-animation' : 'stamp-animation-initial'
+              }`}
+            >
+              <DocumentSeal
+                status={status}
+                date={updatedAt}
+                size="large"
+                className={`${
+                  animateStamp
+                    ? 'stamp-ink-animation'
+                    : 'stamp-ink-animation-initial'
+                }`}
+              />
+            </div>
+          )}
         </div>
       );
     }

@@ -18,6 +18,10 @@ import { QRCodeSVG } from 'qrcode.react';
 import { StatusBadge } from '../../components/dashboard/StatusBadge';
 import { getDocumentTypeName } from '../../constants/documentTypes';
 import { getAuthToken } from '../../../lib/token-util';
+import {
+  getVerificationUrl,
+  isDocumentVerified,
+} from '../../../lib/verification-util';
 import axios from 'axios';
 import { DocumentViewer } from '../../components/document/DocumentViewer';
 import { Toast } from '../../components/ui/Toast';
@@ -43,6 +47,7 @@ export const DocumentTable = ({
     data: string;
     mimeType: string;
     name: string;
+    fallback?: boolean;
   } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showQR, setShowQR] = useState<string | null>(null);
@@ -69,9 +74,9 @@ export const DocumentTable = ({
     );
   };
 
-  // Check if document is verified (status = 'Verified' or '2')
-  const isDocumentVerified = (doc: Document) => {
-    return doc.status === 'Verified' || doc.status === '2';
+  // Check if document is verified (using the utility function)
+  const checkIsVerified = (doc: Document) => {
+    return isDocumentVerified(doc);
   };
 
   // Check if document is rejected (status = 'Rejected' or '3')
@@ -125,19 +130,25 @@ export const DocumentTable = ({
 
       console.log('Document data from Firestore:', docSnap.data());
 
-      // Now fetch the secure details from the API
-      const response = await axios.get(
-        `/api/documents/${docId}/secure-details`,
-        {
-          headers: {
-            Authorization: `Bearer ${idToken}`,
-          },
-        }
-      );
+      try {
+        // Try the primary endpoint first
+        console.log('Trying primary secure-details endpoint');
+        const response = await axios.get(
+          `/api/documents/${docId}/secure-details`,
+          {
+            headers: {
+              Authorization: `Bearer ${idToken}`,
+            },
+            timeout: 20000, // 20 second timeout
+          }
+        );
 
-      console.log('Document details response:', response.status, response.data);
+        console.log(
+          'Document details response:',
+          response.status,
+          response.data
+        );
 
-      if (response.data && response.data.decryptedFile) {
         // Use document name from response if available, otherwise fallback to local data
         const documentName =
           response.data.documentName ||
@@ -145,30 +156,105 @@ export const DocumentTable = ({
           getDocumentTypeName(doc.documentType);
         const mimeType = response.data.mimeType || 'application/octet-stream';
 
-        if (downloadOnly) {
-          // Create a download link and trigger it
-          const link = document.createElement('a');
-          link.href = `data:${mimeType};base64,${response.data.decryptedFile}`;
-          link.download = `${documentName}.${mimeType.split('/')[1] || 'file'}`;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
+        if (response.data && response.data.decryptedFile) {
+          if (downloadOnly) {
+            // Create a download link and trigger it
+            const link = document.createElement('a');
+            link.href = `data:${mimeType};base64,${response.data.decryptedFile}`;
+            link.download = `${documentName}.${
+              mimeType.split('/')[1] || 'file'
+            }`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
 
+            setToastMessage({
+              type: 'success',
+              message: 'Document download started',
+            });
+          } else {
+            // Show the document in the viewer
+            setDocumentData({
+              data: response.data.decryptedFile,
+              mimeType: mimeType,
+              name: documentName,
+            });
+            setShowDocument(docId);
+          }
+          return;
+        } else if (response.data && response.data.fallback) {
+          // This is a fallback response without document content
           setToastMessage({
-            type: 'success',
-            message: 'Document download started',
+            type: 'warning',
+            message:
+              response.data.message ||
+              'Document content unavailable. Using fallback view.',
           });
-        } else {
-          // Show the document in the viewer
+
+          // Show the document viewer with placeholder content
           setDocumentData({
-            data: response.data.decryptedFile,
+            data: '', // Empty content
             mimeType: mimeType,
             name: documentName,
+            fallback: true,
           });
           setShowDocument(docId);
+          return;
+        } else {
+          throw new Error('Invalid document data received from server');
         }
-      } else {
-        throw new Error('Invalid document data received from server');
+      } catch (primaryError) {
+        console.error('Primary endpoint failed:', primaryError);
+
+        // Try the direct-view endpoint as fallback
+        try {
+          console.log('Trying direct-view fallback endpoint');
+          const fallbackResponse = await axios.get(
+            `/api/documents/${docId}/direct-view`,
+            {
+              headers: {
+                Authorization: `Bearer ${idToken}`,
+              },
+              timeout: 15000,
+            }
+          );
+
+          if (fallbackResponse.data && fallbackResponse.data.directView) {
+            const documentName =
+              fallbackResponse.data.documentName ||
+              doc.documentName ||
+              getDocumentTypeName(doc.documentType) ||
+              'Document';
+
+            const mimeType =
+              fallbackResponse.data.mimeType ||
+              docSnap.data().mimeType ||
+              'application/octet-stream';
+
+            setToastMessage({
+              type: 'warning',
+              message:
+                'Using simplified document view. Some features may be limited.',
+            });
+
+            // Show the document viewer with placeholder content
+            setDocumentData({
+              data: '', // Empty content
+              mimeType: mimeType,
+              name: documentName,
+              fallback: true,
+            });
+            setShowDocument(docId);
+            return;
+          }
+        } catch (fallbackError) {
+          console.error('Fallback endpoint also failed:', fallbackError);
+          // Continue to the main error handler
+          throw primaryError;
+        }
+
+        // If we get here, both endpoints failed
+        throw primaryError;
       }
     } catch (error) {
       console.error('Error viewing document:', error);
@@ -215,15 +301,15 @@ export const DocumentTable = ({
     }
   };
 
-  // Function to get verification URL
-  const getVerificationUrl = (docId: string | number) => {
-    return `${window.location.origin}/verify/${docId}`;
+  // Function to check if document is verified (using the utility function)
+  const checkDocumentVerified = (doc: Document) => {
+    return isDocumentVerified(doc);
   };
 
   return (
-    <div className="overflow-x-auto">
+    <div className="overflow-x-auto w-full">
       {/* Desktop Table View */}
-      <table className="w-full border-collapse hidden md:table">
+      <table className="w-full border-collapse hidden md:table table-auto">
         <thead>
           <tr className="bg-soft-sage bg-opacity-50">
             <th className="px-4 py-3 text-left font-bold text-deep-moss border-b-2 border-deep-moss">
@@ -388,7 +474,7 @@ export const DocumentTable = ({
       </table>
 
       {/* Mobile Card View */}
-      <div className="md:hidden space-y-4">
+      <div className="md:hidden space-y-4 w-full">
         {documents.map((doc) => (
           <div
             key={doc.documentId}
@@ -590,8 +676,8 @@ export const DocumentTable = ({
 
       {/* Document Viewer Modal */}
       {showDocument !== null && documentData && (
-        <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4">
-          <div className="bg-ivory p-6 border-4 border-deep-moss max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-2 sm:p-4">
+          <div className="bg-ivory p-3 sm:p-6 border-2 sm:border-4 border-deep-moss max-w-4xl w-full max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-xl font-bold">{documentData.name}</h3>
               <div className="flex items-center gap-2">
@@ -625,6 +711,7 @@ export const DocumentTable = ({
                 documents.find((d) => d.documentId === showDocument)
                   ?.updatedAt || Date.now()
               }
+              fallback={documentData.fallback}
             />
           </div>
         </div>
@@ -632,8 +719,8 @@ export const DocumentTable = ({
 
       {/* QR Code Modal */}
       {showQR && (
-        <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4">
-          <div className="bg-ivory p-6 border-4 border-deep-moss max-w-md w-full">
+        <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-2 sm:p-4">
+          <div className="bg-ivory p-3 sm:p-6 border-2 sm:border-4 border-deep-moss max-w-md w-full">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-xl font-bold">Verification QR Code</h3>
               <button

@@ -427,7 +427,7 @@ export default function IndividualDashboardPage() {
         </h1>
 
         {/* Navigation */}
-        <nav className="flex-1 flex justify-around md:block">
+        <nav className="flex-1 flex justify-around md:block w-full">
           <ul className="flex md:flex-col w-full gap-1 sm:gap-2 md:gap-4">
             <li className="w-full">
               <button
@@ -437,6 +437,7 @@ export default function IndividualDashboardPage() {
                     ? 'bg-forest-green text-ivory'
                     : 'bg-ivory text-deep-moss hover:bg-soft-sage hover:shadow-brutal-sm md:hover:shadow-brutal'
                 } touch-target`}
+                aria-label="My Documents"
               >
                 <span className="hidden md:inline">My Documents</span>
                 <span className="md:hidden">Docs</span>
@@ -450,6 +451,7 @@ export default function IndividualDashboardPage() {
                     ? 'bg-forest-green text-ivory'
                     : 'bg-ivory text-deep-moss hover:bg-soft-sage hover:shadow-brutal-sm md:hover:shadow-brutal'
                 } touch-target`}
+                aria-label="Activity"
               >
                 <span className="hidden md:inline">Activity</span>
                 <span className="md:hidden">Activity</span>
@@ -463,6 +465,7 @@ export default function IndividualDashboardPage() {
                     ? 'bg-forest-green text-ivory'
                     : 'bg-ivory text-deep-moss hover:bg-soft-sage hover:shadow-brutal-sm md:hover:shadow-brutal'
                 } touch-target`}
+                aria-label="Settings"
               >
                 <span className="hidden md:inline">Settings</span>
                 <span className="md:hidden">Settings</span>
@@ -477,6 +480,7 @@ export default function IndividualDashboardPage() {
                   <Link
                     href="/admin-dashboard"
                     className={`w-full text-center md:text-left p-1.5 sm:p-2 md:p-3 border-2 md:border-4 border-deep-moss font-bold text-xs sm:text-sm md:text-base bg-sunflower-yellow bg-opacity-20 hover:bg-sunflower-yellow hover:shadow-brutal-sm md:hover:shadow-brutal block touch-target`}
+                    aria-label="Admin Dashboard"
                   >
                     <span className="hidden md:inline">Admin Dashboard</span>
                     <span className="md:hidden">Admin</span>
@@ -493,17 +497,28 @@ export default function IndividualDashboardPage() {
       </aside>
 
       {/* Main Content Container */}
-      <div className="flex-1 flex flex-col min-h-screen pb-20 md:pb-0">
+      <div className="flex-1 flex flex-col min-h-screen pb-24 md:pb-0 w-full max-w-full">
         {/* Header */}
-        <header className="bg-soft-sage border-b-2 sm:border-b-4 border-deep-moss sticky top-0 z-20">
-          <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-8 py-3 sm:py-4 md:h-20 flex flex-col md:flex-row gap-3 sm:gap-4 md:gap-0 md:items-center justify-between">
-            <div className="flex items-center">
+        <header className="bg-soft-sage border-b-2 sm:border-b-4 border-deep-moss sticky top-0 z-20 w-full">
+          <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-8 py-3 sm:py-4 flex flex-col sm:flex-row gap-3 sm:gap-4 md:gap-6 sm:items-center justify-between">
+            <div className="flex items-center justify-between sm:justify-start w-full sm:w-auto">
               <h2 className="text-lg sm:text-xl font-bold text-deep-moss mr-2 sm:mr-4">
                 Individual Dashboard
               </h2>
               {userOrganizations.length > 0 && <ContextSwitcher />}
+
+              {/* Mobile-only notification bell */}
+              <div className="flex sm:hidden items-center gap-3">
+                <NotificationBell
+                  count={activities.filter((activity) => !activity.read).length}
+                  onClick={() => {
+                    // Show activity pane
+                    gotoActivityPane();
+                  }}
+                />
+              </div>
             </div>
-            <div className="flex items-center gap-3 sm:gap-4 md:gap-6">
+            <div className="hidden sm:flex items-center gap-3 sm:gap-4 md:gap-6">
               <NotificationBell
                 count={activities.filter((activity) => !activity.read).length}
                 onClick={() => {
@@ -511,6 +526,9 @@ export default function IndividualDashboardPage() {
                   gotoActivityPane();
                 }}
               />
+              <ProfileCard />
+            </div>
+            <div className="flex sm:hidden items-center w-full justify-between">
               <ProfileCard />
             </div>
           </div>
@@ -598,7 +616,7 @@ export default function IndividualDashboardPage() {
                         </p>
                       </div>
                     ) : viewMode === 'grid' ? (
-                      <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6">
+                      <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3 sm:gap-4 md:gap-6">
                         {documents.map((doc) => (
                           <EnhancedDocumentCard
                             key={doc.documentId}
@@ -639,7 +657,7 @@ export default function IndividualDashboardPage() {
                         ))}
                       </div>
                     ) : (
-                      <div className="-mx-3 sm:mx-0 overflow-x-auto pb-2">
+                      <div className="-mx-3 sm:mx-0 overflow-x-auto pb-2 w-full">
                         <DocumentTable
                           documents={documents}
                           orgNames={orgNames}
@@ -729,7 +747,7 @@ export default function IndividualDashboardPage() {
         <div className="fixed inset-0 bg-black bg-opacity-50 z-40 flex justify-end">
           <div
             ref={activityPaneRef}
-            className="bg-ivory w-full max-w-[90vw] sm:max-w-md h-full overflow-y-auto p-3 sm:p-4 md:p-6 shadow-[-5px_0_15px_rgba(0,0,0,0.1)]"
+            className="bg-ivory w-full max-w-[90vw] sm:max-w-md h-full overflow-y-auto p-3 sm:p-4 md:p-6 shadow-[-5px_0_15px_rgba(0,0,0,0.1)] flex flex-col"
           >
             <div className="flex justify-between items-center mb-4 sm:mb-6">
               <h3 className="text-lg sm:text-xl font-bold text-deep-moss">
@@ -749,7 +767,7 @@ export default function IndividualDashboardPage() {
                 </p>
               </div>
             ) : (
-              <div className="space-y-3 sm:space-y-4">
+              <div className="space-y-3 sm:space-y-4 flex-1 overflow-y-auto">
                 {activities.map((activity) => (
                   <div
                     key={activity.id}

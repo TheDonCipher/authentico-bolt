@@ -23,6 +23,7 @@ const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
     name: string;
     status?: string;
     updatedAt?: string | number | Date;
+    fallback?: boolean;
   } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -72,29 +73,91 @@ const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
         console.log('Document metadata:', docData);
 
         // Now fetch the actual document content
-        const response = await axios.get(
-          `/api/documents/${documentId}/secure-details`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+        try {
+          console.log('Trying primary secure-details endpoint');
+          const response = await axios.get(
+            `/api/documents/${documentId}/secure-details`,
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+              timeout: 20000, // 20 second timeout
+            }
+          );
 
-        if (response.data && response.data.decryptedFile) {
           const documentName =
             response.data.documentName || docData.documentName || 'Document';
           const mimeType = response.data.mimeType || 'application/octet-stream';
 
-          setDocumentData({
-            data: response.data.decryptedFile,
-            mimeType: mimeType,
-            name: documentName,
-            status: docData.status,
-            updatedAt: docData.updatedAt,
-          });
-        } else {
-          throw new Error('Invalid document data received from server');
+          if (response.data && response.data.decryptedFile) {
+            setDocumentData({
+              data: response.data.decryptedFile,
+              mimeType: mimeType,
+              name: documentName,
+              status: docData.status,
+              updatedAt: docData.updatedAt,
+            });
+          } else if (response.data && response.data.fallback) {
+            // This is a fallback response without document content
+            console.log('Using fallback view for document');
+
+            setDocumentData({
+              data: '', // Empty content
+              mimeType: mimeType,
+              name: documentName,
+              status: docData.status,
+              updatedAt: docData.updatedAt,
+              fallback: true,
+            });
+          } else {
+            throw new Error('Invalid document data received from server');
+          }
+        } catch (primaryError) {
+          console.error('Primary endpoint failed:', primaryError);
+
+          // Try the direct-view endpoint as fallback
+          try {
+            console.log('Trying direct-view fallback endpoint');
+            const fallbackResponse = await axios.get(
+              `/api/documents/${documentId}/direct-view`,
+              {
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+                timeout: 15000,
+              }
+            );
+
+            if (fallbackResponse.data && fallbackResponse.data.directView) {
+              const documentName =
+                fallbackResponse.data.documentName ||
+                docData.documentName ||
+                'Document';
+
+              const mimeType =
+                fallbackResponse.data.mimeType ||
+                docData.mimeType ||
+                'application/octet-stream';
+
+              console.log('Using simplified document view');
+
+              // Show the document viewer with placeholder content
+              setDocumentData({
+                data: '', // Empty content
+                mimeType: mimeType,
+                name: documentName,
+                status: docData.status,
+                updatedAt: docData.updatedAt,
+                fallback: true,
+              });
+            } else {
+              throw new Error('Invalid document data received from fallback');
+            }
+          } catch (fallbackError) {
+            console.error('Fallback endpoint also failed:', fallbackError);
+            // Continue to the main error handler
+            throw primaryError;
+          }
         }
       } catch (error) {
         console.error('Error fetching document:', error);
@@ -168,6 +231,7 @@ const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
                 fileName={documentData.name}
                 status={documentData.status}
                 updatedAt={documentData.updatedAt}
+                fallback={documentData.fallback}
               />
             )}
           </div>

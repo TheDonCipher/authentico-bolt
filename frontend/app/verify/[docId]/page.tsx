@@ -5,7 +5,9 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { Check, X, ExternalLink, Copy, FileText } from 'lucide-react';
 import { Toast } from '../../components/ui/Toast';
+import { DocumentSeal } from '../../components/document/DocumentSeal';
 import axios from 'axios';
+import '../../components/document/documentViewer.css';
 
 interface DocumentData {
   documentName: string;
@@ -34,6 +36,7 @@ const VerifyPage = () => {
     type: 'success' | 'error';
     message: string;
   } | null>(null);
+  const [animateStamp, setAnimateStamp] = useState(false);
 
   useEffect(() => {
     const fetchDocumentVerification = async () => {
@@ -65,6 +68,16 @@ const VerifyPage = () => {
       fetchDocumentVerification();
     }
   }, [docId]);
+
+  // Start animation after component mounts
+  useEffect(() => {
+    // Small delay to ensure the component is fully rendered
+    const timer = setTimeout(() => {
+      setAnimateStamp(true);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard
@@ -156,9 +169,9 @@ const VerifyPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#F5F7F2] text-[#2F4F4F] flex flex-col font-archivo">
+    <div className="min-h-screen bg-[#F5F7F2] text-[#2F4F4F] flex flex-col font-archivo w-full max-w-full">
       {/* Header */}
-      <header className="bg-[#E8EDE1] border-b-4 border-[#556B2F] sticky top-0 z-20">
+      <header className="bg-[#E8EDE1] border-b-4 border-[#556B2F] sticky top-0 z-20 w-full">
         <div className="max-w-7xl mx-auto px-4 md:px-8 py-4 flex justify-between items-center">
           <Link
             href="/"
@@ -170,22 +183,50 @@ const VerifyPage = () => {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 p-4 md:p-8">
+      <main className="flex-1 p-3 sm:p-4 md:p-8 w-full">
         <div className="max-w-3xl mx-auto">
-          <div className="bg-white border-4 border-[#556B2F] p-6 md:p-8 shadow-brutal">
+          <div className="bg-white border-2 sm:border-4 border-[#556B2F] p-4 sm:p-6 md:p-8 shadow-brutal relative">
             <h1 className="text-3xl font-black mb-2 text-[#2F4F4F]">
               Document Verification
             </h1>
 
             {document && (
               <>
-                <div
-                  className={`inline-flex items-center font-bold text-lg mb-6 ${getStatusColor(
-                    document.status
-                  )}`}
-                >
-                  {getStatusIcon(document.status)}
-                  {document.status}
+                <div className="flex flex-col sm:flex-row justify-between items-start mb-6 relative">
+                  <div
+                    className={`inline-flex items-center font-bold text-base sm:text-lg ${getStatusColor(
+                      document.status
+                    )}`}
+                  >
+                    {getStatusIcon(document.status)}
+                    {document.status}
+                  </div>
+
+                  {/* Document Seal */}
+                  {(document.status.toLowerCase() === 'verified' ||
+                    document.status === '0' ||
+                    document.status === '2' ||
+                    document.status.toLowerCase() === 'rejected' ||
+                    document.status === '3') && (
+                    <div
+                      className={`stamp-container relative sm:absolute top-auto sm:top-4 right-auto sm:right-4 mt-4 sm:mt-0 ${
+                        animateStamp
+                          ? 'stamp-animation'
+                          : 'stamp-animation-initial'
+                      }`}
+                    >
+                      <DocumentSeal
+                        status={document.status}
+                        date={document.updatedAt || document.createdAt}
+                        size="medium"
+                        className={`${
+                          animateStamp
+                            ? 'stamp-ink-animation'
+                            : 'stamp-ink-animation-initial'
+                        }`}
+                      />
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-6">

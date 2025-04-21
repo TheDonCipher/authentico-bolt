@@ -42,7 +42,7 @@ export default function OrganizationLayout({
     >
       {/* Don't require verification for the dashboard layout */}
       <OrganizationVerificationCheck requireVerified={false}>
-        <div className="flex flex-col md:flex-row min-h-screen bg-ivory">
+        <div className="flex flex-col md:flex-row min-h-screen bg-ivory w-full max-w-full">
           {/* Mobile sidebar toggle button */}
           <button
             onClick={toggleSidebar}
@@ -171,8 +171,8 @@ export default function OrganizationLayout({
           </aside>
 
           {/* Main content */}
-          <div className="flex-1 flex flex-col overflow-y-auto pb-20 md:pb-0 w-full">
-            <div className="p-responsive">{children}</div>
+          <div className="flex-1 flex flex-col overflow-y-auto pb-24 md:pb-0 w-full max-w-full">
+            <div className="p-responsive w-full">{children}</div>
           </div>
         </div>
       </OrganizationVerificationCheck>

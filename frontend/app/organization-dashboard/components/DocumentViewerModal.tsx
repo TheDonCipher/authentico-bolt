@@ -1,10 +1,24 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { X, Download, AlertCircle, Loader } from 'lucide-react';
+import {
+  X,
+  Download,
+  AlertCircle,
+  Loader,
+  Share2,
+  QrCode,
+  Copy,
+} from 'lucide-react';
 import axios from 'axios';
 import { getAuthToken } from '../../../lib/token-util';
+import {
+  getVerificationUrl,
+  isDocumentVerified,
+} from '../../../lib/verification-util';
 import { DocumentViewer } from '../../components/document/DocumentViewer';
+import { QRCodeSVG } from 'qrcode.react';
+import { Toast } from '../../components/ui/Toast';
 import {
   getFirestore,
   doc,
@@ -33,6 +47,11 @@ const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
     name: string;
     status?: string;
     updatedAt?: string | number | Date;
+  } | null>(null);
+  const [showQR, setShowQR] = useState(false);
+  const [toastMessage, setToastMessage] = useState<{
+    type: 'success' | 'error';
+    message: string;
   } | null>(null);
 
   useEffect(() => {
@@ -196,13 +215,45 @@ const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
           <h3 className="text-xl font-bold text-deep-moss">Document Viewer</h3>
           <div className="flex items-center gap-2">
             {documentData && (
-              <button
-                onClick={handleDownload}
-                className="p-2 bg-soft-sage text-deep-moss rounded-sm hover:bg-opacity-90 transition-all"
-                title="Download"
-              >
-                <Download size={20} />
-              </button>
+              <>
+                <button
+                  onClick={handleDownload}
+                  className="p-2 bg-soft-sage text-deep-moss rounded-sm hover:bg-opacity-90 transition-all"
+                  title="Download"
+                >
+                  <Download size={20} />
+                </button>
+                <button
+                  onClick={() => setShowQR(true)}
+                  className="p-2 bg-soft-sage text-deep-moss rounded-sm hover:bg-opacity-90 transition-all"
+                  title="QR Code"
+                >
+                  <QrCode size={20} />
+                </button>
+                <button
+                  onClick={() => {
+                    const verificationUrl = getVerificationUrl(documentId);
+                    navigator.clipboard.writeText(verificationUrl).then(
+                      () => {
+                        setToastMessage({
+                          type: 'success',
+                          message: 'Verification link copied to clipboard!',
+                        });
+                      },
+                      () => {
+                        setToastMessage({
+                          type: 'error',
+                          message: 'Failed to copy to clipboard',
+                        });
+                      }
+                    );
+                  }}
+                  className="p-2 bg-soft-sage text-deep-moss rounded-sm hover:bg-opacity-90 transition-all"
+                  title="Copy Verification Link"
+                >
+                  <Copy size={20} />
+                </button>
+              </>
             )}
             <button
               onClick={onClose}
@@ -240,6 +291,71 @@ const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
           </div>
         )}
       </div>
+
+      {/* QR Code Modal */}
+      {showQR && (
+        <div className="fixed inset-0 z-[60] bg-black bg-opacity-50 flex items-center justify-center p-4">
+          <div className="bg-white p-6 border-4 border-deep-moss max-w-md w-full">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-bold text-deep-moss">
+                Verification QR Code
+              </h3>
+              <button
+                onClick={() => setShowQR(false)}
+                className="text-deep-moss hover:text-forest-green"
+              >
+                <X size={24} />
+              </button>
+            </div>
+            <div className="flex flex-col items-center justify-center p-4 bg-soft-sage border-2 border-deep-moss">
+              <QRCodeSVG
+                value={getVerificationUrl(documentId)}
+                size={200}
+                bgColor={'#FFFFFF'}
+                fgColor={'#1B4332'}
+                level={'H'}
+                includeMargin={true}
+              />
+            </div>
+            <div className="mt-4 text-center">
+              <p className="text-deep-moss mb-2">
+                Scan this QR code to verify the document
+              </p>
+              <button
+                onClick={() => {
+                  const verificationUrl = getVerificationUrl(documentId);
+                  navigator.clipboard.writeText(verificationUrl).then(
+                    () => {
+                      setToastMessage({
+                        type: 'success',
+                        message: 'Verification link copied to clipboard!',
+                      });
+                    },
+                    () => {
+                      setToastMessage({
+                        type: 'error',
+                        message: 'Failed to copy to clipboard',
+                      });
+                    }
+                  );
+                }}
+                className="px-4 py-2 bg-forest-green text-white font-bold border-2 border-deep-moss hover:shadow-brutal-sm transition-all"
+              >
+                Copy Link
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Toast message */}
+      {toastMessage && (
+        <Toast
+          type={toastMessage.type}
+          message={toastMessage.message}
+          onClose={() => setToastMessage(null)}
+        />
+      )}
     </div>
   );
 };

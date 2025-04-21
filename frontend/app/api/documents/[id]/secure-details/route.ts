@@ -3,14 +3,22 @@ import { auth } from '../../../../../lib/firebase-admin-server';
 import axios from 'axios';
 
 // Get the API URL from environment variables
-// Remove '/api' from the end if it exists to avoid duplication
+// Ensure proper formatting of the API URL
 let API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
-if (API_URL.endsWith('/api')) {
-  API_URL = API_URL;
-} else {
+
+// Remove trailing slash if present
+if (API_URL.endsWith('/')) {
+  API_URL = API_URL.slice(0, -1);
+}
+
+// Ensure the URL ends with /api
+if (!API_URL.endsWith('/api')) {
   API_URL = `${API_URL}/api`;
 }
+
 console.log('Using API URL for document secure-details:', API_URL);
+console.log('Node environment:', process.env.NODE_ENV);
+console.log('Vercel environment:', process.env.VERCEL_ENV || 'Not on Vercel');
 
 export async function GET(
   request: NextRequest,
@@ -57,6 +65,14 @@ export async function GET(
 
       const docData = docSnapshot.data();
 
+      if (!docData) {
+        console.error(`Document ${id} data is undefined`);
+        return NextResponse.json(
+          { error: 'Document data not found' },
+          { status: 404 }
+        );
+      }
+
       // Check if user has permission to access this document
       if (docData.ownerUid !== uid && docData.verifyingOrgId !== uid) {
         console.error(`User ${uid} not authorized to access document ${id}`);
@@ -76,11 +92,19 @@ export async function GET(
         const backendUrl = `${API_URL}/documents/${id}/secure-details`;
         console.log(`Making request to backend: ${backendUrl}`);
 
+        // Add a custom header to indicate this is a direct API call
+        const headers = {
+          Authorization: `Bearer ${token}`,
+          'x-request-source': 'nextjs-api',
+          'x-document-id': id,
+          'x-user-id': uid,
+        };
+
+        console.log('Request headers:', headers);
+
         const response = await axios.get(backendUrl, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          timeout: 15000, // 15 second timeout
+          headers,
+          timeout: 20000, // 20 second timeout
         });
 
         console.log('Backend secure document details response received');
@@ -119,34 +143,57 @@ export async function GET(
     } catch (firestoreError: any) {
       console.error('Error checking document in Firestore:', firestoreError);
 
-      // Try the backend as a fallback
+      // Try the direct view as a fallback
       try {
-        console.log('Falling back to direct backend request');
-        // Construct the backend URL correctly
-        const backendUrl = `${API_URL}/documents/${id}/secure-details`;
-        console.log(`Making fallback request to backend: ${backendUrl}`);
+        console.log('Falling back to direct document view');
 
-        const response = await axios.get(backendUrl, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          timeout: 15000, // 15 second timeout
+        // Return basic document information from Firestore
+        return NextResponse.json({
+          id: id,
+          documentName: 'Unnamed Document',
+          documentType: 'Unknown',
+          documentTypeName: 'Unknown Type',
+          status: 'Unknown',
+          ownerName: 'Unknown',
+          mimeType: 'application/octet-stream',
+          fallback: true,
+          message: 'Unable to retrieve document content. Using fallback view.',
         });
+      } catch (fallbackError: any) {
+        console.error('Fallback also failed:', fallbackError.message);
 
-        return NextResponse.json(response.data);
-      } catch (backendError: any) {
-        console.error(
-          'Both Firestore and backend failed:',
-          backendError.message
-        );
-        return NextResponse.json(
-          {
-            error:
-              'Failed to retrieve document from both Firestore and backend',
-            details: backendError.message,
-          },
-          { status: 500 }
-        );
+        // Try the backend as a last resort
+        try {
+          console.log('Trying direct backend request as last resort');
+          // Construct the backend URL correctly
+          const backendUrl = `${API_URL}/documents/${id}/secure-details`;
+          console.log(`Making last resort request to backend: ${backendUrl}`);
+
+          const response = await axios.get(backendUrl, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'x-request-source': 'nextjs-api-fallback',
+              'x-document-id': id,
+              'x-user-id': uid,
+            },
+            timeout: 20000, // 20 second timeout
+          });
+
+          return NextResponse.json(response.data);
+        } catch (backendError: any) {
+          console.error(
+            'Both Firestore and backend failed:',
+            backendError.message
+          );
+          return NextResponse.json(
+            {
+              error:
+                'Failed to retrieve document from both Firestore and backend',
+              details: backendError.message,
+            },
+            { status: 500 }
+          );
+        }
       }
     }
   } catch (error: any) {

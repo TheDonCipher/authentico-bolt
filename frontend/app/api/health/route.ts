@@ -25,7 +25,7 @@ export async function GET() {
 
     // Check if we can connect to the backend
     let backendStatus = 'unknown';
-    let backendError = null;
+    let backendError: string | null = null;
 
     try {
       if (apiUrl !== 'Not configured') {

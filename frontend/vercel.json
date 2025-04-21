@@ -7,6 +7,22 @@
   },
   "rewrites": [
     {
+      "source": "/api/documents/:id/direct-view",
+      "destination": "/api/documents/:id/direct-view"
+    },
+    {
+      "source": "/api/documents/:id/fallback-view",
+      "destination": "/api/documents/:id/fallback-view"
+    },
+    {
+      "source": "/api/debug/:path*",
+      "destination": "/api/debug/:path*"
+    },
+    {
+      "source": "/api/test",
+      "destination": "/api/test"
+    },
+    {
       "source": "/api/documents/:id/secure-details",
       "destination": "$NEXT_PUBLIC_API_URL/documents/:id/secure-details"
     },

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '../../../../../lib/firebase-admin-server';
 import axios from 'axios';
 import { getFirestore } from 'firebase-admin/firestore';
+import crypto from 'crypto';
 
 // CORS headers to allow cross-origin requests
 const corsHeaders = {
@@ -24,7 +25,7 @@ export async function GET(
 ) {
   const { id } = await context.params;
   try {
-    console.log(`Fallback document view API route called for document ${id}`);
+    console.log(`Direct document view API route called for document ${id}`);
 
     // Get the authorization header
     const authHeader = request.headers.get('authorization');
@@ -39,7 +40,7 @@ export async function GET(
     const decodedToken = await auth.verifyIdToken(token);
     const uid = decodedToken.uid;
 
-    console.log(`Getting fallback document view for ${id} for user ${uid}`);
+    console.log(`Getting direct document view for ${id} for user ${uid}`);
 
     // Get the document from Firestore
     const db = getFirestore();
@@ -81,12 +82,13 @@ export async function GET(
       documentTypeName: docData.documentTypeName || 'Unknown Type',
       status: docData.status || 'Unknown',
       ownerName: docData.ownerName || 'Unknown User',
-      message:
-        "This is a fallback view. The document content couldn't be retrieved from the backend.",
-      fallback: true,
+      mimeType: docData.mimeType || 'application/octet-stream',
+      // Include a placeholder for the document content
+      decryptedFile: 'DOCUMENT_CONTENT_PLACEHOLDER',
+      directView: true,
     });
   } catch (error: any) {
-    console.error('Error in fallback document view API route:', error);
+    console.error('Error in direct document view API route:', error);
     return NextResponse.json(
       {
         error: 'Internal server error',

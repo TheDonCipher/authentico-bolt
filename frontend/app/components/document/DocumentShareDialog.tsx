@@ -4,6 +4,10 @@ import React, { useState } from 'react';
 import { X, Copy, Download, Share2 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { Toast } from '../ui/Toast';
+import {
+  getVerificationUrl,
+  isDocumentVerified,
+} from '../../../lib/verification-util';
 
 interface DocumentShareDialogProps {
   isOpen: boolean;
@@ -20,8 +24,8 @@ export const DocumentShareDialog = ({
   documentName,
   documentStatus = 'Verified', // Default to verified if not provided
 }: DocumentShareDialogProps) => {
-  // Check if document is verified
-  const isVerified = documentStatus === 'Verified' || documentStatus === '2';
+  // Check if document is verified using the utility function
+  const isVerified = isDocumentVerified({ status: documentStatus });
   const [toastMessage, setToastMessage] = useState<{
     type: 'success' | 'error' | 'warning';
     message: string;
@@ -29,7 +33,7 @@ export const DocumentShareDialog = ({
 
   if (!isOpen) return null;
 
-  const verificationUrl = `${window.location.origin}/verify/${documentId}`;
+  const verificationUrl = getVerificationUrl(documentId);
 
   const copyToClipboard = (text: string, message: string) => {
     navigator.clipboard.writeText(text).then(

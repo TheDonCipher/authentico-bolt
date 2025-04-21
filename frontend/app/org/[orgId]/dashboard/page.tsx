@@ -399,26 +399,46 @@ export default function OrganizationDashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-ivory w-full">
-      <header className="bg-soft-sage p-4 border-b-4 border-deep-moss sticky top-0 z-20">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div className="flex items-center">
-            <h1 className="text-2xl font-black text-deep-moss mr-4">
-              {orgName}
-            </h1>
-            <ContextSwitcher />
+    <div className="min-h-screen bg-ivory w-full max-w-full">
+      <header className="bg-soft-sage p-3 sm:p-4 border-b-2 sm:border-b-4 border-deep-moss sticky top-0 z-20 w-full">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
+          <div className="flex items-center justify-between w-full sm:w-auto">
+            <div className="flex items-center">
+              <h1 className="text-xl sm:text-2xl font-black text-deep-moss mr-2 sm:mr-4">
+                {orgName}
+              </h1>
+              <div className="hidden sm:block">
+                <ContextSwitcher />
+              </div>
+            </div>
+
+            {/* Mobile-only notification bell */}
+            <div className="flex sm:hidden items-center gap-3">
+              <NotificationBell
+                count={unreadNotifications}
+                notificationsPath={`/org/${orgId}/notifications`}
+              />
+            </div>
           </div>
-          <div className="flex items-center gap-4">
+
+          <div className="hidden sm:flex items-center gap-3 sm:gap-4">
             <NotificationBell
               count={unreadNotifications}
               notificationsPath={`/org/${orgId}/notifications`}
             />
             <ProfileCard />
           </div>
+
+          <div className="flex sm:hidden items-center w-full justify-between mt-2">
+            <div className="block sm:hidden">
+              <ContextSwitcher />
+            </div>
+            <ProfileCard />
+          </div>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto p-4 md:p-8 pb-20 md:pb-8">
+      <main className="max-w-7xl mx-auto p-3 sm:p-4 md:p-8 pb-24 md:pb-8 w-full">
         {/* Organization Info Card */}
         <div className="bg-soft-sage border-2 md:border-4 border-deep-moss p-4 md:p-6 shadow-brutal mb-8">
           <div className="flex flex-col md:flex-row justify-between gap-4">
@@ -502,7 +522,7 @@ export default function OrganizationDashboardPage() {
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-deep-moss">
               Organization Dashboard
             </h2>
-            <div className="flex flex-wrap gap-2 w-full sm:w-auto overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0">
+            <div className="flex flex-wrap gap-2 w-full sm:w-auto overflow-x-auto pb-2 -mx-2 px-2 sm:mx-0 sm:px-0">
               <button
                 onClick={() => setActiveTab('dashboard')}
                 className={`px-3 sm:px-4 py-2 font-bold transition-all whitespace-nowrap text-sm sm:text-base ${
@@ -549,8 +569,8 @@ export default function OrganizationDashboardPage() {
           {documents.length > 0 ? (
             <>
               {/* Desktop/Tablet View */}
-              <div className="hidden sm:block overflow-x-auto -mx-4 md:mx-0 px-4 md:px-0">
-                <table className="w-full border-collapse text-sm md:text-base">
+              <div className="hidden sm:block overflow-x-auto -mx-4 md:mx-0 px-4 md:px-0 w-full">
+                <table className="w-full border-collapse text-sm md:text-base table-auto">
                   <thead>
                     <tr className="bg-forest-green text-ivory">
                       <th className="p-2 text-left">Document Name</th>

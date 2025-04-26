@@ -321,13 +321,16 @@ export const DocumentUploadDialog = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4">
-      <div className="bg-ivory border-4 border-deep-moss p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-2xl font-bold text-deep-moss">
+    <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-2 xs:p-3 sm:p-4">
+      <div className="bg-ivory border-2 xs:border-3 sm:border-4 border-deep-moss p-3 xs:p-4 sm:p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
+        <div className="flex justify-between items-center mb-3 xs:mb-4">
+          <h2 className="text-lg xs:text-xl sm:text-2xl font-bold text-deep-moss">
             {documentToReupload ? (
               <span className="flex items-center">
-                <RefreshCw size={20} className="mr-2" />
+                <RefreshCw
+                  size={16}
+                  className="xs:w-5 xs:h-5 sm:w-6 sm:h-6 mr-1 xs:mr-2"
+                />
                 Re-upload Document
               </span>
             ) : (
@@ -339,35 +342,37 @@ export const DocumentUploadDialog = ({
             className="p-1 hover:bg-soft-sage rounded-full"
             disabled={isUploading}
           >
-            <X size={24} />
+            <X size={20} className="xs:w-5 xs:h-5 sm:w-6 sm:h-6" />
           </button>
         </div>
 
         {error && (
-          <div className="bg-burnt-sienna bg-opacity-20 p-4 mb-4 border-2 border-deep-moss flex items-start">
+          <div className="bg-burnt-sienna bg-opacity-20 p-3 xs:p-4 mb-3 xs:mb-4 border-2 border-deep-moss flex items-start">
             <AlertCircle
-              className="text-burnt-sienna mr-2 flex-shrink-0 mt-1"
-              size={18}
+              className="text-burnt-sienna mr-2 flex-shrink-0 mt-0.5 xs:mt-1 xs:w-4 xs:h-4 sm:w-5 sm:h-5"
+              size={16}
+              width="16"
+              height="16"
             />
-            <p className="text-deep-moss">{error}</p>
+            <p className="text-deep-moss text-xs xs:text-sm">{error}</p>
           </div>
         )}
 
         {documentToReupload && documentToReupload?.status === 'Rejected' && (
-          <div className="bg-soft-sage bg-opacity-50 p-4 mb-4 border-2 border-deep-moss">
-            <h3 className="font-bold text-deep-moss mb-2">
+          <div className="bg-soft-sage bg-opacity-50 p-3 xs:p-4 mb-3 xs:mb-4 border-2 border-deep-moss">
+            <h3 className="font-bold text-deep-moss mb-1 xs:mb-2 text-sm xs:text-base">
               Re-uploading Rejected Document
             </h3>
-            <p className="text-deep-moss text-sm mb-2">
+            <p className="text-deep-moss text-xs xs:text-sm mb-1 xs:mb-2">
               Your document was rejected. Please make the necessary corrections
               before re-uploading.
             </p>
             {documentToReupload?.rejectionReason && (
-              <div className="mt-2 p-2 bg-ivory border border-deep-moss">
-                <p className="text-sm font-medium text-deep-moss">
+              <div className="mt-1 xs:mt-2 p-1.5 xs:p-2 bg-ivory border border-deep-moss">
+                <p className="text-xs xs:text-sm font-medium text-deep-moss">
                   Rejection reason:
                 </p>
-                <p className="text-sm text-deep-moss">
+                <p className="text-xs xs:text-sm text-deep-moss">
                   {documentToReupload?.rejectionReason}
                 </p>
               </div>
@@ -375,11 +380,11 @@ export const DocumentUploadDialog = ({
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-3 xs:space-y-4">
           <div>
             <label
               htmlFor="documentName"
-              className="block font-bold mb-1 text-deep-moss"
+              className="block font-bold mb-1 text-deep-moss text-sm xs:text-base"
             >
               Document Name *
             </label>
@@ -388,7 +393,7 @@ export const DocumentUploadDialog = ({
               id="documentName"
               value={documentName}
               onChange={(e) => setDocumentName(e.target.value)}
-              className="w-full p-2 border-2 border-deep-moss focus:outline-none focus:border-forest-green"
+              className="w-full p-1.5 xs:p-2 border-2 border-deep-moss focus:outline-none focus:border-forest-green text-sm xs:text-base"
               disabled={isUploading}
               required
             />
@@ -397,7 +402,7 @@ export const DocumentUploadDialog = ({
           <div>
             <label
               htmlFor="documentType"
-              className="block font-bold mb-1 text-deep-moss"
+              className="block font-bold mb-1 text-deep-moss text-sm xs:text-base"
             >
               Document Type *
             </label>
@@ -405,7 +410,7 @@ export const DocumentUploadDialog = ({
               id="documentType"
               value={documentType}
               onChange={(e) => setDocumentType(e.target.value)}
-              className="w-full p-2 border-2 border-deep-moss focus:outline-none focus:border-forest-green"
+              className="w-full p-1.5 xs:p-2 border-2 border-deep-moss focus:outline-none focus:border-forest-green text-sm xs:text-base"
               disabled={isUploading}
               required
             >
@@ -424,19 +429,21 @@ export const DocumentUploadDialog = ({
             <div className="flex justify-between items-center mb-1">
               <label
                 htmlFor="verifyingOrg"
-                className="block font-bold text-deep-moss"
+                className="block font-bold text-deep-moss text-sm xs:text-base"
               >
                 Verifying Organization *
               </label>
               <button
                 type="button"
                 onClick={handleRefreshOrgs}
-                className="text-deep-moss hover:text-forest-green flex items-center text-sm"
+                className="text-deep-moss hover:text-forest-green flex items-center text-xs xs:text-sm"
                 disabled={isUploading || isLoadingOrgs}
               >
                 <RefreshCw
-                  size={14}
-                  className={`mr-1 ${isLoadingOrgs ? 'animate-spin' : ''}`}
+                  size={12}
+                  className={`mr-0.5 xs:mr-1 xs:w-3.5 xs:h-3.5 ${
+                    isLoadingOrgs ? 'animate-spin' : ''
+                  }`}
                 />
                 {isLoadingOrgs ? 'Refreshing...' : 'Refresh List'}
               </button>
@@ -456,7 +463,7 @@ export const DocumentUploadDialog = ({
                     hasSetInitialOrgRef.current = true;
                   }
                 }}
-                className={`w-full p-2 border-2 ${
+                className={`w-full p-1.5 xs:p-2 border-2 text-sm xs:text-base ${
                   orgLoadError ? 'border-burnt-sienna' : 'border-deep-moss'
                 } focus:outline-none focus:border-forest-green`}
                 disabled={isUploading || isLoadingOrgs}
@@ -483,15 +490,15 @@ export const DocumentUploadDialog = ({
               </select>
               {isLoadingOrgs && (
                 <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
-                  <div className="w-4 h-4 border-2 border-forest-green border-t-transparent rounded-full animate-spin"></div>
+                  <div className="w-3 h-3 xs:w-4 xs:h-4 border-2 border-forest-green border-t-transparent rounded-full animate-spin"></div>
                 </div>
               )}
             </div>
-            <div className="flex justify-between items-start mt-1">
-              <p className="text-sm text-deep-moss">
+            <div className="flex flex-col xs:flex-row justify-between items-start mt-1">
+              <p className="text-xs xs:text-sm text-deep-moss mb-1 xs:mb-0">
                 Only verified organizations (✓) can verify your documents.
               </p>
-              <div className="text-sm">
+              <div className="text-xs xs:text-sm">
                 {isLoadingOrgs ? (
                   <span className="text-amber-600">Loading...</span>
                 ) : orgLoadError ? (
@@ -510,11 +517,11 @@ export const DocumentUploadDialog = ({
           <div>
             <label
               htmlFor="documentFile"
-              className="block font-bold mb-1 text-deep-moss"
+              className="block font-bold mb-1 text-deep-moss text-sm xs:text-base"
             >
               Document File *
             </label>
-            <div className="border-2 border-dashed border-deep-moss p-4 text-center">
+            <div className="border-2 border-dashed border-deep-moss p-2 xs:p-3 sm:p-4 text-center">
               <input
                 type="file"
                 id="documentFile"
@@ -525,23 +532,29 @@ export const DocumentUploadDialog = ({
               />
               <label
                 htmlFor="documentFile"
-                className="cursor-pointer block p-4 hover:bg-soft-sage transition-colors"
+                className="cursor-pointer block p-2 xs:p-3 sm:p-4 hover:bg-soft-sage transition-colors"
               >
                 {selectedFile ? (
                   <div className="text-deep-moss">
-                    <p className="font-bold">{selectedFile.name}</p>
-                    <p className="text-sm">
+                    <p className="font-bold text-sm xs:text-base">
+                      {selectedFile.name}
+                    </p>
+                    <p className="text-xs xs:text-sm">
                       {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
                     </p>
                   </div>
                 ) : (
                   <div className="text-deep-moss">
-                    <Upload className="mx-auto mb-2" size={24} />
-                    <p>Click to select a file or drag and drop</p>
-                    <p className="text-sm mt-1">
+                    <Upload className="mx-auto mb-1 xs:mb-2" size={20} />
+                    <p className="text-sm xs:text-base">
+                      Click to select a file or drag and drop
+                    </p>
+                    <p className="text-xs xs:text-sm mt-0.5 xs:mt-1">
                       Supported formats: PDF, JPG, PNG
                     </p>
-                    <p className="text-sm mt-1">Max size: 10MB</p>
+                    <p className="text-xs xs:text-sm mt-0.5 xs:mt-1">
+                      Max size: 10MB
+                    </p>
                   </div>
                 )}
               </label>
@@ -549,17 +562,17 @@ export const DocumentUploadDialog = ({
           </div>
 
           {isUploading && (
-            <div className="mt-4">
-              <p className="text-deep-moss mb-1 font-bold">
+            <div className="mt-3 xs:mt-4">
+              <p className="text-deep-moss mb-1 font-bold text-sm xs:text-base">
                 Uploading: {uploadProgress}%
               </p>
-              <div className="w-full bg-soft-sage h-4 border-2 border-deep-moss relative overflow-hidden">
+              <div className="w-full bg-soft-sage h-3 xs:h-4 border-2 border-deep-moss relative overflow-hidden">
                 <div
                   className="bg-forest-green h-full transition-all duration-300 ease-out flex items-center justify-center"
                   style={{ width: `${uploadProgress}%` }}
                 >
                   {uploadProgress > 30 && (
-                    <span className="text-xs text-ivory font-bold">
+                    <span className="text-[10px] xs:text-xs text-ivory font-bold">
                       {uploadProgress}%
                     </span>
                   )}
@@ -574,15 +587,15 @@ export const DocumentUploadDialog = ({
                   >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
-                      width="12"
-                      height="12"
+                      width="10"
+                      height="10"
                       viewBox="0 0 24 24"
                       fill="none"
                       stroke="currentColor"
                       strokeWidth="2"
                       strokeLinecap="round"
                       strokeLinejoin="round"
-                      className="text-ivory"
+                      className="text-ivory xs:w-3 xs:h-3"
                     >
                       <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
                       <polyline points="14 2 14 8 20 8" />
@@ -590,7 +603,7 @@ export const DocumentUploadDialog = ({
                   </div>
                 )}
               </div>
-              <p className="text-sm text-deep-moss mt-2 font-medium">
+              <p className="text-xs xs:text-sm text-deep-moss mt-1 xs:mt-2 font-medium">
                 {uploadProgress < 30
                   ? 'Starting upload...'
                   : uploadProgress < 90
@@ -599,25 +612,25 @@ export const DocumentUploadDialog = ({
                   ? 'Almost there...'
                   : 'Processing document and creating blockchain record...'}
               </p>
-              <p className="text-xs text-deep-moss mt-1 italic">
+              <p className="text-[10px] xs:text-xs text-deep-moss mt-0.5 xs:mt-1 italic">
                 {uploadProgress === 100 &&
                   'This may take a moment as we securely anchor your document on the blockchain.'}
               </p>
             </div>
           )}
 
-          <div className="flex justify-end space-x-3 pt-4">
+          <div className="flex justify-end space-x-2 xs:space-x-3 pt-3 xs:pt-4">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 border-2 border-deep-moss hover:bg-soft-sage transition-colors font-bold"
+              className="px-2 xs:px-3 sm:px-4 py-1.5 xs:py-2 border-2 border-deep-moss hover:bg-soft-sage transition-colors font-bold text-xs xs:text-sm sm:text-base min-h-[36px]"
               disabled={isUploading}
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-4 py-2 bg-forest-green text-ivory border-2 border-deep-moss hover:shadow-[2px_2px_0px_0px_rgba(27,67,50,0.8)] transition-all font-bold"
+              className="px-2 xs:px-3 sm:px-4 py-1.5 xs:py-2 bg-forest-green text-ivory border-2 border-deep-moss hover:shadow-[2px_2px_0px_0px_rgba(27,67,50,0.8)] transition-all font-bold text-xs xs:text-sm sm:text-base min-h-[36px]"
               disabled={isUploading}
             >
               {isUploading ? 'Uploading...' : 'Upload Document'}

@@ -92,11 +92,11 @@ export const ProfileCard = () => {
         </div>
 
         {/* User Profile */}
-        <div className="flex items-center p-2 sm:p-3 z-10">
+        <div className="flex items-center p-1.5 xs:p-2 sm:p-3 z-10">
           <div className="flex flex-col">
             {user?.userType === 'admin' && (
               <motion.span
-                className="bg-gradient-to-r from-red-500 to-pink-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md mb-1"
+                className="bg-gradient-to-r from-red-500 to-pink-500 text-white text-[8px] xs:text-[10px] font-bold px-1 xs:px-1.5 py-0.5 rounded-md mb-0.5 xs:mb-1"
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ delay: 0.2 }}
@@ -106,7 +106,7 @@ export const ProfileCard = () => {
               </motion.span>
             )}
             <span
-              className="font-bold text-white text-xs sm:text-sm tracking-tight truncate max-w-[100px] sm:max-w-[120px] md:max-w-[140px]"
+              className="font-bold text-white text-[10px] xs:text-xs sm:text-sm tracking-tight truncate max-w-[80px] xs:max-w-[100px] sm:max-w-[120px] md:max-w-[140px]"
               style={{ textShadow: '0 0 5px rgba(255, 255, 255, 0.3)' }}
             >
               {user?.userType === 'organization'
@@ -114,9 +114,9 @@ export const ProfileCard = () => {
                 : user?.name || 'User'}
             </span>
             {account && (
-              <div className="flex items-center mt-1">
+              <div className="flex items-center mt-0.5 xs:mt-1">
                 <motion.div
-                  className="flex items-center rounded-md px-1.5 py-0.5"
+                  className="flex items-center rounded-md px-1 xs:px-1.5 py-0.5"
                   style={{
                     background:
                       'linear-gradient(135deg, rgba(79, 70, 229, 0.2) 0%, rgba(45, 212, 191, 0.2) 100%)',
@@ -127,9 +127,9 @@ export const ProfileCard = () => {
                   whileHover={{ scale: 1.05 }}
                 >
                   {/* Blockchain connection indicator */}
-                  <div className="relative mr-1.5">
+                  <div className="relative mr-1 xs:mr-1.5">
                     <motion.div
-                      className="w-2 h-2 rounded-full bg-green-400"
+                      className="w-1.5 h-1.5 xs:w-2 xs:h-2 rounded-full bg-green-400"
                       animate={{
                         boxShadow: [
                           '0 0 0px rgba(74, 222, 128, 0)',
@@ -140,18 +140,18 @@ export const ProfileCard = () => {
                       transition={{ duration: 3, repeat: Infinity }}
                     />
                     <motion.div
-                      className="absolute inset-0 w-2 h-2 rounded-full bg-green-400 opacity-40"
+                      className="absolute inset-0 w-1.5 h-1.5 xs:w-2 xs:h-2 rounded-full bg-green-400 opacity-40"
                       animate={{ scale: [1, 1.4, 1] }}
                       transition={{ duration: 3, repeat: Infinity }}
                     />
                   </div>
 
-                  {/* Blockchain network info */}
-                  <div className="flex items-center">
+                  {/* Blockchain network info - hide on very small screens */}
+                  <div className="hidden xs:flex items-center">
                     {account ? (
                       <div className="flex items-center">
                         <svg
-                          className="w-2.5 h-2.5 mr-1 text-indigo-200"
+                          className="w-2 h-2 xs:w-2.5 xs:h-2.5 mr-0.5 xs:mr-1 text-indigo-200"
                           viewBox="0 0 24 24"
                           fill="none"
                           xmlns="http://www.w3.org/2000/svg"
@@ -168,26 +168,26 @@ export const ProfileCard = () => {
                             strokeLinecap="round"
                           />
                         </svg>
-                        <span className="text-[10px] text-indigo-200 font-mono font-medium">
+                        <span className="text-[8px] xs:text-[10px] text-indigo-200 font-mono font-medium">
                           {(account as any).chainId === 11155111
-                            ? 'Sepolia Testnet'
+                            ? 'Sepolia'
                             : (account as any).chainId === 1
-                            ? 'Ethereum Mainnet'
+                            ? 'Ethereum'
                             : (account as any).chainId === 137
                             ? 'Polygon'
                             : (account as any).chainId === 56
-                            ? 'BNB Chain'
+                            ? 'BNB'
                             : (account as any).chainId === 10
                             ? 'Optimism'
                             : (account as any).chainId === 42161
                             ? 'Arbitrum'
                             : (account as any).chainId === 8453
                             ? 'Base'
-                            : 'Blockchain Connected'}
+                            : 'Connected'}
                         </span>
                       </div>
                     ) : (
-                      <span className="text-[10px] text-indigo-200 font-mono">
+                      <span className="text-[8px] xs:text-[10px] text-indigo-200 font-mono">
                         Connecting...
                       </span>
                     )}
@@ -195,7 +195,7 @@ export const ProfileCard = () => {
                     {/* Connected indicator */}
                     {account && (
                       <motion.div
-                        className="ml-1.5 w-3.5 h-3.5 bg-green-400 rounded-full flex items-center justify-center"
+                        className="ml-1 xs:ml-1.5 w-3 h-3 xs:w-3.5 xs:h-3.5 bg-green-400 rounded-full flex items-center justify-center"
                         initial={{ opacity: 0.8 }}
                         animate={{
                           opacity: [0.8, 0.9, 0.8],
@@ -211,7 +211,7 @@ export const ProfileCard = () => {
                           viewBox="0 0 24 24"
                           fill="none"
                           xmlns="http://www.w3.org/2000/svg"
-                          className="w-2 h-2 text-white"
+                          className="w-1.5 h-1.5 xs:w-2 xs:h-2 text-white"
                         >
                           <path
                             d="M7.5 12L10.5 15L16.5 9"
@@ -231,9 +231,9 @@ export const ProfileCard = () => {
         </div>
 
         {/* Connect Button */}
-        <div className="h-full flex items-center ml-2 z-10">
+        <div className="h-full flex items-center ml-1 xs:ml-2 z-10">
           {loading || authLoading ? (
-            <div className="flex items-center justify-center px-2 sm:px-3 py-1.5 text-white">
+            <div className="flex items-center justify-center px-1.5 xs:px-2 sm:px-3 py-1 xs:py-1.5 text-white">
               <NeubrutalistLoading
                 message="Processing"
                 subMessage="Please wait..."
@@ -275,7 +275,7 @@ export const ProfileCard = () => {
                 connectButton={{
                   label: 'Connect',
                   className:
-                    'text-white font-bold py-2 px-5 text-sm !rounded-none',
+                    'text-white font-bold py-1 xs:py-1.5 sm:py-2 px-2 xs:px-3 sm:px-5 text-[10px] xs:text-xs sm:text-sm !rounded-none',
                 }}
                 onConnect={async () => {
                   // When wallet is connected, we need to check if the account is updated

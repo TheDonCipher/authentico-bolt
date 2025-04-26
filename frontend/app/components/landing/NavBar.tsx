@@ -8,11 +8,11 @@ interface INavbar {
 
 export const NavBar = ({ toogleShow, openForm }: INavbar) => {
   return (
-    <nav className="fixed top-0 z-40 w-full bg-ivory px-3 sm:px-4 py-2 sm:py-3 md:py-4 border-b-2 sm:border-b-4 border-deep-moss shadow-md">
+    <nav className="fixed top-0 z-40 w-full bg-ivory px-2 xs:px-3 sm:px-4 py-2 sm:py-3 md:py-4 border-b-2 sm:border-b-4 border-deep-moss shadow-md">
       <div className="max-w-7xl mx-auto flex justify-between items-center">
         {/* Logo */}
         <div className="flex-shrink-0">
-          <button className="font-black text-lg sm:text-xl md:text-2xl bg-soft-sage px-2 py-1 sm:px-3 md:px-4 sm:py-1 md:py-2 border-2 md:border-4 border-deep-moss shadow-brutal-sm sm:shadow-[4px_4px_0px_0px_rgba(27,67,50,0.8)] hover:translate-y-[-2px] transition-all">
+          <button className="font-black text-base xs:text-lg sm:text-xl md:text-2xl bg-soft-sage px-2 py-1 xs:px-2 sm:px-3 md:px-4 xs:py-1 sm:py-1 md:py-2 border-2 md:border-4 border-deep-moss shadow-brutal-sm sm:shadow-[4px_4px_0px_0px_rgba(27,67,50,0.8)] hover:translate-y-[-2px] transition-all">
             AUTHENTICO
           </button>
         </div>
@@ -55,7 +55,7 @@ export const NavBar = ({ toogleShow, openForm }: INavbar) => {
         <div className="flex items-center md:hidden">
           <button
             onClick={toogleShow}
-            className="mr-3 bg-forest-green text-ivory px-2 sm:px-3 py-1 text-sm font-bold border-2 border-deep-moss shadow-brutal-sm sm:shadow-[3px_3px_0px_0px_rgba(27,67,50,0.8)] hover:translate-y-[-2px] transition-all touch-target"
+            className="mr-2 xs:mr-3 bg-forest-green text-ivory px-2 xs:px-2 sm:px-3 py-1 text-xs xs:text-sm font-bold border-2 border-deep-moss shadow-brutal-sm sm:shadow-[3px_3px_0px_0px_rgba(27,67,50,0.8)] hover:translate-y-[-2px] transition-all touch-target min-h-[36px] min-w-[70px] flex items-center justify-center"
           >
             Connect
           </button>

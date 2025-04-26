@@ -37,7 +37,9 @@
     "deploy:build": "powershell -File scripts/deploy.ps1 -Environment prod -Build",
     "install:postcss-deps": "node scripts/install-postcss-deps.js",
     "verify:deployment": "node scripts/verify-deployment.js",
-    "prepare:deploy": "npm run validate:env:prod && npm run install:postcss-deps && npm run verify:deployment && npm run build"
+    "verify:deployment:config": "node scripts/verify-deployment-config.js",
+    "test:verify-links": "node scripts/test-verify-links.js",
+    "prepare:deploy": "npm run validate:env:prod && npm run install:postcss-deps && npm run verify:deployment && npm run verify:deployment:config && npm run build"
   },
   "devDependencies": {
     "@radix-ui/react-toast": "^1.2.11",

@@ -43,9 +43,16 @@ const VerifyPage = () => {
     const fetchDocumentVerification = async () => {
       try {
         setLoading(true);
+        console.log(
+          `[Verify Page] Fetching verification for document ID: ${docId}`
+        );
 
-        // Call the public verification endpoint
-        const response = await axios.get(`/api/verify/${docId}`);
+        // Call the public verification endpoint with timeout
+        const response = await axios.get(`/api/verify/${docId}`, {
+          timeout: 20000, // 20 second timeout
+        });
+
+        console.log('[Verify Page] Verification response:', response.data);
 
         // Format dates
         const data = response.data;
@@ -58,8 +65,32 @@ const VerifyPage = () => {
 
         setError(null);
       } catch (error: any) {
-        console.error('Error fetching document verification:', error);
-        setError(error.response?.data?.error || 'Failed to verify document');
+        console.error(
+          '[Verify Page] Error fetching document verification:',
+          error
+        );
+
+        // Log more detailed error information
+        if (error.response) {
+          console.error(
+            '[Verify Page] Error response status:',
+            error.response.status
+          );
+          console.error(
+            '[Verify Page] Error response data:',
+            error.response.data
+          );
+        } else if (error.request) {
+          console.error('[Verify Page] No response received:', error.request);
+        } else {
+          console.error('[Verify Page] Request setup error:', error.message);
+        }
+
+        // Set a more descriptive error message
+        const errorMessage =
+          error.response?.data?.error || 'Failed to verify document';
+        const errorDetails = error.response?.data?.details || error.message;
+        setError(`${errorMessage}${errorDetails ? `: ${errorDetails}` : ''}`);
       } finally {
         setLoading(false);
       }
@@ -156,15 +187,40 @@ const VerifyPage = () => {
   if (error) {
     return (
       <div className="min-h-screen bg-[#F5F7F2] flex items-center justify-center">
-        <div className="bg-white border-4 border-[#556B2F] p-8 shadow-brutal text-center">
-          <h1 className="text-2xl font-bold text-red-600 mb-4">Error</h1>
-          <p className="mb-6">{error}</p>
-          <Link
-            href="/"
-            className="bg-[#698B69] text-white px-4 py-2 font-bold border-2 border-[#556B2F]"
-          >
-            Return Home
-          </Link>
+        <div className="bg-white border-4 border-[#556B2F] p-8 shadow-brutal text-center max-w-2xl mx-4">
+          <h1 className="text-2xl font-bold text-red-600 mb-4">
+            Verification Error
+          </h1>
+          <p className="mb-6 whitespace-pre-wrap">{error}</p>
+          <div className="mb-6 text-left bg-gray-100 p-4 rounded border border-gray-300 text-sm">
+            <p className="font-semibold mb-2">Troubleshooting:</p>
+            <ul className="list-disc pl-5 space-y-1">
+              <li>Check if the document ID is correct</li>
+              <li>
+                The document may not have been anchored on the blockchain yet
+              </li>
+              <li>
+                The document may have been deleted or is no longer available
+              </li>
+              <li>
+                There might be a temporary issue with the verification service
+              </li>
+            </ul>
+          </div>
+          <div className="flex flex-col sm:flex-row justify-center gap-4">
+            <Link
+              href="/"
+              className="bg-[#698B69] text-white px-4 py-2 font-bold border-2 border-[#556B2F] hover:bg-[#556B2F] transition-colors"
+            >
+              Return Home
+            </Link>
+            <button
+              onClick={() => window.location.reload()}
+              className="bg-white text-[#556B2F] px-4 py-2 font-bold border-2 border-[#556B2F] hover:bg-gray-100 transition-colors"
+            >
+              Try Again
+            </button>
+          </div>
         </div>
       </div>
     );

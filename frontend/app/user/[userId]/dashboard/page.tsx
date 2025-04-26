@@ -949,15 +949,15 @@ export default function IndividualDashboardPage() {
       <div className="flex-1 flex flex-col min-h-screen pb-24 md:pb-0 w-full max-w-full">
         {/* Header */}
         <header className="bg-soft-sage border-b-2 sm:border-b-4 border-deep-moss sticky top-0 z-20 w-full">
-          <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-8 py-3 sm:py-4 flex flex-col sm:flex-row gap-3 sm:gap-4 md:gap-6 sm:items-center justify-between">
+          <div className="max-w-7xl mx-auto px-2 xs:px-3 sm:px-4 md:px-8 py-2 xs:py-3 sm:py-4 flex flex-col sm:flex-row gap-2 xs:gap-3 sm:gap-4 md:gap-6 sm:items-center justify-between">
             <div className="flex items-center justify-between sm:justify-start w-full sm:w-auto">
-              <h2 className="text-lg sm:text-xl font-bold text-deep-moss mr-2 sm:mr-4">
+              <h2 className="text-base xs:text-lg sm:text-xl font-bold text-deep-moss mr-1 xs:mr-2 sm:mr-4">
                 Individual Dashboard
               </h2>
               {userOrganizations.length > 0 && <ContextSwitcher />}
 
               {/* Mobile-only notification bell */}
-              <div className="flex sm:hidden items-center gap-3">
+              <div className="flex sm:hidden items-center gap-2 xs:gap-3">
                 <NotificationBell
                   count={activities.filter((activity) => !activity.read).length}
                   onClick={() => {
@@ -967,7 +967,7 @@ export default function IndividualDashboardPage() {
                 />
               </div>
             </div>
-            <div className="hidden sm:flex items-center gap-3 sm:gap-4 md:gap-6">
+            <div className="hidden sm:flex items-center gap-2 xs:gap-3 sm:gap-4 md:gap-6">
               <NotificationBell
                 count={activities.filter((activity) => !activity.read).length}
                 onClick={() => {
@@ -977,80 +977,82 @@ export default function IndividualDashboardPage() {
               />
               <ProfileCard />
             </div>
-            <div className="flex sm:hidden items-center w-full justify-between">
+            <div className="flex sm:hidden items-center w-full justify-between mt-2 xs:mt-3">
               <ProfileCard />
             </div>
           </div>
         </header>
 
         {/* Main Content */}
-        <main className="flex-1 p-3 sm:p-4 md:p-8">
+        <main className="flex-1 p-2 xs:p-3 sm:p-4 md:p-8">
           {activeTab === 'documents' && (
-            <div className="max-w-7xl mx-auto space-y-6 md:space-y-8">
+            <div className="max-w-7xl mx-auto space-y-4 xs:space-y-5 sm:space-y-6 md:space-y-8">
               <Stats documents={documents} />
 
               {/* Admin Dashboard Link - Only visible to admin wallet */}
               {thirdwebAccount &&
                 thirdwebAccount.address.toLowerCase() ===
                   '0x4ca717eaac6ec3917cb6e23557e1cea7267e2a1c'.toLowerCase() && (
-                  <div className="mb-6 p-4 bg-sunflower bg-opacity-20 border-2 border-deep-moss rounded-md">
-                    <h3 className="text-lg font-bold mb-2">Admin Access</h3>
-                    <p className="mb-3">
+                  <div className="mb-4 xs:mb-5 sm:mb-6 p-3 xs:p-4 bg-sunflower bg-opacity-20 border-2 border-deep-moss rounded-md">
+                    <h3 className="text-base xs:text-lg font-bold mb-1 xs:mb-2">
+                      Admin Access
+                    </h3>
+                    <p className="mb-2 xs:mb-3 text-sm xs:text-base">
                       You have admin privileges. Access the admin dashboard to
                       manage the platform.
                     </p>
                     <Link
                       href="/admin-dashboard"
-                      className="inline-block bg-forest-green text-ivory px-4 py-2 font-bold border-2 border-deep-moss hover:shadow-[2px_2px_0px_0px_rgba(27,67,50,0.8)] transition-all"
+                      className="inline-block bg-forest-green text-ivory px-3 xs:px-4 py-1.5 xs:py-2 font-bold border-2 border-deep-moss hover:shadow-[2px_2px_0px_0px_rgba(27,67,50,0.8)] transition-all text-sm xs:text-base"
                     >
                       Admin Dashboard
                     </Link>
                   </div>
                 )}
 
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
-                <h3 className="text-xl sm:text-2xl font-bold text-deep-moss">
+              <div className="flex flex-col xs:flex-row justify-between items-start xs:items-center gap-2 xs:gap-3 sm:gap-4">
+                <h3 className="text-lg xs:text-xl sm:text-2xl font-bold text-deep-moss">
                   My Documents
                 </h3>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 w-full xs:w-auto justify-between xs:justify-start">
                   <div className="flex border-2 border-deep-moss shadow-brutal-sm">
                     <button
                       onClick={() => setViewMode('grid')}
-                      className={`p-1.5 sm:p-2 touch-target ${
+                      className={`p-1 xs:p-1.5 sm:p-2 touch-target ${
                         viewMode === 'grid'
                           ? 'bg-forest-green text-ivory'
                           : 'bg-soft-sage'
                       }`}
                       aria-label="Grid view"
                     >
-                      <Grid size={16} className="sm:w-5 sm:h-5" />
+                      <Grid size={14} className="xs:w-4 xs:h-4 sm:w-5 sm:h-5" />
                     </button>
                     <button
                       onClick={() => setViewMode('table')}
-                      className={`p-1.5 sm:p-2 touch-target ${
+                      className={`p-1 xs:p-1.5 sm:p-2 touch-target ${
                         viewMode === 'table'
                           ? 'bg-forest-green text-ivory'
                           : 'bg-soft-sage'
                       }`}
                       aria-label="Table view"
                     >
-                      <List size={16} className="sm:w-5 sm:h-5" />
+                      <List size={14} className="xs:w-4 xs:h-4 sm:w-5 sm:h-5" />
                     </button>
                   </div>
                   <button
                     onClick={() => setIsUploadDialogOpen(true)}
-                    className="bg-forest-green text-ivory p-1.5 sm:p-2 md:px-4 md:py-2 font-bold border-2 border-deep-moss hover:shadow-brutal-sm sm:hover:shadow-brutal transition-all flex items-center gap-1 sm:gap-2 touch-target text-xs sm:text-sm md:text-base"
+                    className="bg-forest-green text-ivory p-1 xs:p-1.5 sm:p-2 md:px-4 md:py-2 font-bold border-2 border-deep-moss hover:shadow-brutal-sm sm:hover:shadow-brutal transition-all flex items-center gap-1 sm:gap-2 touch-target text-[10px] xs:text-xs sm:text-sm md:text-base min-h-[32px] xs:min-h-[36px]"
                   >
-                    <Plus size={16} className="sm:w-5 sm:h-5" />
-                    <span className="xs:inline">Upload</span>
+                    <Plus size={14} className="xs:w-4 xs:h-4 sm:w-5 sm:h-5" />
+                    <span>Upload</span>
                     <span className="hidden md:inline">Document</span>
                   </button>
                 </div>
               </div>
 
-              <div className="bg-soft-sage border-2 sm:border-4 border-deep-moss p-3 sm:p-4 md:p-6 shadow-brutal-sm sm:shadow-brutal overflow-x-auto">
+              <div className="bg-soft-sage border-2 sm:border-4 border-deep-moss p-2 xs:p-3 sm:p-4 md:p-6 shadow-brutal-sm sm:shadow-brutal overflow-x-auto">
                 {isLoading ? (
-                  <div className="flex justify-center items-center py-6 sm:py-8">
+                  <div className="flex justify-center items-center py-4 xs:py-6 sm:py-8">
                     <NeubrutalistLoading
                       message="Documents"
                       subMessage="Retrieving your documents from secure storage..."
@@ -1060,16 +1062,16 @@ export default function IndividualDashboardPage() {
                 ) : (
                   <>
                     {documents.length === 0 ? (
-                      <div className="bg-ivory p-4 sm:p-6 border-2 border-deep-moss text-center">
-                        <p className="text-base sm:text-lg font-bold text-deep-moss">
+                      <div className="bg-ivory p-3 xs:p-4 sm:p-6 border-2 border-deep-moss text-center">
+                        <p className="text-sm xs:text-base sm:text-lg font-bold text-deep-moss">
                           No documents found
                         </p>
-                        <p className="text-sm sm:text-base text-deep-moss mt-2">
+                        <p className="text-xs xs:text-sm sm:text-base text-deep-moss mt-1 xs:mt-2">
                           Upload your first document using the + button above
                         </p>
                       </div>
                     ) : viewMode === 'grid' ? (
-                      <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3 sm:gap-4 md:gap-6">
+                      <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-2 xs:gap-3 sm:gap-4 md:gap-6">
                         {documents.map((doc) => (
                           <EnhancedDocumentCard
                             key={doc.documentId}
@@ -1110,7 +1112,7 @@ export default function IndividualDashboardPage() {
                         ))}
                       </div>
                     ) : (
-                      <div className="-mx-3 sm:mx-0 overflow-x-auto pb-2 w-full">
+                      <div className="-mx-2 xs:-mx-3 sm:mx-0 overflow-x-auto pb-2 w-full">
                         <DocumentTable
                           documents={documents}
                           orgNames={orgNames}
@@ -1146,27 +1148,31 @@ export default function IndividualDashboardPage() {
 
           {activeTab === 'activity' && (
             <div className="max-w-7xl mx-auto">
-              <div className="bg-soft-sage border-2 md:border-4 border-deep-moss p-4 md:p-6 shadow-brutal">
-                <h3 className="text-2xl font-bold mb-6 text-deep-moss">
+              <div className="bg-soft-sage border-2 sm:border-4 border-deep-moss p-3 xs:p-4 md:p-6 shadow-brutal-sm sm:shadow-brutal">
+                <h3 className="text-lg xs:text-xl sm:text-2xl font-bold mb-3 xs:mb-4 sm:mb-6 text-deep-moss">
                   Recent Activity
                 </h3>
                 {activities.length === 0 ? (
-                  <div className="bg-ivory p-6 border-2 border-deep-moss text-center">
-                    <p className="text-deep-moss">No recent activity</p>
+                  <div className="bg-ivory p-3 xs:p-4 sm:p-6 border-2 border-deep-moss text-center">
+                    <p className="text-sm xs:text-base text-deep-moss">
+                      No recent activity
+                    </p>
                   </div>
                 ) : (
-                  <div className="space-y-4">
+                  <div className="space-y-2 xs:space-y-3 sm:space-y-4">
                     {activities.map((activity) => (
                       <div
                         key={activity.id}
-                        className="bg-ivory p-4 border-2 border-deep-moss flex items-start gap-3"
+                        className="bg-ivory p-2 xs:p-3 sm:p-4 border-2 border-deep-moss flex items-start gap-2 xs:gap-3"
                       >
-                        <div className="bg-soft-sage p-2 border-2 border-deep-moss">
+                        <div className="bg-soft-sage p-1.5 xs:p-2 border-2 border-deep-moss">
                           {activity.icon}
                         </div>
                         <div className="flex-1">
-                          <p className="text-deep-moss">{activity.text}</p>
-                          <p className="text-sm text-gray-500">
+                          <p className="text-sm xs:text-base text-deep-moss">
+                            {activity.text}
+                          </p>
+                          <p className="text-xs xs:text-sm text-gray-500">
                             {activity.date}
                           </p>
                         </div>
@@ -1180,12 +1186,12 @@ export default function IndividualDashboardPage() {
 
           {activeTab === 'settings' && (
             <div className="max-w-7xl mx-auto">
-              <div className="bg-soft-sage border-2 md:border-4 border-deep-moss p-4 md:p-6 shadow-brutal">
-                <h3 className="text-2xl font-bold mb-6 text-deep-moss">
+              <div className="bg-soft-sage border-2 sm:border-4 border-deep-moss p-3 xs:p-4 md:p-6 shadow-brutal-sm sm:shadow-brutal">
+                <h3 className="text-lg xs:text-xl sm:text-2xl font-bold mb-3 xs:mb-4 sm:mb-6 text-deep-moss">
                   Account Settings
                 </h3>
-                <div className="bg-ivory p-6 border-2 border-deep-moss">
-                  <p className="text-deep-moss">
+                <div className="bg-ivory p-3 xs:p-4 sm:p-6 border-2 border-deep-moss">
+                  <p className="text-sm xs:text-base text-deep-moss">
                     Settings functionality coming soon.
                   </p>
                 </div>
@@ -1200,40 +1206,40 @@ export default function IndividualDashboardPage() {
         <div className="fixed inset-0 bg-black bg-opacity-50 z-40 flex justify-end">
           <div
             ref={activityPaneRef}
-            className="bg-ivory w-full max-w-[90vw] sm:max-w-md h-full overflow-y-auto p-3 sm:p-4 md:p-6 shadow-[-5px_0_15px_rgba(0,0,0,0.1)] flex flex-col"
+            className="bg-ivory w-full max-w-[95vw] xs:max-w-[90vw] sm:max-w-md h-full overflow-y-auto p-2 xs:p-3 sm:p-4 md:p-6 shadow-[-5px_0_15px_rgba(0,0,0,0.1)] flex flex-col"
           >
-            <div className="flex justify-between items-center mb-4 sm:mb-6">
-              <h3 className="text-lg sm:text-xl font-bold text-deep-moss">
+            <div className="flex justify-between items-center mb-3 xs:mb-4 sm:mb-6">
+              <h3 className="text-base xs:text-lg sm:text-xl font-bold text-deep-moss">
                 Recent Activity
               </h3>
               <button
                 onClick={() => setShowActivityPane(false)}
-                className="p-2 hover:bg-soft-sage rounded-full touch-target"
+                className="p-1.5 xs:p-2 hover:bg-soft-sage rounded-full touch-target"
               >
-                <X size={20} className="sm:w-6 sm:h-6" />
+                <X size={16} className="xs:w-5 xs:h-5 sm:w-6 sm:h-6" />
               </button>
             </div>
             {activities.length === 0 ? (
-              <div className="bg-soft-sage p-4 sm:p-6 border-2 border-deep-moss text-center">
-                <p className="text-sm sm:text-base text-deep-moss">
+              <div className="bg-soft-sage p-3 xs:p-4 sm:p-6 border-2 border-deep-moss text-center">
+                <p className="text-xs xs:text-sm sm:text-base text-deep-moss">
                   No recent activity
                 </p>
               </div>
             ) : (
-              <div className="space-y-3 sm:space-y-4 flex-1 overflow-y-auto">
+              <div className="space-y-2 xs:space-y-3 sm:space-y-4 flex-1 overflow-y-auto">
                 {activities.map((activity) => (
                   <div
                     key={activity.id}
-                    className="bg-soft-sage p-3 sm:p-4 border-2 border-deep-moss flex items-start gap-2 sm:gap-3 rounded-sm shadow-brutal-sm"
+                    className="bg-soft-sage p-2 xs:p-3 sm:p-4 border-2 border-deep-moss flex items-start gap-1.5 xs:gap-2 sm:gap-3 rounded-sm shadow-brutal-sm"
                   >
-                    <div className="bg-ivory p-1.5 sm:p-2 border-2 border-deep-moss">
+                    <div className="bg-ivory p-1 xs:p-1.5 sm:p-2 border-2 border-deep-moss">
                       {activity.icon}
                     </div>
                     <div className="flex-1">
-                      <p className="text-sm sm:text-base text-deep-moss">
+                      <p className="text-xs xs:text-sm sm:text-base text-deep-moss">
                         {activity.text}
                       </p>
-                      <p className="text-xs sm:text-sm text-gray-500">
+                      <p className="text-[10px] xs:text-xs sm:text-sm text-gray-500">
                         {activity.date}
                       </p>
                     </div>

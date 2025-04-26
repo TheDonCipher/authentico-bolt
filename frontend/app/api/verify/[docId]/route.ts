@@ -10,16 +10,52 @@ export async function GET(
 ) {
   const { docId } = await context.params;
   try {
-    console.log(`Verifying document with ID: ${docId}`);
+    console.log(`[Verify API] Verifying document with ID: ${docId}`);
+    console.log(`[Verify API] Using API URL: ${API_URL}`);
 
-    // Forward the request to the backend
-    const response = await axios.get(`${API_URL}/verify/${docId}`);
+    // Construct the backend URL
+    const backendUrl = `${API_URL}/verify/${docId}`;
+    console.log(`[Verify API] Making request to backend: ${backendUrl}`);
 
-    console.log('Verification response:', response.data);
+    // Forward the request to the backend with timeout and additional headers
+    const response = await axios.get(backendUrl, {
+      timeout: 15000, // 15 second timeout
+      headers: {
+        'x-request-source': 'nextjs-api',
+        'x-document-id': docId,
+      },
+    });
+
+    console.log(
+      `[Verify API] Verification response status: ${response.status}`
+    );
+    console.log('[Verify API] Verification response data:', response.data);
 
     return NextResponse.json(response.data);
   } catch (error: any) {
-    console.error('Error verifying document:', error);
+    console.error('[Verify API] Error verifying document:', error);
+
+    // Log more detailed error information
+    if (error.response) {
+      // The request was made and the server responded with a status code
+      // that falls out of the range of 2xx
+      console.error(
+        '[Verify API] Error response status:',
+        error.response.status
+      );
+      console.error('[Verify API] Error response data:', error.response.data);
+      console.error(
+        '[Verify API] Error response headers:',
+        error.response.headers
+      );
+    } else if (error.request) {
+      // The request was made but no response was received
+      console.error('[Verify API] No response received:', error.request);
+    } else {
+      // Something happened in setting up the request that triggered an Error
+      console.error('[Verify API] Request setup error:', error.message);
+    }
+    console.error('[Verify API] Error config:', error.config);
 
     // Return appropriate error response
     const status = error.response?.status || 500;
@@ -27,7 +63,12 @@ export async function GET(
       error.response?.data?.error || 'Failed to verify document';
 
     return NextResponse.json(
-      { error: errorMessage, details: error.response?.data?.details },
+      {
+        error: errorMessage,
+        details: error.response?.data?.details,
+        message: error.message,
+        apiUrl: API_URL, // Include the API URL in the error response for debugging
+      },
       { status }
     );
   }

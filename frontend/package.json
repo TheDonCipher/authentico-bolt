@@ -12,6 +12,8 @@
     "test": "jest --passWithNoTests --config=jest.config.ts",
     "test:all": "jest test/lib/validation-util.test.ts test/lib/error-handler.test.ts test/lib/rate-limit.test.ts test/lib/secure-storage.test.ts test/lib/authorization-util.test.js test/lib/token-util.test.ts test/lib/api-client.test.ts test/lib/secure-api-client.test.ts test/integration test/e2e test/components test/security --config=jest.config.ts --no-coverage",
     "test:all:non-react": "jest test/lib/validation-util.test.ts test/lib/error-handler.test.ts test/lib/rate-limit.test.ts test/lib/secure-storage.test.ts test/lib/authorization-util.test.js test/lib/token-util.test.ts test/lib/api-client.test.ts test/lib/secure-api-client.test.ts test/e2e test/security/security-vulnerabilities.test.ts test/security/input-validation.test.js test/security/auth-service.test.js test/security/session-management.test.js test/security/api-client.test.js test/security/token-util.test.js test/security/authorization.test.js test/security/rate-limiting.test.js test/security/secure-storage.test.js --config=jest.config.ts --no-coverage",
+    "test:verify-links": "node ../scripts/test-verify-links.js",
+    "verify:deployment:config": "node ../scripts/verify-deployment-config.js",
     "test:coverage:utils": "jest test/lib/validation-util.test.ts test/lib/error-handler.test.ts test/lib/rate-limit.test.ts test/lib/secure-storage.test.ts test/lib/authorization-util.test.js test/lib/token-util.test.ts test/lib/api-client.test.ts test/lib/secure-api-client.test.ts --config=jest.config.ts --coverage",
     "test:coverage": "jest --coverage --config=jest.config.ts",
     "test:coverage:all": "jest test/lib test/integration test/e2e test/components test/security --coverage --config=jest.config.ts",

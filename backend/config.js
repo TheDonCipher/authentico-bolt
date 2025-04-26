@@ -1,21 +1,6 @@
-const { initializeApp } = require('firebase/app');
-const { getFirestore, collection } = require('firebase/firestore');
 const admin = require('firebase-admin');
 const fs = require('fs');
 const path = require('path');
-
-// Client SDK Configuration from environment variables
-const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
-};
-
-// Initialize Firebase client SDK
-const firebaseApp = initializeApp(firebaseConfig);
 
 // Initialize Firebase Admin SDK
 // Try to use service account file if it exists, otherwise use environment variables
@@ -53,24 +38,21 @@ if (fs.existsSync(serviceAccountPath)) {
   };
 }
 
-// Initialize Firebase Admin SDK
-admin.initializeApp(adminConfig);
+// Initialize Firebase Admin SDK if not already initialized
+if (!admin.apps.length) {
+  admin.initializeApp(adminConfig);
+}
 
 // Database references
-const db = getFirestore(firebaseApp);
-const adminDb = admin.firestore();
+const adminDb = admin.firestore(); // Admin SDK Firestore
 
 // Standardize on a single collection name (lowercase)
 const USER_COLLECTION = 'users';
-const User = collection(db, USER_COLLECTION);
 const AdminUser = adminDb.collection(USER_COLLECTION);
 
 module.exports = {
-  firebaseApp,
   admin,
-  db,
   adminDb,
-  User,
   AdminUser,
   USER_COLLECTION,
 };

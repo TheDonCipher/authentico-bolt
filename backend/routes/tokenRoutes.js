@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { firebase, admin } = require('../config');
+const { admin } = require('../config');
 
 // Exchange a custom token for an ID token
 // This is primarily for testing purposes
@@ -13,20 +13,21 @@ router.post('/exchange', async (req, res) => {
     }
 
     try {
-      // Sign in with the custom token using the Firebase client SDK
-      const userCredential = await firebase.auth().signInWithCustomToken(customToken);
-      
-      // Get the ID token
-      const idToken = await userCredential.user.getIdToken();
+      // Note: This endpoint requires a client-side token exchange
+      // The server cannot directly exchange a custom token for an ID token
+      // without using the Firebase client SDK
 
-      if (!idToken) {
-        return res.status(500).json({ error: 'Failed to get ID token' });
-      }
-
-      res.json({ idToken });
+      // Return the custom token and instructions
+      res.json({
+        message:
+          'Please use the client-side Firebase SDK to exchange this token',
+        customToken,
+      });
     } catch (error) {
-      console.error('Error exchanging token:', error);
-      res.status(500).json({ error: error.message || 'Failed to exchange token' });
+      console.error('Error processing token:', error);
+      res
+        .status(500)
+        .json({ error: error.message || 'Failed to process token' });
     }
   } catch (error) {
     console.error('Token exchange error:', error);

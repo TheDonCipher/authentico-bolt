@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { admin, adminDb, firebase, USER_COLLECTION } = require('./config');
+const { admin, adminDb, USER_COLLECTION } = require('./config');
 const { verifyToken } = require('./authMiddleware');
 
 // User registration with wallet address

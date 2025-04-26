@@ -1,6 +1,6 @@
 {
   "framework": "nextjs",
-  "buildCommand": "npm run build:vercel",
+  "buildCommand": "npm run deploy:fixes && npm run build",
   "outputDirectory": ".next",
   "env": {
     "NODE_ENV": "production"

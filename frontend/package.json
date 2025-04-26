@@ -48,7 +48,8 @@
     "install:postcss-deps": "node scripts/install-postcss-deps.js",
     "install:typescript-deps": "node scripts/install-typescript-deps.js",
     "verify:deployment": "node scripts/verify-deployment.js",
-    "deploy:fixes": "node scripts/deploy-fixes.js"
+    "deploy:fixes": "node scripts/deploy-fixes.js",
+    "deploy:vercel": "node scripts/deploy-to-vercel.js"
   },
   "dependencies": {
     "@radix-ui/react-tabs": "^1.1.4",

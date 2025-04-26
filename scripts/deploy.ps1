@@ -47,7 +47,7 @@ Write-Host ""
 # Setup environment files
 function Setup-Env {
     Write-Host "Setting up $Environment environment..."
-    
+
     if ($Environment -eq "prod") {
         Copy-Item -Path "frontend/.env.production" -Destination "frontend/.env" -Force
         Copy-Item -Path "backend/.env.production" -Destination "backend/.env" -Force
@@ -55,7 +55,7 @@ function Setup-Env {
         Copy-Item -Path "frontend/.env.example" -Destination "frontend/.env" -Force
         Copy-Item -Path "backend/.env.example" -Destination "backend/.env" -Force
     }
-    
+
     Write-Host "Environment files set up."
     Write-Host ""
 }
@@ -63,7 +63,11 @@ function Setup-Env {
 # Build the application
 function Build-App {
     Write-Host "Building the application..."
-    
+
+    # Fix dependency conflicts before building
+    Write-Host "Fixing dependency conflicts..."
+    npm run fix:dependencies
+
     if ($Target -eq "docker") {
         Write-Host "Building Docker images..."
         docker-compose build
@@ -71,7 +75,7 @@ function Build-App {
         Write-Host "Running npm build..."
         npm run build
     }
-    
+
     Write-Host "Build completed."
     Write-Host ""
 }
@@ -79,7 +83,7 @@ function Build-App {
 # Deploy the application
 function Deploy-App {
     Write-Host "Deploying the application..."
-    
+
     if ($Target -eq "vercel") {
         Write-Host "Deploying to Vercel..."
         Set-Location -Path "frontend"
@@ -93,7 +97,7 @@ function Deploy-App {
         Write-Host "Starting Docker containers..."
         docker-compose up -d
     }
-    
+
     Write-Host "Deployment completed."
     Write-Host ""
 }

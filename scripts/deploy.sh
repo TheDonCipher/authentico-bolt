@@ -87,7 +87,7 @@ echo ""
 # Setup environment files
 function setup_env {
   echo "Setting up $ENVIRONMENT environment..."
-  
+
   if [[ "$ENVIRONMENT" == "prod" ]]; then
     cp frontend/.env.production frontend/.env
     cp backend/.env.production backend/.env
@@ -95,7 +95,7 @@ function setup_env {
     cp frontend/.env.example frontend/.env
     cp backend/.env.example backend/.env
   fi
-  
+
   echo "Environment files set up."
   echo ""
 }
@@ -103,7 +103,11 @@ function setup_env {
 # Build the application
 function build_app {
   echo "Building the application..."
-  
+
+  # Fix dependency conflicts before building
+  echo "Fixing dependency conflicts..."
+  npm run fix:dependencies
+
   if [[ "$TARGET" == "docker" ]]; then
     echo "Building Docker images..."
     docker-compose build
@@ -111,7 +115,7 @@ function build_app {
     echo "Running npm build..."
     npm run build
   fi
-  
+
   echo "Build completed."
   echo ""
 }
@@ -119,7 +123,7 @@ function build_app {
 # Deploy the application
 function deploy_app {
   echo "Deploying the application..."
-  
+
   if [[ "$TARGET" == "vercel" ]]; then
     echo "Deploying to Vercel..."
     cd frontend
@@ -133,7 +137,7 @@ function deploy_app {
     echo "Starting Docker containers..."
     docker-compose up -d
   fi
-  
+
   echo "Deployment completed."
   echo ""
 }

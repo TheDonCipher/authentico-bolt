@@ -17,7 +17,7 @@ COPY backend/package.json ./backend/
 # COPY smart-contracts/package.json ./smart-contracts/
 
 # Install all dependencies including devDependencies needed for builds
-RUN npm install
+RUN npm install --legacy-peer-deps
 
 # ---- Backend Builder ----
 # Copy backend source code

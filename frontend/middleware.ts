@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { validateWalletAddress } from './lib/validation-util';
+import { createError } from './lib/error-handler';
 
 // Define protected routes patterns
 // Note: The base routes are demo pages and should be accessible without authentication
@@ -24,12 +26,14 @@ const adminProtectedRoutes = [
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Get auth token from cookies
+  // Get auth token and session ID from cookies
   const authToken = request.cookies.get('authToken')?.value;
+  const sessionId = request.cookies.get('sessionId')?.value;
   const userDataCookie = request.cookies.get('userData')?.value;
 
   console.log(`Middleware processing path: ${pathname}`);
   console.log(`Auth token exists: ${!!authToken}`);
+  console.log(`Session ID exists: ${!!sessionId}`);
   console.log(`User data cookie exists: ${!!userDataCookie}`);
 
   // Parse user data if available
@@ -44,12 +48,22 @@ export async function middleware(request: NextRequest) {
       console.log(
         `User data parsed: userType=${userData?.userType}, uid=${userData?.uid}`
       );
+
+      // Validate wallet address if present
+      if (
+        userData?.walletAddress &&
+        !validateWalletAddress(userData.walletAddress)
+      ) {
+        console.error('Invalid wallet address format in user data');
+        userData = null; // Invalidate user data if wallet address is invalid
+      }
     }
   } catch (error) {
     console.error('Error parsing user data cookie:', error);
   }
 
-  // Check if user is authenticated
+  // Check if user is authenticated - only require authToken and userData
+  // sessionId is optional as it's not being set in the current implementation
   const isAuthenticated = !!authToken && !!userData;
   console.log(`User is authenticated: ${isAuthenticated}`);
 
@@ -140,14 +154,24 @@ export async function middleware(request: NextRequest) {
     const userId = userData?.uid;
 
     // Check if user is admin for admin routes
+    const adminWalletAddress =
+      process.env.NEXT_PUBLIC_ADMIN_WALLET_ADDRESS ||
+      '0x4Ca717EAAC6Ec3917Cb6E23557e1CEa7267E2A1c';
+
+    // Validate admin wallet address format
+    if (!validateWalletAddress(adminWalletAddress)) {
+      console.error(
+        'Invalid admin wallet address format in environment variables'
+      );
+    }
+
     const isAdmin =
       userType === 'admin' ||
       (userData?.walletAddress &&
+        validateWalletAddress(userData.walletAddress) &&
+        validateWalletAddress(adminWalletAddress) &&
         userData.walletAddress.toLowerCase() ===
-          (
-            process.env.NEXT_PUBLIC_ADMIN_WALLET_ADDRESS ||
-            '0x4Ca717EAAC6Ec3917Cb6E23557e1CEa7267E2A1c'
-          ).toLowerCase());
+          adminWalletAddress.toLowerCase());
 
     if (isAdminProtected && !isAdmin) {
       // Redirect non-admins to 403 page

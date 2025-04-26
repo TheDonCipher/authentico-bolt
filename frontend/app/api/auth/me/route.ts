@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db, auth } from '../../../../lib/firebase-admin-server';
-import { verifyAuth } from '../../../../lib/auth-middleware';
+import { verifyAuth, isAuthSuccess } from '../../../../lib/auth-middleware';
 
 // Standardize on a single collection name
 const USER_COLLECTION = 'users';
@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
     // Verify the authentication token
     const authResult = await verifyAuth(request);
 
-    if (!authResult.success) {
+    if (!isAuthSuccess(authResult)) {
       return NextResponse.json(
         { error: authResult.error },
         { status: authResult.status, headers: corsHeaders }
@@ -48,18 +48,20 @@ export async function GET(request: NextRequest) {
         );
       }
 
-      const userData = userDoc.data();
+      const userData = userDoc.data() || {};
 
       return NextResponse.json(
         {
           uid,
-          walletAddress: userData.walletAddress,
-          userType: userData.userType,
-          name: userData.name,
+          walletAddress: userData.walletAddress || '',
+          userType: userData.userType || 'individual',
+          name: userData.name || '',
           isVerified: userData.isVerified || false,
-          ...(userData.organizationName && {
-            organizationName: userData.organizationName,
-          }),
+          ...(userData.organizationName
+            ? {
+                organizationName: userData.organizationName,
+              }
+            : {}),
         },
         {
           headers: corsHeaders,

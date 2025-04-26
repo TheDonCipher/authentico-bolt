@@ -6,7 +6,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { AuthGuard } from '../../components/auth/AuthGuard';
 import { ProfileCard } from '../../components/dashboard/ProfileCard';
 import { NotificationBell } from '../../components/dashboard/NotificationBell';
-import { Loader } from '../../components/ui/Loader';
+import { NeubrutalistLoading } from '../../components/ui/NeubrutalistLoading';
 import { Toast } from '../../components/ui/Toast';
 import Link from 'next/link';
 import { SignOutButton } from '../../components/auth/SignOutButton';
@@ -85,15 +85,42 @@ export default function OrganizationsPage() {
           throw new Error('Not authenticated');
         }
 
-        // Fetch organizations from Firestore
-        const response = await axios.get('/api/admin/organizations', {
+        // Fetch all organizations
+        const orgResponse = await axios.get(API_ENDPOINTS.ADMIN.ORGANIZATIONS, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         });
 
-        setOrganizations(response.data);
-        setFilteredOrgs(response.data);
+        // Fetch verified organizations
+        const verifiedOrgResponse = await axios.get(
+          API_ENDPOINTS.ADMIN.VERIFIED_ORGANIZATIONS,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        console.log('Fetched organizations:', orgResponse.data.length);
+        console.log(
+          'Fetched verified organizations:',
+          verifiedOrgResponse.data.length
+        );
+
+        // Combine the results, ensuring no duplicates
+        const allOrgs = [...orgResponse.data];
+        const verifiedOrgIds = new Set(allOrgs.map((org) => org.id));
+
+        // Add verified organizations that aren't already in the list
+        verifiedOrgResponse.data.forEach((org: Organization) => {
+          if (!verifiedOrgIds.has(org.id)) {
+            allOrgs.push(org);
+          }
+        });
+
+        setOrganizations(allOrgs);
+        setFilteredOrgs(allOrgs);
       } catch (error) {
         console.error('Error fetching organizations:', error);
         setError(error instanceof Error ? error.message : 'Unknown error');
@@ -260,7 +287,7 @@ export default function OrganizationsPage() {
   };
 
   if (!user) {
-    return <Loader />;
+    return <NeubrutalistLoading message="Authenticating" fullScreen={true} />;
   }
 
   return (
@@ -476,8 +503,11 @@ export default function OrganizationsPage() {
 
                 {loading ? (
                   <div className="bg-white p-6 border-2 border-deep-moss text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-deep-moss mx-auto mb-4"></div>
-                    <p className="text-deep-moss">Loading organizations...</p>
+                    <NeubrutalistLoading
+                      message="Organizations"
+                      subMessage="Loading organization data..."
+                      showSeal={false}
+                    />
                   </div>
                 ) : error ? (
                   <div className="bg-white p-6 border-2 border-deep-moss text-center">

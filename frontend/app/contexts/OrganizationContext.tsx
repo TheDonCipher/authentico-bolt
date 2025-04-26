@@ -132,6 +132,15 @@ export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({
 
     try {
       setIsLoadingOrgs(true);
+
+      // Set a safety timeout to ensure loading state doesn't get stuck
+      const safetyTimeout = setTimeout(() => {
+        console.log(
+          'Safety timeout triggered in OrganizationContext - forcing loading state reset'
+        );
+        setIsLoadingOrgs(false);
+      }, 8000);
+
       const memberships: OrganizationMembership[] = [];
 
       // Skip Firestore queries for now due to permissions issues
@@ -150,6 +159,8 @@ export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({
 
       console.log('Setting user organizations:', memberships);
       setUserOrganizations(memberships);
+      clearTimeout(safetyTimeout);
+      setIsLoadingOrgs(false);
     } catch (error) {
       console.error('Error fetching user organizations:', error);
       // Even if there's an error, ensure we add the organization's own membership
@@ -166,7 +177,6 @@ export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({
           },
         ]);
       }
-    } finally {
       setIsLoadingOrgs(false);
     }
   }, [user]);

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyAuth } from '../../../../../lib/auth-middleware';
+import { verifyAuth, isAuthSuccess } from '../../../../../lib/auth-middleware';
 import { db } from '../../../../../lib/firebase-admin-server';
 
 export async function GET(request: NextRequest) {
@@ -7,7 +7,7 @@ export async function GET(request: NextRequest) {
     // Verify the authentication token
     const authResult = await verifyAuth(request);
 
-    if (!authResult.success) {
+    if (!isAuthSuccess(authResult)) {
       return NextResponse.json(
         { error: authResult.error },
         { status: authResult.status }
@@ -19,16 +19,13 @@ export async function GET(request: NextRequest) {
 
     // Get the user document to check verification status
     const userDoc = await db.collection('users').doc(uid).get();
-    
+
     if (!userDoc.exists) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    const userData = userDoc.data();
-    
+    const userData = userDoc.data() || {};
+
     // Check if the user is an organization
     if (userData.userType !== 'organization') {
       return NextResponse.json(
@@ -38,25 +35,31 @@ export async function GET(request: NextRequest) {
     }
 
     // Get verification status from user data
-    const verificationStatus = userData.verificationStatus || 
-                              (userData.isVerified ? 'verified' : 'not_verified');
-    
+    const verificationStatus =
+      userData.verificationStatus ||
+      (userData.isVerified ? 'verified' : 'not_verified');
+
     // If the user is already verified, return the status
     if (verificationStatus === 'verified') {
       return NextResponse.json({
         status: verificationStatus,
         isVerified: true,
-        verifiedAt: userData.verifiedAt || userData.verificationUpdatedAt,
+        verifiedAt:
+          userData.verifiedAt || userData.verificationUpdatedAt || null,
       });
     }
-    
+
     // If the user is rejected, return the status and reason
     if (verificationStatus === 'rejected') {
       return NextResponse.json({
         status: verificationStatus,
         isVerified: false,
-        rejectedAt: userData.rejectedAt || userData.verificationUpdatedAt,
-        rejectionReason: userData.verificationRejectionReason || userData.rejectionNotes,
+        rejectedAt:
+          userData.rejectedAt || userData.verificationUpdatedAt || null,
+        rejectionReason:
+          userData.verificationRejectionReason ||
+          userData.rejectionNotes ||
+          null,
       });
     }
 
@@ -87,8 +90,12 @@ export async function GET(request: NextRequest) {
       application: {
         id: applicationDoc.id,
         status: applicationData.status,
-        submittedAt: applicationData.submittedAt ? applicationData.submittedAt.toDate() : null,
-        updatedAt: applicationData.updatedAt ? applicationData.updatedAt.toDate() : null,
+        submittedAt: applicationData.submittedAt
+          ? applicationData.submittedAt.toDate()
+          : null,
+        updatedAt: applicationData.updatedAt
+          ? applicationData.updatedAt.toDate()
+          : null,
         notes: applicationData.notes || null,
       },
     });

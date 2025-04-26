@@ -17,6 +17,10 @@ export const DOCUMENT_STATUS = {
   PENDING: 'pending',
   VERIFIED: 'verified',
   REJECTED: 'rejected',
+  // Numeric codes for backward compatibility
+  PENDING_CODE: '0',
+  VERIFIED_CODE: '1',
+  REJECTED_CODE: '2',
 };
 
 // Organization status
@@ -36,6 +40,7 @@ export const API_ENDPOINTS = {
     VALIDATE: '/api/auth/validate',
     SET_COOKIES: '/api/auth/set-cookies',
     CLEAR_COOKIES: '/api/auth/clear-cookies',
+    CSRF_TOKEN: '/api/auth/csrf-token',
   },
   DOCUMENTS: {
     BASE: '/api/documents',
@@ -52,5 +57,7 @@ export const API_ENDPOINTS = {
     STATS: '/api/admin/stats',
     AUDIT_LOGS: '/api/admin/audit-logs',
     USERS: '/api/admin/users',
+    ORGANIZATIONS: '/api/admin/organizations',
+    VERIFIED_ORGANIZATIONS: '/api/admin/verified-organizations',
   },
 };

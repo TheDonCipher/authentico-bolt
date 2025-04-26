@@ -16,7 +16,24 @@ import {
   getUserData,
   signOutUser,
 } from '../../lib/auth-service';
+import { validateWalletAddress } from '../../lib/validation-util';
+import * as secureStorage from '../../lib/secure-storage';
+import * as sessionManager from '../../lib/session-manager';
+import { createError, handleError } from '../../lib/error-handler';
+import { useToast } from '../components/ui/ToastProvider';
 import { useActiveAccount } from 'thirdweb/react';
+import { initCsrfProtection } from '../../lib/csrf-protection';
+import { getErrorMessage } from '../../lib/utils/error-handling';
+import {
+  AuthResult,
+  SuccessfulAuthResult,
+  FailedAuthResult,
+  NetworkErrorAuthResult,
+  isSuccessfulAuthResult,
+  isFailedAuthResult,
+  isNetworkErrorAuthResult,
+  isNewUserAuthResult,
+} from '../types/auth';
 
 // Define the shape of the user object
 interface User {
@@ -40,18 +57,12 @@ interface AuthContextType {
     context: 'individual' | 'organization',
     orgId?: string
   ) => void;
-  login: (walletAddress: string) => Promise<{
-    success: boolean;
-    newUser?: boolean;
-    networkError?: boolean;
-    firebaseAuthError?: boolean;
-    message?: string;
-  }>;
+  login: (walletAddress: string) => Promise<AuthResult>;
   register: (
     walletAddress: string,
     userType: 'individual' | 'organization',
     userData: any
-  ) => Promise<{ success: boolean; message?: string }>;
+  ) => Promise<AuthResult>;
   logout: () => Promise<void>;
   clearError: () => void;
   isAdmin: boolean;
@@ -96,17 +107,45 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const clearError = () => setError(null);
 
   // Login with wallet
+  const { showToast } = useToast();
+
   const login = useCallback(
-    async (walletAddress: string) => {
+    async (walletAddress: string): Promise<AuthResult> => {
       try {
         setLoading(true);
         clearError();
-        console.log('Logging in with wallet address:', walletAddress);
-        const result = await loginWithWallet(walletAddress);
 
-        if (result.success && result.user) {
+        // Validate wallet address format
+        if (!validateWalletAddress(walletAddress)) {
+          const error = createError(
+            'VALIDATION_ERROR',
+            'Invalid wallet address format. Please check your wallet connection.'
+          );
+          console.error('Wallet validation error:', error);
+          showToast({
+            type: 'error',
+            message: error.userMessage || 'Invalid wallet address format',
+          });
+          setError(error.userMessage || 'Invalid wallet address format');
+          return {
+            success: false,
+            message: error.userMessage || 'Invalid wallet address format',
+          };
+        }
+
+        console.log('Logging in with wallet address:', walletAddress);
+        const result = (await loginWithWallet(walletAddress)) as AuthResult;
+
+        if (isSuccessfulAuthResult(result)) {
           console.log('Login successful, setting user:', result.user);
-          setUser(result.user as User);
+          setUser(result.user);
+
+          // Create a session for the user
+          const session = sessionManager.createSession(result.user);
+          if (!session) {
+            console.warn('Failed to create session, but login was successful');
+          }
+
           // Remove from unregistered wallets if it was there
           if (unregisteredWallets.includes(walletAddress)) {
             console.log(
@@ -117,11 +156,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
               prev.filter((address) => address !== walletAddress)
             );
           }
+
+          // Store login timestamp securely
+          secureStorage.setItem('lastLoginTime', Date.now());
+
+          // Show success toast
+          showToast({
+            type: 'success',
+            message: result.message || 'Sign in successful!',
+          });
+
           return {
             success: true,
+            user: result.user,
             message: result.message || 'Sign in successful!',
           };
-        } else if (result.newUser) {
+        } else if (isNewUserAuthResult(result)) {
           console.log('New user detected, needs registration');
           // Add to unregistered wallets to prevent auto-login attempts
           if (!unregisteredWallets.includes(walletAddress)) {
@@ -131,44 +181,72 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
             );
             setUnregisteredWallets((prev) => [...prev, walletAddress]);
           }
+
+          // Show info toast
+          const newUserMessage =
+            'This wallet is not registered yet. Please register first.';
+          showToast({
+            type: 'info',
+            message: (result as { message?: string }).message || newUserMessage,
+          });
+
           return {
             success: false,
             newUser: true,
-            message:
-              result.message ||
-              'This wallet is not registered yet. Please register first.',
-          };
-        } else if (result.networkError) {
+            message: (result as { message?: string }).message || newUserMessage,
+          } as any;
+        } else if (isNetworkErrorAuthResult(result)) {
           console.log('Network error during login, API may be offline');
           // Set a non-blocking error that doesn't prevent the app from working
-          setError(
-            result.message || 'Network error. API server may be offline.'
-          );
+          const errorMessage = 'Network error. API server may be offline.';
+          setError(errorMessage);
+
+          // Show warning toast
+          showToast({
+            type: 'warning',
+            message: (result as { message?: string }).message || errorMessage,
+          });
+
           return {
             success: false,
             networkError: true,
-            message:
-              result.message || 'Network error. API server may be offline.',
-          };
+            message: (result as { message?: string }).message || errorMessage,
+          } as any;
         }
 
         console.log('Login failed for other reasons');
-        setError('Authentication failed. Please try again.');
+        const errorMessage = 'Authentication failed. Please try again.';
+        setError(errorMessage);
+
+        // Show error toast
+        showToast({
+          type: 'error',
+          message: errorMessage,
+        });
+
         return {
           success: false,
-          message: 'Authentication failed. Please try again.',
+          message: errorMessage,
         };
-      } catch (err: any) {
+      } catch (err) {
         console.error('Login error:', err);
-        const errorMessage =
-          err.message || 'Failed to login. Please try again.';
+        const toast = handleError(err, 'Login Error');
+        showToast(toast);
+
+        const errorMessage = getErrorMessage(
+          err,
+          'Failed to login. Please try again.'
+        );
         setError(errorMessage);
-        return { success: false, message: errorMessage };
+        return {
+          success: false,
+          message: errorMessage,
+        };
       } finally {
         setLoading(false);
       }
     },
-    [unregisteredWallets]
+    [unregisteredWallets, showToast]
   );
 
   // Register a new user
@@ -177,29 +255,128 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       walletAddress: string,
       userType: 'individual' | 'organization',
       userData: any
-    ) => {
+    ): Promise<AuthResult> => {
       try {
         setLoading(true);
         clearError();
-        const result = await registerUser(walletAddress, userType, userData);
 
-        if (result.success && result.user) {
+        // Validate wallet address format
+        if (!validateWalletAddress(walletAddress)) {
+          const error = createError(
+            'VALIDATION_ERROR',
+            'Invalid wallet address format. Please check your wallet connection.'
+          );
+          console.error('Wallet validation error during registration:', error);
+          showToast({
+            type: 'error',
+            message: error.userMessage || 'Invalid wallet address format',
+          });
+          setError(error.userMessage || 'Invalid wallet address format');
+          return {
+            success: false,
+            message: error.userMessage || 'Invalid wallet address format',
+          };
+        }
+
+        // Validate user data
+        if (!userData || !userData.name) {
+          const error = createError(
+            'VALIDATION_ERROR',
+            'Name is required for registration.'
+          );
+          console.error('User data validation error:', error);
+          showToast({
+            type: 'error',
+            message: error.userMessage || 'Name is required for registration',
+          });
+          setError(error.userMessage || 'Name is required for registration');
+          return {
+            success: false,
+            message: error.userMessage || 'Name is required for registration',
+          };
+        }
+
+        // Additional validation for organization users
+        if (userType === 'organization' && !userData.organizationName) {
+          const error = createError(
+            'VALIDATION_ERROR',
+            'Organization name is required for registration.'
+          );
+          console.error('Organization validation error:', error);
+          showToast({
+            type: 'error',
+            message: error.userMessage || 'Organization name is required',
+          });
+          setError(error.userMessage || 'Organization name is required');
+          return {
+            success: false,
+            message: error.userMessage || 'Organization name is required',
+          };
+        }
+
+        const result = (await registerUser(
+          walletAddress,
+          userType,
+          userData
+        )) as AuthResult;
+
+        if (isSuccessfulAuthResult(result)) {
           // If registration is successful, remove from unregistered wallets list
           setUnregisteredWallets((prev) =>
             prev.filter((address) => address !== walletAddress)
           );
-          setUser(result.user as User);
-        }
+          setUser(result.user);
 
-        return { success: result.success, message: result.message };
-      } catch (err: any) {
-        setError(err.message || 'Failed to register');
-        return { success: false };
+          // Create a session for the user
+          const session = sessionManager.createSession(result.user);
+          if (!session) {
+            console.warn(
+              'Failed to create session, but registration was successful'
+            );
+          }
+
+          // Store registration timestamp securely
+          secureStorage.setItem('registrationTime', Date.now());
+
+          // Show success toast
+          showToast({
+            type: 'success',
+            message: result.message || 'Registration successful!',
+          });
+
+          return {
+            success: true,
+            user: result.user,
+            message: result.message || 'Registration successful!',
+          };
+        } else {
+          // Show error toast
+          showToast({
+            type: 'error',
+            message: result.message || 'Registration failed. Please try again.',
+          });
+
+          return {
+            success: false,
+            message: result.message || 'Registration failed. Please try again.',
+          };
+        }
+      } catch (err) {
+        console.error('Registration error:', err);
+        const toast = handleError(err, 'Registration Error');
+        showToast(toast);
+
+        const errorMessage = getErrorMessage(err, 'Failed to register');
+        setError(errorMessage);
+        return {
+          success: false,
+          message: errorMessage,
+        };
       } finally {
         setLoading(false);
       }
     },
-    []
+    [showToast, unregisteredWallets]
   );
 
   // Logout
@@ -207,6 +384,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     try {
       setLoading(true);
       clearError();
+
+      // Invalidate the current session
+      sessionManager.invalidateSession();
+
+      // Clear secure storage items
+      secureStorage.removeItem('lastLoginTime');
 
       // Sign out from Firebase
       await signOutUser();
@@ -230,14 +413,60 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         });
       }
 
+      // Show success toast
+      showToast({
+        type: 'success',
+        message: 'You have been successfully logged out.',
+      });
+
       // Redirect to home page
       router.push('/');
-    } catch (err: any) {
-      setError(err.message || 'Failed to logout');
+    } catch (err) {
+      console.error('Logout error:', err);
+      const toast = handleError(err, 'Logout Error');
+      showToast(toast);
+
+      setError(getErrorMessage(err, 'Failed to logout'));
     } finally {
       setLoading(false);
     }
-  }, [router, account]);
+  }, [router, account, showToast]);
+
+  // Initialize CSRF protection
+  useEffect(() => {
+    // Fetch CSRF token from the backend when the component mounts
+    const fetchCsrfToken = async () => {
+      try {
+        console.log('Fetching initial CSRF token from backend...');
+        const csrfResponse = await fetch('/api/auth/csrf-token', {
+          method: 'GET',
+          credentials: 'include', // Include cookies in the request
+        });
+
+        if (!csrfResponse.ok) {
+          console.error(
+            'Failed to get initial CSRF token from backend:',
+            await csrfResponse.text()
+          );
+        } else {
+          console.log('Successfully fetched initial CSRF token from backend');
+        }
+      } catch (csrfError) {
+        console.error(
+          'Error fetching initial CSRF token:',
+          getErrorMessage(csrfError)
+        );
+        // Fall back to client-side token generation
+        const csrfToken = initCsrfProtection();
+        console.log(
+          'CSRF protection initialized with client-side token:',
+          csrfToken
+        );
+      }
+    };
+
+    fetchCsrfToken();
+  }, []);
 
   // Listen for auth state changes
   useEffect(() => {
@@ -250,17 +479,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
             // Get the user data from our API
             const userData = await getUserData();
             setUser(userData as User);
-          } catch (err: any) {
+          } catch (err) {
             console.error('Error fetching user data:', err);
-            setError(err.message || 'Failed to fetch user data');
+            setError(getErrorMessage(err, 'Failed to fetch user data'));
             setUser(null);
           }
         } else {
           setUser(null);
         }
-      } catch (err: any) {
+      } catch (err) {
         console.error('Auth state change error:', err);
-        setError(err.message || 'Authentication error');
+        setError(getErrorMessage(err, 'Authentication error'));
       } finally {
         setIsInitializing(false);
       }
@@ -359,12 +588,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
             const result = await login(account.address);
 
-            if (result.success) {
+            if (isSuccessfulAuthResult(result)) {
               console.log('Successfully authenticated with wallet');
               clearError();
               // Reset failure count on success
               localStorage.setItem('autoLoginFailureCount', '0');
-            } else if (result.newUser) {
+            } else if (
+              result.success === false &&
+              'newUser' in result &&
+              result.newUser === true
+            ) {
               console.log(
                 'Auto-login failed - new user, adding to unregistered list'
               );
@@ -399,9 +632,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
                 // This is more reliable across page refreshes
               }
             }
-          } catch (err: any) {
+          } catch (err) {
             console.error('Wallet auth error:', err);
-            setError(err.message || 'Failed to authenticate with wallet');
+            setError(
+              getErrorMessage(err, 'Failed to authenticate with wallet')
+            );
           } finally {
             setLoading(false);
             setIsAutoLogin(false); // Reset auto-login state
@@ -457,7 +692,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   );
 
   // Navigate to the appropriate dashboard based on context
-  const navigateToDashboard = useCallback(() => {
+  // This function is kept for future use but currently not used
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _navigateToDashboard = useCallback(() => {
     if (user) {
       if (activeContext === 'individual') {
         router.push(`/individual-dashboard`);

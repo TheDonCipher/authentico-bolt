@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useOrganization } from '../../../contexts/OrganizationContext';
-import { Loader } from '../../../components/ui/Loader';
+import { NeubrutalistLoading } from '../../../components/ui/NeubrutalistLoading';
 import { Toast } from '../../../components/ui/Toast';
 import { NotificationBell } from '../../../components/dashboard/NotificationBell';
 import { ProfileCard } from '../../../components/dashboard/ProfileCard';
@@ -216,13 +216,11 @@ export default function SettingsPage() {
   // Loading state
   if (authLoading || isLoadingOrgs || isLoading) {
     return (
-      <div className="min-h-screen bg-ivory flex items-center justify-center">
-        <Loader
-          fullScreen
-          text="Loading organization settings..."
-          size="large"
-        />
-      </div>
+      <NeubrutalistLoading
+        message="Organization Settings"
+        subMessage="Loading your organization settings..."
+        fullScreen={true}
+      />
     );
   }
 

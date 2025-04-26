@@ -1,0 +1,350 @@
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { DocumentSeal } from '../document/DocumentSeal';
+import '../document/documentViewer.css';
+
+interface NeubrutalistLoadingProps {
+  message?: string;
+  fullScreen?: boolean;
+  subMessage?: string;
+  showSeal?: boolean;
+}
+
+export const NeubrutalistLoading: React.FC<NeubrutalistLoadingProps> = ({
+  message = 'Loading...',
+  fullScreen = false,
+  subMessage = 'Securely processing your request',
+  showSeal = true,
+}) => {
+  const [animationStep, setAnimationStep] = useState(0);
+  const [animateStamp, setAnimateStamp] = useState(false);
+  const [stampCount, setStampCount] = useState(0);
+
+  // Animation sequence controller - simulating office document certification process
+  useEffect(() => {
+    if (!showSeal) return;
+
+    // Start the animation sequence
+    const sequence = async () => {
+      // Step 0: Initial state - reset
+      setAnimationStep(0);
+      setAnimateStamp(false);
+
+      // Wait a moment before starting the next cycle
+      await new Promise((resolve) => setTimeout(resolve, 300));
+
+      // Step 1: Shuffle papers - document is pulled from a stack
+      setAnimationStep(1);
+
+      // Step 2: Show form content - document is being filled out
+      await new Promise((resolve) => setTimeout(resolve, 700));
+      setAnimationStep(2);
+
+      // Wait for form to be completely filled out (including signature)
+      await new Promise((resolve) => setTimeout(resolve, 1800));
+
+      // Step 3: Position document for certification
+      setAnimationStep(3);
+
+      // Prepare for stamping
+      await new Promise((resolve) => setTimeout(resolve, 300));
+
+      // Apply certification stamp
+      setAnimateStamp(true);
+      setStampCount((prev) => prev + 1);
+
+      // Keep completed document visible for a moment
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+    };
+
+    // Run the sequence initially
+    sequence();
+
+    // Set up interval to repeat the sequence
+    const interval = setInterval(() => {
+      sequence();
+    }, 4500); // Total animation cycle time adjusted for the complete certification process
+
+    return () => clearInterval(interval);
+  }, [showSeal]);
+
+  const containerClasses = fullScreen
+    ? 'fixed inset-0 bg-ivory bg-opacity-90 flex items-center justify-center z-[100]'
+    : 'flex flex-col items-center justify-center p-6';
+
+  return (
+    <div className={containerClasses}>
+      <div className="bg-ivory border-4 border-deep-moss p-6 shadow-[8px_8px_0px_0px_rgba(27,67,50,0.8)] max-w-sm w-full text-center relative">
+        <h3 className="text-2xl font-black mb-4 text-deep-moss inline-block bg-soft-sage p-2 border-4 border-deep-moss">
+          {message}
+        </h3>
+
+        <div className="flex justify-center my-4">
+          <div className="relative w-full h-80">
+            {/* Stack of papers - centered and raised much higher */}
+            <div
+              className="absolute inset-0 flex items-center justify-center"
+              style={{ top: '-60px' }}
+            >
+              {/* Background stack (static) with more realistic details */}
+              {[6, 5, 4, 3, 2, 1, 0].map((index) => (
+                <div
+                  key={`static-${index}`}
+                  className={`absolute border-2 border-deep-moss ${
+                    index % 2 === 0 ? 'bg-ivory' : 'bg-soft-sage bg-opacity-30'
+                  }`}
+                  style={{
+                    width: '160px',
+                    height: '110px',
+                    bottom: `${35 + index * 5}px`,
+                    left: '50%',
+                    transform: `translateX(-50%) rotate(${
+                      ((index % 3) - 1) * 1.5
+                    }deg)`,
+                    zIndex: 1,
+                    boxShadow:
+                      index < 3
+                        ? '4px 4px 8px rgba(0,0,0,0.2), 0 0 2px rgba(0,0,0,0.1)'
+                        : '2px 2px 4px rgba(0,0,0,0.15), 0 0 1px rgba(0,0,0,0.05)',
+                  }}
+                >
+                  {/* Add subtle paper details */}
+                  {index < 5 && (
+                    <div className="absolute inset-0 overflow-hidden opacity-20">
+                      <div className="w-full h-0.5 bg-deep-moss mt-4 ml-3 mr-6"></div>
+                      <div className="w-full h-0.5 bg-deep-moss mt-3 ml-5 mr-4"></div>
+                      <div className="w-full h-0.5 bg-deep-moss mt-3 ml-2 mr-8"></div>
+                      {index < 3 && (
+                        <>
+                          <div className="w-full h-0.5 bg-deep-moss mt-3 ml-4 mr-5"></div>
+                          <div className="w-full h-0.5 bg-deep-moss mt-3 ml-6 mr-3"></div>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
+
+              {/* Active document being processed - top to bottom animation */}
+              <motion.div
+                className="absolute border-2 border-deep-moss bg-soft-sage"
+                style={{
+                  width: '160px',
+                  height: '110px',
+                  zIndex: 10,
+                  bottom: '35px', // Align with the top of the stack
+                  boxShadow:
+                    '6px 6px 12px rgba(0,0,0,0.25), 0 0 4px rgba(0,0,0,0.1)',
+                }}
+                initial={{
+                  y: -120,
+                  x: 'calc(50% + 80px)', // Start further to the right (like from a document tray)
+                  opacity: 0,
+                  rotate: -8,
+                  scale: 0.9,
+                }}
+                animate={{
+                  y: animationStep >= 1 ? [null, 0] : -120,
+                  x: animationStep >= 1 ? [null, '50%'] : 'calc(50% + 80px)', // Move to center
+                  opacity: animationStep >= 1 ? [null, 1] : 0,
+                  rotate: animationStep >= 1 ? [null, 0] : -8,
+                  scale: animationStep >= 1 ? [null, 1] : 0.9,
+                  translateX: '-50%', // Center the element
+                }}
+                transition={{
+                  duration: 0.5,
+                  ease: 'easeOut',
+                }}
+              >
+                {/* Paper texture */}
+                <div className="absolute inset-0 overflow-hidden">
+                  <div className="w-full h-full opacity-5">
+                    {[...Array(8)].map((_, i) => (
+                      <div
+                        key={`texture-${i}`}
+                        className="w-full h-px bg-deep-moss"
+                        style={{ marginTop: 10 + i * 10 }}
+                      ></div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Document content - simulating a form being filled out */}
+                <AnimatePresence>
+                  {animationStep >= 2 && (
+                    <div className="p-3">
+                      {/* Title/Header */}
+                      <motion.div
+                        className="h-3 bg-deep-moss bg-opacity-30 rounded-sm mx-auto mb-4 mt-2"
+                        style={{ width: '70%' }}
+                        initial={{ width: 0, opacity: 0 }}
+                        animate={{ width: '70%', opacity: 1 }}
+                        transition={{ duration: 0.4 }}
+                      />
+
+                      {/* Form fields with labels and values */}
+                      {[0, 1, 2].map((fieldGroup) => (
+                        <div
+                          key={`field-group-${fieldGroup}`}
+                          className="flex mb-3"
+                        >
+                          {/* Label */}
+                          <motion.div
+                            className="h-2 bg-deep-moss bg-opacity-20 rounded-sm mr-2"
+                            style={{ width: '30%' }}
+                            initial={{ width: 0, opacity: 0 }}
+                            animate={{ width: '30%', opacity: 1 }}
+                            transition={{
+                              duration: 0.3,
+                              delay: 0.4 + fieldGroup * 0.2,
+                            }}
+                          />
+
+                          {/* Value - appears to be filled in */}
+                          <motion.div
+                            className="h-2 bg-deep-moss bg-opacity-40 rounded-sm flex-grow"
+                            initial={{ width: 0, opacity: 0 }}
+                            animate={{ width: '100%', opacity: 1 }}
+                            transition={{
+                              duration: 0.4,
+                              delay: 0.6 + fieldGroup * 0.2,
+                            }}
+                          />
+                        </div>
+                      ))}
+
+                      {/* Signature line */}
+                      <div className="flex justify-end mt-4">
+                        <motion.div
+                          className="h-1 bg-deep-moss bg-opacity-30 rounded-sm"
+                          style={{ width: '40%' }}
+                          initial={{ width: 0, opacity: 0 }}
+                          animate={{ width: '40%', opacity: 1 }}
+                          transition={{
+                            duration: 0.3,
+                            delay: 1.2,
+                          }}
+                        />
+                      </div>
+
+                      {/* Signature */}
+                      <div className="flex justify-end mt-1">
+                        <motion.div
+                          className="h-2 bg-deep-moss bg-opacity-40 rounded-sm"
+                          style={{
+                            width: '35%',
+                            transform: 'skew(-15deg, 0deg)',
+                          }}
+                          initial={{ width: 0, opacity: 0 }}
+                          animate={{ width: '35%', opacity: 1 }}
+                          transition={{
+                            duration: 0.5,
+                            delay: 1.4,
+                          }}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </AnimatePresence>
+
+                {/* Stamp mark that appears on the document after stamping */}
+                <AnimatePresence>
+                  {animationStep >= 3 && animateStamp && ( // Only show when stamp animation is active
+                    <motion.div
+                      className="absolute top-3 right-3 w-12 h-12 opacity-70"
+                      initial={{ opacity: 0, scale: 0.5 }}
+                      animate={{ opacity: 0.7, scale: 1 }}
+                      transition={{ duration: 0.3, delay: 0.1 }} // Delay slightly after stamp hits
+                    >
+                      <svg
+                        viewBox="0 0 40 40"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <circle
+                          cx="20"
+                          cy="20"
+                          r="18"
+                          fill="none"
+                          stroke="#2E7D32"
+                          strokeWidth="1.5"
+                        />
+                        <path
+                          d="M12,20 L18,26 L28,14"
+                          stroke="#2E7D32"
+                          strokeWidth="2.5"
+                          fill="none"
+                        />
+                      </svg>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.div>
+            </div>
+
+            {/* Document Seal - positioned precisely on the corner of the active document */}
+            {showSeal && (
+              <div
+                className="absolute z-30" // Higher z-index to ensure it's above everything
+                style={{
+                  // Position relative to the active document's corner
+                  // Adjust positioning based on animation step
+                  bottom: animationStep >= 3 ? 'calc(35px + 110px - 25px)' : '250px', // 35px (bottom) + 110px (height) - 25px (offset for corner)
+                  right: animationStep >= 3 ? 'calc(50% - 160px/2 + 25px)' : 'calc(50% - 160px/2 + 25px)', // 50% - half document width + corner offset
+                  opacity: animationStep >= 3 ? 1 : 0, // Fade in when ready to stamp
+                  transition: 'all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                  transform: 'rotate(0deg)', // Fixed angle
+                }}
+              >
+                <motion.div
+                  style={{
+                    transformOrigin: 'center',
+                    zIndex: 30,
+                    position: 'relative',
+                  }}
+                  animate={{
+                    y: animateStamp ? [40, 0] : 0, // Stamp down animation
+                    scale: animateStamp ? [0.5, 0.45] : 0.45, // Dynamic scaling for better stamp effect
+                    rotate: 0, // Ensure fixed angle
+                  }}
+                  transition={{
+                    duration: 0.3,
+                    ease: 'easeOut',
+                  }}
+                  key={`stamp-${stampCount}`}
+                >
+                  <div style={{ transform: 'rotate(0deg)' }}>
+                    <DocumentSeal
+                      status="verified"
+                      size="small"
+                      className={`${
+                        animateStamp
+                          ? 'stamp-ink-animation'
+                          : 'stamp-ink-animation-initial'
+                      }`}
+                    />
+                  </div>
+
+                  {/* Stamp impact effect */}
+                  <AnimatePresence>
+                    {animateStamp && (
+                      <motion.div
+                        className="absolute inset-0 rounded-full bg-forest-green"
+                        initial={{ opacity: 0.5, scale: 0.8 }}
+                        animate={{ opacity: 0, scale: 1.5 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.5 }}
+                        style={{ filter: 'blur(8px)' }}
+                      />
+                    )}
+                  </AnimatePresence>
+                </motion.div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <p className="text-deep-moss font-bold mb-4">{subMessage}</p>
+      </div>
+    </div>
+  );
+};

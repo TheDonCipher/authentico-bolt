@@ -2,6 +2,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { Check, X, Eye, Clock, Download, AlertTriangle } from 'lucide-react';
+import {
+  normalizeDocumentStatus,
+  isDocumentPending,
+} from '../../../../../lib/document-status-util';
 import { db } from '../../../../../lib/firebase';
 import {
   collection,
@@ -17,7 +21,7 @@ import {
 import axios from 'axios';
 import { getAuthToken } from '../../../../../lib/token-util';
 import { Toast } from '../../../../components/ui/Toast';
-import { Loader } from '../../../../components/ui/Loader';
+import { NeubrutalistLoading } from '../../../../components/ui/NeubrutalistLoading';
 import DocumentViewerModal from './DocumentViewerModal';
 
 interface Document {
@@ -115,20 +119,12 @@ const VerificationQueue = ({
       // Filter for pending documents in memory
       snapshot.forEach((doc: any) => {
         const data = doc.data();
-        const status = data.status?.toLowerCase?.() || '';
+        const status = data.status || '';
 
         console.log(`Document ${doc.id} has status: ${status}`);
 
-        // Check for any status that indicates pending verification
-        // Explicitly exclude verified and rejected documents
-        if (
-          (status === 'pending verification' ||
-            status === 'pending' ||
-            status === 'awaiting verification' ||
-            status === 'submitted') &&
-          status !== 'verified' &&
-          status !== 'rejected'
-        ) {
+        // Use our utility function to check if the document is pending verification
+        if (isDocumentPending(status)) {
           console.log(`Processing ${source} document:`, data);
           fetchedDocuments.push({
             id: doc.id,
@@ -139,7 +135,7 @@ const VerificationQueue = ({
             ownerName: data.ownerName || data.requesterName || '',
             ownerEmail: data.ownerEmail || data.email || '',
             createdAt: data.createdAt || data.submittedAt || new Date(),
-            status: data.status || 'Pending Verification',
+            status: normalizeDocumentStatus(status), // Normalize status for consistency
             metadataHash: data.metadataHash || data.originalDocHash || '',
             verifyingOrgId: data.verifyingOrgId || '',
             publicAddress: data.publicAddress || '',
@@ -387,15 +383,15 @@ const VerificationQueue = ({
       // First update the document in Firestore
       const docRef = doc(db, 'documents', docId);
 
-      // Normalize status to lowercase for consistency
-      const normalizedStatus = status === 'Verified' ? 'verified' : 'rejected';
+      // Use our utility function to normalize status
+      const normalizedStatus = normalizeDocumentStatus(status);
 
       console.log(`Updating document ${docId} status to ${normalizedStatus}`);
 
       // Update the document status in Firestore directly
       await updateDoc(docRef, {
         status: normalizedStatus,
-        ...(normalizedStatus === 'verified'
+        ...(normalizedStatus === 'Verified'
           ? {
               verifiedAt: new Date(),
               verifiedBy: orgId,
@@ -569,7 +565,11 @@ const VerificationQueue = ({
 
       {loading ? (
         <div className="flex justify-center items-center py-12">
-          <Loader text="Loading verification queue..." />
+          <NeubrutalistLoading
+            message="Verification Queue"
+            subMessage="Loading documents to verify..."
+            showSeal={false}
+          />
         </div>
       ) : documents.length === 0 ? (
         <div className="bg-ivory p-6 border-2 border-deep-moss text-center">

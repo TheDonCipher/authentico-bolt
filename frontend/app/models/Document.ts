@@ -31,21 +31,22 @@ export class Document {
 
   // Helper method to normalize status values
   private normalizeStatus(status: string): string {
-    if (!status) return 'Pending';
+    if (!status) return 'Pending Verification';
 
     const lowerStatus = status.toLowerCase();
 
+    // Handle string status values
     if (lowerStatus === 'verified') return 'Verified';
     if (lowerStatus === 'rejected') return 'Rejected';
     if (lowerStatus === 'pending' || lowerStatus === 'pending verification')
       return 'Pending Verification';
 
-    // If it's a numeric status (old format), convert it
-    if (lowerStatus === '1') return 'Pending';
-    if (lowerStatus === '2') return 'Verified';
-    if (lowerStatus === '3') return 'Rejected';
+    // Handle numeric status codes (old format)
+    if (status === '0') return 'Pending Verification';
+    if (status === '1') return 'Verified';
+    if (status === '2') return 'Rejected';
 
-    // Return the original status if no match
-    return status;
+    // Return a default status if no match
+    return 'Pending Verification';
   }
 }

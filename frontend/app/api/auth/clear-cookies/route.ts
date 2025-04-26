@@ -5,7 +5,9 @@ import { clearAuthCookies } from '../../../../lib/auth-cookies-server';
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  'Access-Control-Allow-Headers':
+    'Content-Type, Authorization, x-xsrf-token, Cookie',
+  'Access-Control-Allow-Credentials': 'true',
 };
 
 // Handle OPTIONS requests (preflight)
@@ -18,6 +20,9 @@ export async function OPTIONS() {
 
 export async function POST(request: NextRequest) {
   try {
+    // Get CSRF token from request headers
+    const csrfToken = request.headers.get('x-xsrf-token');
+    console.log('CSRF token from clear-cookies request:', csrfToken);
     // Create a response object with CORS headers
     const response = NextResponse.json(
       { success: true },

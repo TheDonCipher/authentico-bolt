@@ -7,6 +7,12 @@ import {
   setUserDataCookie,
   clearAuthCookies,
 } from './auth-cookies';
+import {
+  getTokenFromCookie,
+  initCsrfProtection,
+  addTokenToHeaders,
+} from './csrf-protection';
+import { API_ENDPOINTS } from './constants';
 
 /**
  * Attempts to login with a wallet address
@@ -27,10 +33,47 @@ const loginWithWallet = async (walletAddress) => {
     try {
       console.log('Attempting to login with wallet address:', walletAddress);
 
+      // First, get a CSRF token from the backend
+      console.log('Fetching CSRF token from backend...');
+      try {
+        const csrfResponse = await fetch(API_ENDPOINTS.AUTH.CSRF_TOKEN, {
+          method: 'GET',
+          credentials: 'include', // Include cookies in the request
+        });
+
+        if (!csrfResponse.ok) {
+          console.error(
+            'Failed to get CSRF token from backend:',
+            await csrfResponse.text()
+          );
+          throw new Error('Failed to get CSRF token');
+        }
+
+        console.log('Successfully fetched CSRF token from backend');
+      } catch (csrfError) {
+        console.error('Error fetching CSRF token:', csrfError);
+        throw new Error('Failed to get CSRF token: ' + csrfError.message);
+      }
+
+      // Get CSRF token from cookie (should be set by the backend now)
+      let csrfToken = getTokenFromCookie();
+      if (!csrfToken) {
+        console.error(
+          'No CSRF token found in cookie after fetching from backend'
+        );
+        throw new Error('CSRF token not found');
+      }
+      console.log('Using CSRF token from backend:', csrfToken);
+
+      // Add CSRF token to headers
+      const headers = addTokenToHeaders({ 'Content-Type': 'application/json' });
+      console.log('Request headers:', headers);
+
       const response = await fetch('/api/auth/login', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ walletAddress }),
+        credentials: 'include', // Include cookies in the request
       });
 
       console.log('Login API response status:', response.status);
@@ -68,13 +111,20 @@ const loginWithWallet = async (walletAddress) => {
         // Set cookies for server-side access
         try {
           console.log('Setting auth cookies with token and user data');
+          // Add CSRF token to headers
+          const cookieHeaders = addTokenToHeaders({
+            'Content-Type': 'application/json',
+          });
+          console.log('Cookie request headers:', cookieHeaders);
+
           const cookieResponse = await fetch('/api/auth/set-cookies', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: cookieHeaders,
             body: JSON.stringify({
               token: idToken,
               userData: data.user,
             }),
+            credentials: 'include', // Include cookies in the request
           });
 
           if (!cookieResponse.ok) {
@@ -195,10 +245,52 @@ const registerUser = async (walletAddress, userType, userData) => {
     }
 
     console.log('Registering user with wallet address:', walletAddress);
+
+    // First, get a CSRF token from the backend
+    console.log('Fetching CSRF token from backend for registration...');
+    try {
+      const csrfResponse = await fetch(API_ENDPOINTS.AUTH.CSRF_TOKEN, {
+        method: 'GET',
+        credentials: 'include', // Include cookies in the request
+      });
+
+      if (!csrfResponse.ok) {
+        console.error(
+          'Failed to get CSRF token from backend for registration:',
+          await csrfResponse.text()
+        );
+        throw new Error('Failed to get CSRF token for registration');
+      }
+
+      console.log(
+        'Successfully fetched CSRF token from backend for registration'
+      );
+    } catch (csrfError) {
+      console.error('Error fetching CSRF token for registration:', csrfError);
+      throw new Error(
+        'Failed to get CSRF token for registration: ' + csrfError.message
+      );
+    }
+
+    // Get CSRF token from cookie (should be set by the backend now)
+    let csrfToken = getTokenFromCookie();
+    if (!csrfToken) {
+      console.error(
+        'No CSRF token found in cookie after fetching from backend for registration'
+      );
+      throw new Error('CSRF token not found for registration');
+    }
+    console.log('Using CSRF token from backend for registration:', csrfToken);
+
+    // Add CSRF token to headers
+    const headers = addTokenToHeaders({ 'Content-Type': 'application/json' });
+    console.log('Registration request headers:', headers);
+
     const response = await fetch('/api/auth/register', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify({ walletAddress, userType, userData }),
+      credentials: 'include', // Include cookies in the request
     });
 
     console.log('Register API response status:', response.status);
@@ -228,10 +320,63 @@ const registerUser = async (walletAddress, userType, userData) => {
       'Logging in after registration with wallet address:',
       walletAddress
     );
+
+    // First, get a CSRF token from the backend for post-registration login
+    console.log(
+      'Fetching CSRF token from backend for post-registration login...'
+    );
+    try {
+      const csrfResponse = await fetch(API_ENDPOINTS.AUTH.CSRF_TOKEN, {
+        method: 'GET',
+        credentials: 'include', // Include cookies in the request
+      });
+
+      if (!csrfResponse.ok) {
+        console.error(
+          'Failed to get CSRF token from backend for post-registration login:',
+          await csrfResponse.text()
+        );
+        throw new Error('Failed to get CSRF token for post-registration login');
+      }
+
+      console.log(
+        'Successfully fetched CSRF token from backend for post-registration login'
+      );
+    } catch (csrfError) {
+      console.error(
+        'Error fetching CSRF token for post-registration login:',
+        csrfError
+      );
+      throw new Error(
+        'Failed to get CSRF token for post-registration login: ' +
+          csrfError.message
+      );
+    }
+
+    // Get CSRF token from cookie (should be set by the backend now)
+    let loginCsrfToken = getTokenFromCookie();
+    if (!loginCsrfToken) {
+      console.error(
+        'No CSRF token found in cookie after fetching from backend for post-registration login'
+      );
+      throw new Error('CSRF token not found for post-registration login');
+    }
+    console.log(
+      'Using CSRF token from backend for post-registration login:',
+      loginCsrfToken
+    );
+
+    // Add CSRF token to headers
+    const loginHeaders = addTokenToHeaders({
+      'Content-Type': 'application/json',
+    });
+    console.log('Post-registration login request headers:', loginHeaders);
+
     const loginResponse = await fetch('/api/auth/login', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: loginHeaders,
       body: JSON.stringify({ walletAddress }),
+      credentials: 'include', // Include cookies in the request
     });
 
     console.log(
@@ -267,13 +412,20 @@ const registerUser = async (walletAddress, userType, userData) => {
       // Set cookies for server-side access
       try {
         console.log('Setting auth cookies after registration');
+        // Add CSRF token to headers
+        const cookieHeaders = addTokenToHeaders({
+          'Content-Type': 'application/json',
+        });
+        console.log('Post-registration cookie request headers:', cookieHeaders);
+
         const cookieResponse = await fetch('/api/auth/set-cookies', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: cookieHeaders,
           body: JSON.stringify({
             token: idToken,
             userData: loginData.user,
           }),
+          credentials: 'include', // Include cookies in the request
         });
 
         if (!cookieResponse.ok) {
@@ -348,13 +500,20 @@ const getUserData = async () => {
 
           if (userData) {
             console.log('Setting auth cookies in getUserData');
+            // Add CSRF token to headers
+            const cookieHeaders = addTokenToHeaders({
+              'Content-Type': 'application/json',
+            });
+            console.log('getUserData cookie request headers:', cookieHeaders);
+
             const cookieResponse = await fetch('/api/auth/set-cookies', {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
+              headers: cookieHeaders,
               body: JSON.stringify({
                 token,
                 userData,
               }),
+              credentials: 'include', // Include cookies in the request
             });
 
             if (!cookieResponse.ok) {
@@ -424,8 +583,14 @@ const signOutUser = async () => {
 
     // Clear cookies
     try {
+      // Add CSRF token to headers
+      const headers = addTokenToHeaders();
+      console.log('Logout cookie request headers:', headers);
+
       await fetch('/api/auth/clear-cookies', {
         method: 'POST',
+        headers,
+        credentials: 'include', // Include cookies in the request
       });
     } catch (cookieError) {
       console.error('Error clearing auth cookies:', cookieError);

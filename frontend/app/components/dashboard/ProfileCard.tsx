@@ -6,7 +6,8 @@ import { client } from '../../client';
 import { createWallet, inAppWallet } from 'thirdweb/wallets';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { LoadingSpinner } from '../ui/LoadingSpinner';
+import { NeubrutalistLoading } from '../ui/NeubrutalistLoading';
+import { motion } from 'framer-motion';
 
 // Wallet Configuration
 const wallets = [
@@ -72,135 +73,227 @@ export const ProfileCard = () => {
 
   return (
     <div className="flex items-center">
-      {/* Combined Profile Card and Connect Button */}
-      <div className="bg-ivory border-2 sm:border-4 border-deep-moss shadow-[2px_2px_0px_0px_rgba(27,67,50,0.8)] sm:shadow-[4px_4px_0px_0px_rgba(27,67,50,0.8)] overflow-hidden flex items-center transition-all hover:translate-y-[-1px] sm:hover:translate-y-[-2px] hover:shadow-[3px_3px_0px_0px_rgba(27,67,50,1)] sm:hover:shadow-[6px_6px_0px_0px_rgba(27,67,50,1)]">
+      {/* Enhanced Modern Web3 Profile Card */}
+      <motion.div
+        className="relative bg-indigo-900 overflow-hidden flex items-center"
+        initial={{ opacity: 0.9 }}
+        animate={{ opacity: 1 }}
+        whileHover={{ scale: 1.02 }}
+        style={{
+          boxShadow:
+            '0 0 15px rgba(138, 43, 226, 0.4), 0 0 30px rgba(72, 61, 139, 0.2), 4px 4px 0px #000',
+          border: '2px solid #000',
+          backdropFilter: 'blur(5px)',
+        }}
+      >
+        {/* Solid background */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute inset-0 bg-indigo-900" />
+        </div>
+
         {/* User Profile */}
-        <div className="flex items-center p-2 sm:p-3 border-r-2 sm:border-r-4 border-deep-moss">
-          <div className="w-8 h-8 sm:w-12 sm:h-12 bg-soft-sage border-2 sm:border-4 border-deep-moss rounded-full flex items-center justify-center mr-2 sm:mr-3 shadow-[1px_1px_0px_0px_rgba(27,67,50,0.7)] sm:shadow-[2px_2px_0px_0px_rgba(27,67,50,0.7)]">
-            {user?.userType === 'admin' ? (
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="3"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="text-deep-moss sm:w-[18px] sm:h-[18px]"
-              >
-                <path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"></path>
-                <path d="M12 8v8"></path>
-                <path d="M12 16v.01"></path>
-              </svg>
-            ) : user?.userType === 'organization' ? (
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="3"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="text-deep-moss sm:w-[18px] sm:h-[18px]"
-              >
-                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-                <polyline points="9 22 9 12 15 12 15 22"></polyline>
-              </svg>
-            ) : (
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="3"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="text-deep-moss sm:w-[18px] sm:h-[18px]"
-              >
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                <circle cx="12" cy="7" r="4" />
-              </svg>
-            )}
-          </div>
+        <div className="flex items-center p-2 sm:p-3 z-10">
           <div className="flex flex-col">
-            <span className="font-bold text-deep-moss text-sm sm:text-base tracking-tight truncate max-w-[80px] sm:max-w-[120px] md:max-w-[150px]">
+            {user?.userType === 'admin' && (
+              <motion.span
+                className="bg-gradient-to-r from-red-500 to-pink-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md mb-1"
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ delay: 0.2 }}
+                style={{ boxShadow: '0 0 8px rgba(244, 63, 94, 0.6)' }}
+              >
+                Admin
+              </motion.span>
+            )}
+            <span
+              className="font-bold text-white text-xs sm:text-sm tracking-tight truncate max-w-[100px] sm:max-w-[120px] md:max-w-[140px]"
+              style={{ textShadow: '0 0 5px rgba(255, 255, 255, 0.3)' }}
+            >
               {user?.userType === 'organization'
                 ? user?.organizationName || 'Organization'
                 : user?.name || 'User'}
             </span>
-            <div className="flex items-center">
-              <span className="text-xs font-medium text-forest-green hidden xs:inline">
-                {user?.userType === 'admin'
-                  ? 'Admin Account'
-                  : user?.userType === 'individual'
-                  ? 'Individual Account'
-                  : 'Organization Account'}
-              </span>
-              {user?.userType === 'admin' && (
-                <span className="ml-1 bg-red-100 text-red-800 text-xs px-1 rounded-full">
-                  Admin
-                </span>
-              )}
-            </div>
-            {user?.walletAddress && (
-              <span className="text-xs text-gray-500 font-mono truncate max-w-[80px] sm:max-w-[120px] md:max-w-[150px]">
-                {user.walletAddress.substring(0, 4)}...
-                {user.walletAddress.substring(user.walletAddress.length - 4)}
-              </span>
+            {account && (
+              <div className="flex items-center mt-1">
+                <motion.div
+                  className="flex items-center rounded-md px-1.5 py-0.5"
+                  style={{
+                    background:
+                      'linear-gradient(135deg, rgba(79, 70, 229, 0.2) 0%, rgba(45, 212, 191, 0.2) 100%)',
+                    backdropFilter: 'blur(4px)',
+                    border: '1px solid rgba(99, 102, 241, 0.3)',
+                    boxShadow: '0 0 8px rgba(79, 70, 229, 0.2)',
+                  }}
+                  whileHover={{ scale: 1.05 }}
+                >
+                  {/* Blockchain connection indicator */}
+                  <div className="relative mr-1.5">
+                    <motion.div
+                      className="w-2 h-2 rounded-full bg-green-400"
+                      animate={{
+                        boxShadow: [
+                          '0 0 0px rgba(74, 222, 128, 0)',
+                          '0 0 5px rgba(74, 222, 128, 0.6)',
+                          '0 0 0px rgba(74, 222, 128, 0)',
+                        ],
+                      }}
+                      transition={{ duration: 3, repeat: Infinity }}
+                    />
+                    <motion.div
+                      className="absolute inset-0 w-2 h-2 rounded-full bg-green-400 opacity-40"
+                      animate={{ scale: [1, 1.4, 1] }}
+                      transition={{ duration: 3, repeat: Infinity }}
+                    />
+                  </div>
+
+                  {/* Blockchain network info */}
+                  <div className="flex items-center">
+                    {account ? (
+                      <div className="flex items-center">
+                        <svg
+                          className="w-2.5 h-2.5 mr-1 text-indigo-200"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            d="M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                          />
+                          <path
+                            d="M12 8V16M8 12H16"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                          />
+                        </svg>
+                        <span className="text-[10px] text-indigo-200 font-mono font-medium">
+                          {(account as any).chainId === 11155111
+                            ? 'Sepolia Testnet'
+                            : (account as any).chainId === 1
+                            ? 'Ethereum Mainnet'
+                            : (account as any).chainId === 137
+                            ? 'Polygon'
+                            : (account as any).chainId === 56
+                            ? 'BNB Chain'
+                            : (account as any).chainId === 10
+                            ? 'Optimism'
+                            : (account as any).chainId === 42161
+                            ? 'Arbitrum'
+                            : (account as any).chainId === 8453
+                            ? 'Base'
+                            : 'Blockchain Connected'}
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="text-[10px] text-indigo-200 font-mono">
+                        Connecting...
+                      </span>
+                    )}
+
+                    {/* Connected indicator */}
+                    {account && (
+                      <motion.div
+                        className="ml-1.5 w-3.5 h-3.5 bg-green-400 rounded-full flex items-center justify-center"
+                        initial={{ opacity: 0.8 }}
+                        animate={{
+                          opacity: [0.8, 0.9, 0.8],
+                          boxShadow: [
+                            '0 0 0px rgba(74, 222, 128, 0)',
+                            '0 0 3px rgba(74, 222, 128, 0.5)',
+                            '0 0 0px rgba(74, 222, 128, 0)',
+                          ],
+                        }}
+                        transition={{ duration: 3, repeat: Infinity }}
+                      >
+                        <svg
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="w-2 h-2 text-white"
+                        >
+                          <path
+                            d="M7.5 12L10.5 15L16.5 9"
+                            stroke="currentColor"
+                            strokeWidth="3"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                      </motion.div>
+                    )}
+                  </div>
+                </motion.div>
+              </div>
             )}
           </div>
         </div>
 
         {/* Connect Button */}
-        <div className="bg-forest-green h-full flex items-center px-1">
+        <div className="h-full flex items-center ml-2 z-10">
           {loading || authLoading ? (
-            <div className="flex items-center justify-center px-2 sm:px-4 py-2 text-white">
-              <LoadingSpinner
-                size={14}
-                className="mr-1 sm:mr-2 animate-spin sm:w-4 sm:h-4"
+            <div className="flex items-center justify-center px-2 sm:px-3 py-1.5 text-white">
+              <NeubrutalistLoading
+                message="Processing"
+                subMessage="Please wait..."
+                showSeal={false}
               />
-              <span className="text-xs sm:text-sm">Signing Out...</span>
             </div>
           ) : (
-            <ConnectButton
-              client={client}
-              wallets={wallets}
-              theme={darkTheme({
-                colors: {
-                  accentText: '#ffffff',
-                  accentButtonBg: '#2E7D32', // Forest Green
-                  primaryButtonBg: '#2E7D32', // Forest Green
-                  modalOverlayBg: 'rgba(250, 249, 246, 0.8)', // Ivory
-                  primaryText: '#FFFFFF',
-                  secondaryText: '#FAF9F6', // Ivory
-                  connectedButtonBg: '#2E7D32', // Forest Green
-                },
-              })}
-              connectButton={{
-                label: 'Wallet',
+            <motion.div
+              className="overflow-hidden"
+              whileHover={{
+                scale: 1.02,
+                transform: 'translate(-2px, -2px)',
+                boxShadow: '4px 4px 0px #000',
               }}
-              onConnect={async () => {
-                // When wallet is connected, we need to check if the account is updated
-                // Wait a moment for the account to be updated
-                setTimeout(async () => {
-                  if (account) {
-                    if (!user || user.walletAddress !== account.address) {
-                      await login(account.address);
+              style={{
+                backgroundColor: '#000000',
+                border: '2px solid #000',
+                boxShadow: '3px 3px 0px #000',
+                borderRadius: '0',
+              }}
+            >
+              <ConnectButton
+                client={client}
+                wallets={wallets}
+                theme={darkTheme({
+                  colors: {
+                    accentText: '#ffffff',
+                    accentButtonBg: '#4338CA', // Solid Indigo
+                    primaryButtonBg: '#4338CA', // Solid Indigo
+                    modalBg: '#1F2937', // Dark background for modal
+                    secondaryButtonBg: '#374151', // Dark secondary button
+                    secondaryButtonHoverBg: '#4B5563', // Darker on hover
+                    secondaryButtonText: '#FFFFFF', // White text
+                    connectedButtonBg: '#4338CA', // Solid Indigo
+                    modalOverlayBg: 'rgba(17, 24, 39, 0.8)', // Dark gray
+                    primaryText: '#FFFFFF',
+                  },
+                })}
+                connectButton={{
+                  label: 'Connect',
+                  className:
+                    'text-white font-bold py-2 px-5 text-sm !rounded-none',
+                }}
+                onConnect={async () => {
+                  // When wallet is connected, we need to check if the account is updated
+                  // Wait a moment for the account to be updated
+                  setTimeout(async () => {
+                    if (account) {
+                      if (!user || user.walletAddress !== account.address) {
+                        await login(account.address);
+                      }
                     }
-                  }
-                }, 500);
-              }}
-              onDisconnect={handleWalletDisconnect}
-            />
+                  }, 500);
+                }}
+                onDisconnect={handleWalletDisconnect}
+              />
+            </motion.div>
           )}
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 };

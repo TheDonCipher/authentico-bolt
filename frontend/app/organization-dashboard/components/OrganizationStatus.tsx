@@ -12,6 +12,7 @@ import {
 import axios from 'axios';
 import { getAuthToken } from '../../../lib/token-util';
 import { Toast } from '../../components/ui/Toast';
+import { NeubrutalistLoading } from '../../components/ui/NeubrutalistLoading';
 import Link from 'next/link';
 import { OrganizationVerificationStatus } from '../../types/user';
 import {
@@ -277,10 +278,10 @@ const OrganizationStatus: React.FC<OrganizationStatusProps> = ({ userId }) => {
   if (loading) {
     return (
       <div className="bg-[#E8EDE1] border-4 border-[#556B2F] p-6 shadow-brutal">
-        <div className="animate-pulse">
-          <div className="h-8 bg-[#D2E3C8] w-1/3 mb-4"></div>
-          <div className="h-24 bg-[#D2E3C8] w-full mb-4"></div>
-        </div>
+        <NeubrutalistLoading
+          message="Organization Status"
+          subMessage="Loading your organization status..."
+        />
       </div>
     );
   }

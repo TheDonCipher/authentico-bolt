@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import './fonts.css';
 import { ThirdwebProvider } from 'thirdweb/react';
@@ -6,8 +6,10 @@ import { ReactNode } from 'react';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { AuthProvider } from './contexts/AuthContext';
 import { OrganizationProvider } from './contexts/OrganizationContext';
+import ToastProvider from './components/ui/ToastProvider';
 import localFont from 'next/font/local';
 import { Inter } from 'next/font/google';
+import CsrfInitializer from './components/security/CsrfInitializer';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -37,10 +39,15 @@ const archivo = localFont({
   display: 'swap',
 });
 
-export const metadata = {
+export const metadata: Metadata = {
   title: 'Authentico',
   description: 'Secure document verification platform',
-  viewport: 'width=device-width, initial-scale=1, maximum-scale=1',
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
@@ -50,9 +57,15 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <body className="font-inter">
         <ThirdwebProvider>
           <ThemeProvider>
-            <AuthProvider>
-              <OrganizationProvider>{children}</OrganizationProvider>
-            </AuthProvider>
+            <ToastProvider>
+              <AuthProvider>
+                <OrganizationProvider>
+                  {/* Initialize CSRF protection */}
+                  <CsrfInitializer />
+                  {children}
+                </OrganizationProvider>
+              </AuthProvider>
+            </ToastProvider>
           </ThemeProvider>
         </ThirdwebProvider>
       </body>

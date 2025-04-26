@@ -165,8 +165,12 @@ const Settings = () => {
         walletAddress: '',
         role: '0',
       });
-    } catch (error) {
-      setError(error.message || 'An error occurred. Please try again.');
+    } catch (error: unknown) {
+      setError(
+        error instanceof Error
+          ? error.message
+          : 'An error occurred. Please try again.'
+      );
     } finally {
       setLoading(false);
     }

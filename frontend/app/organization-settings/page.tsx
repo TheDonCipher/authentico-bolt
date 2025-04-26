@@ -5,14 +5,22 @@ import { useRouter } from 'next/navigation';
 import SidebarNavigation from '../organization-dashboard/components/SidebarNavigation';
 import { AuthGuard } from '../components/auth/AuthGuard';
 import { useAuth } from '../contexts/AuthContext';
-import { Loader } from '../components/ui/Loader';
+import { NeubrutalistLoading } from '../components/ui/NeubrutalistLoading';
 import { Toast } from '../components/ui/Toast';
 import { NotificationBell } from '../components/dashboard/NotificationBell';
 import { ProfileCard } from '../components/dashboard/ProfileCard';
 import { ContextSwitcher } from '../components/dashboard/ContextSwitcher';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
-import { Building, Mail, Phone, Globe, MapPin, User, Briefcase } from 'lucide-react';
+import {
+  Building,
+  Mail,
+  Phone,
+  Globe,
+  MapPin,
+  User,
+  Briefcase,
+} from 'lucide-react';
 
 interface ToastMessage {
   type: 'success' | 'error' | 'info';
@@ -62,7 +70,7 @@ export default function OrganizationSettingsPage() {
     try {
       setIsLoading(true);
       const orgDoc = await getDoc(doc(db, 'users', user.uid));
-      
+
       if (orgDoc.exists()) {
         const data = orgDoc.data();
         setOrgData({
@@ -88,7 +96,9 @@ export default function OrganizationSettingsPage() {
     }
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     const { name, value } = e.target;
     setOrgData((prev) => ({
       ...prev,
@@ -98,17 +108,17 @@ export default function OrganizationSettingsPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!user) return;
 
     try {
       setIsSaving(true);
-      
+
       // Don't allow changing status through settings
       const { status, ...updateData } = orgData;
-      
+
       await updateDoc(doc(db, 'users', user.uid), updateData);
-      
+
       setToastMessage({
         type: 'success',
         message: 'Organization settings updated successfully',
@@ -126,13 +136,11 @@ export default function OrganizationSettingsPage() {
 
   if (authLoading || isLoading) {
     return (
-      <div className="min-h-screen bg-ivory flex items-center justify-center">
-        <Loader
-          fullScreen
-          text="Loading organization settings..."
-          size="large"
-        />
-      </div>
+      <NeubrutalistLoading
+        message="Organization Settings"
+        subMessage="Loading your organization settings..."
+        fullScreen={true}
+      />
     );
   }
 
@@ -164,7 +172,7 @@ export default function OrganizationSettingsPage() {
               <h2 className="text-2xl md:text-3xl font-black mb-6 text-deep-moss">
                 Organization Profile
               </h2>
-              
+
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
@@ -182,7 +190,7 @@ export default function OrganizationSettingsPage() {
                       required
                     />
                   </div>
-                  
+
                   <div className="space-y-2">
                     <label className="flex items-center text-deep-moss font-bold">
                       <Mail size={18} className="mr-2" />
@@ -198,7 +206,7 @@ export default function OrganizationSettingsPage() {
                       required
                     />
                   </div>
-                  
+
                   <div className="space-y-2">
                     <label className="flex items-center text-deep-moss font-bold">
                       <Phone size={18} className="mr-2" />
@@ -213,7 +221,7 @@ export default function OrganizationSettingsPage() {
                       placeholder="Enter contact phone"
                     />
                   </div>
-                  
+
                   <div className="space-y-2">
                     <label className="flex items-center text-deep-moss font-bold">
                       <Globe size={18} className="mr-2" />
@@ -228,7 +236,7 @@ export default function OrganizationSettingsPage() {
                       placeholder="Enter website URL"
                     />
                   </div>
-                  
+
                   <div className="space-y-2">
                     <label className="flex items-center text-deep-moss font-bold">
                       <MapPin size={18} className="mr-2" />
@@ -243,7 +251,7 @@ export default function OrganizationSettingsPage() {
                       placeholder="Enter address"
                     />
                   </div>
-                  
+
                   <div className="space-y-2">
                     <label className="flex items-center text-deep-moss font-bold">
                       <User size={18} className="mr-2" />
@@ -258,7 +266,7 @@ export default function OrganizationSettingsPage() {
                       placeholder="Enter contact person name"
                     />
                   </div>
-                  
+
                   <div className="space-y-2">
                     <label className="flex items-center text-deep-moss font-bold">
                       <Briefcase size={18} className="mr-2" />
@@ -274,7 +282,7 @@ export default function OrganizationSettingsPage() {
                     />
                   </div>
                 </div>
-                
+
                 <div className="space-y-2">
                   <label className="flex items-center text-deep-moss font-bold">
                     Organization Description
@@ -287,7 +295,7 @@ export default function OrganizationSettingsPage() {
                     placeholder="Enter organization description"
                   />
                 </div>
-                
+
                 <div className="flex justify-end">
                   <button
                     type="submit"
@@ -296,9 +304,25 @@ export default function OrganizationSettingsPage() {
                   >
                     {isSaving ? (
                       <span className="flex items-center">
-                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        <svg
+                          className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          ></circle>
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          ></path>
                         </svg>
                         Saving...
                       </span>

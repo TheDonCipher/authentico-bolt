@@ -3,6 +3,8 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const bodyParser = require('body-parser');
+const helmet = require('helmet');
+const session = require('express-session');
 
 // Load environment variables
 require('dotenv').config();
@@ -44,14 +46,54 @@ if (process.env.MASTER_KEY_SECRET.length !== 32) {
 
 const { AdminUser } = require('./config');
 const authRoutes = require('./authRoutes');
+const csrfTokenRoute = require('./routes/auth/csrf-token');
 const documentRoutes = require('./routes/documentRoutes');
+const secureDocumentRoutes = require('./routes/secureDocumentRoutes');
 const orgRoutes = require('./routes/orgRoutes');
 const tokenRoutes = require('./routes/tokenRoutes');
 const verificationRoutes = require('./routes/verificationRoutes');
 const { verifyToken } = require('./authMiddleware');
+const {
+  syncUserClaimsMiddleware,
+} = require('./middleware/userClaimsMiddleware');
+
+// Import security middleware
+const securityHeaders = require('./middleware/securityHeaders');
+const { rateLimiter } = require('./middleware/rateLimiter');
+const { sanitizeInputs } = require('./middleware/inputValidation');
+const {
+  csrfTokenGenerator,
+  csrfTokenValidator,
+} = require('./middleware/csrfProtection');
+const {
+  getSessionOptions,
+  regenerateSessionOnLogin,
+  checkSessionTimeout,
+  protectAgainstSessionFixation,
+  protectAgainstSessionHijacking,
+} = require('./middleware/sessionManagement');
+
 const app = express();
 
 // Middleware
+
+// Security middleware
+app.use(helmet()); // Apply security headers with helmet
+app.use(securityHeaders); // Apply custom security headers
+app.use(rateLimiter); // Apply rate limiting
+app.use(sanitizeInputs); // Sanitize inputs
+
+// Session management
+app.use(session(getSessionOptions()));
+app.use(protectAgainstSessionFixation);
+app.use(protectAgainstSessionHijacking);
+app.use(checkSessionTimeout);
+
+// CSRF protection
+app.use(csrfTokenGenerator);
+app.use(csrfTokenValidator);
+
+// Body parsing middleware
 app.use(express.json());
 app.use(bodyParser.urlencoded({ extended: true, limit: '10mb' }));
 app.use(
@@ -62,7 +104,12 @@ app.use(
 
       const allowedOrigins =
         process.env.NODE_ENV === 'development'
-          ? ['http://localhost:3000', 'http://127.0.0.1:3000']
+          ? [
+              'http://localhost:3000',
+              'http://127.0.0.1:3000',
+              'http://localhost:3001',
+              'http://127.0.0.1:3001',
+            ]
           : [
               'https://authentico-demov2.vercel.app',
               'https://authentico-demov2.netlify.app',
@@ -78,7 +125,13 @@ app.use(
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'X-XSRF-TOKEN',
+      'x-xsrf-token',
+    ],
+    exposedHeaders: ['Set-Cookie', 'Date', 'ETag'],
   })
 );
 
@@ -94,11 +147,19 @@ console.log(`Using Pinata Gateway: ${process.env.GATEWAY_URL}`);
 console.log(`Firebase Project: ${process.env.FIREBASE_PROJECT_ID}`);
 
 // Routes
+app.use('/api/auth/csrf-token', csrfTokenRoute); // Register CSRF token route first
 app.use('/api/auth', authRoutes);
-app.use('/api/documents', documentRoutes);
-app.use('/api/organizations', orgRoutes);
-app.use('/api/tokens', tokenRoutes);
-app.use('/api/verify', verificationRoutes);
+
+// Apply syncUserClaimsMiddleware to all protected routes
+const protectedRoutes = express.Router();
+protectedRoutes.use(verifyToken, syncUserClaimsMiddleware);
+
+// Apply protected routes
+app.use('/api/documents', protectedRoutes, documentRoutes);
+app.use('/api/secure/documents', protectedRoutes, secureDocumentRoutes); // New secure document routes
+app.use('/api/organizations', protectedRoutes, orgRoutes);
+app.use('/api/tokens', protectedRoutes, tokenRoutes);
+app.use('/api/verify', verificationRoutes); // Public verification endpoint
 
 // Public routes
 app.get('/', async (req, res) => {
@@ -154,12 +215,30 @@ app.post('/delete', verifyToken, async (req, res) => {
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-  console.error('Error:', err);
+  // Log the error with stack trace in development
+  if (process.env.NODE_ENV === 'development') {
+    console.error('Error:', err);
+  } else {
+    // Log error without sensitive details in production
+    console.error('Error:', {
+      name: err.name,
+      message: err.message,
+      status: err.status || 500,
+      path: req.path,
+      method: req.method,
+    });
+  }
+
+  // Send a sanitized error response
   res.status(err.status || 500).json({
-    error:
+    error: 'An error occurred',
+    message:
       process.env.NODE_ENV === 'development'
         ? err.message
         : 'Internal server error',
+    code: err.code || 'SERVER_ERROR',
+    // Include a request ID for tracking
+    requestId: req.id || Math.random().toString(36).substring(2, 15),
   });
 });
 

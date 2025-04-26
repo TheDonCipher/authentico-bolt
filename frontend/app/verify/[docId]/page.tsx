@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { Check, X, ExternalLink, Copy, FileText } from 'lucide-react';
 import { Toast } from '../../components/ui/Toast';
 import { DocumentSeal } from '../../components/document/DocumentSeal';
+import { NeubrutalistLoading } from '../../components/ui/NeubrutalistLoading';
 import axios from 'axios';
 import '../../components/document/documentViewer.css';
 
@@ -141,11 +142,12 @@ const VerifyPage = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-[#F5F7F2] flex items-center justify-center">
-        <div className="bg-white border-4 border-[#556B2F] p-8 shadow-brutal">
-          <div className="animate-pulse flex flex-col items-center">
-            <div className="h-8 w-64 bg-gray-200 mb-4"></div>
-            <div className="h-4 w-48 bg-gray-200"></div>
-          </div>
+        <div className="w-full max-w-md">
+          <NeubrutalistLoading
+            message="Verifying Document"
+            subMessage="Retrieving blockchain verification data..."
+            fullScreen={false}
+          />
         </div>
       </div>
     );

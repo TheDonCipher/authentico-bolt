@@ -9,9 +9,14 @@ const { verifyToken } = require('../authMiddleware');
 const { admin, adminDb, USER_COLLECTION } = require('../config');
 const EncryptionService = require('../services/EncryptionService');
 const StorageService = require('../services/StorageService');
-const BlockchainService = require('../services/BlockchainService');
-const NotificationService = require('../services/NotificationService');
-const VerificationRequestService = require('../services/VerificationRequestService');
+const BlockchainService = require('../services/BlockchainService'); // Import the instance directly
+const NotificationService = require('../services/NotificationService'); // Import the instance directly
+const VerificationRequestService = require('../services/VerificationRequestService'); // Import the instance directly
+
+// Instantiate other services
+const encryptionService = new EncryptionService();
+const storageService = new StorageService();
+
 const {
   isValidDocumentType,
   getDocumentTypeName,
@@ -497,6 +502,76 @@ router.get('/:documentId', verifyToken, async (req, res) => {
 });
 
 /**
+ * Get direct view of a document (simplified view without decryption)
+ * GET /api/documents/:documentId/direct-view
+ */
+router.get('/:documentId/direct-view', verifyToken, async (req, res) => {
+  try {
+    const { documentId } = req.params;
+    console.log(
+      `Direct document view requested for ID: ${documentId} by user: ${req.user.uid}`
+    );
+
+    // Get document from Firestore
+    const docSnapshot = await documentsCollection.doc(documentId).get();
+
+    if (!docSnapshot.exists) {
+      console.log(`Document ${documentId} not found in Firestore`);
+      return res.status(404).json({ error: 'Document not found' });
+    }
+
+    const docData = docSnapshot.data();
+    console.log(
+      `Document ${documentId} found. Owner: ${docData.ownerUid}, VerifyingOrg: ${docData.verifyingOrgId}`
+    );
+
+    // Check if user is authorized to access this document
+    // Either the document owner or the verifying organization can access
+    if (
+      docData.ownerUid !== req.user.uid &&
+      docData.verifyingOrgId !== req.user.uid
+    ) {
+      console.log(
+        `User ${req.user.uid} not authorized to access document ${documentId}`
+      );
+      console.log(
+        `Document owner: ${docData.ownerUid}, Verifying org: ${docData.verifyingOrgId}`
+      );
+      return res.status(403).json({
+        error: 'Unauthorized access to document',
+      });
+    }
+
+    console.log(
+      `User ${req.user.uid} authorized to access document ${documentId}. Providing direct view.`
+    );
+
+    // Return basic document information
+    res.json({
+      id: docSnapshot.id,
+      documentName: docData.documentName || 'Unnamed Document',
+      documentType: docData.documentType || 'unknown',
+      documentTypeName:
+        docData.documentTypeName ||
+        getDocumentTypeName(docData.documentType) ||
+        'Unknown Type',
+      status: docData.status || 'Unknown',
+      ownerName: docData.ownerName || 'Unknown User',
+      mimeType: docData.mimeType || 'application/octet-stream',
+      // Include a placeholder for the document content
+      decryptedFile: 'DOCUMENT_CONTENT_PLACEHOLDER',
+      directView: true,
+    });
+  } catch (error) {
+    console.error('Error in direct document view route:', error);
+    res.status(500).json({
+      error: 'Internal server error',
+      details: error.message,
+    });
+  }
+});
+
+/**
  * Get secure document details for verification or viewing
  * GET /api/documents/:documentId/secure-details
  */
@@ -567,37 +642,109 @@ router.get('/:documentId/secure-details', verifyToken, async (req, res) => {
       // Allow viewing documents in any status (verified, rejected, pending)
     }
 
-    // Get the encrypted file from IPFS
-    const encryptedFile = await StorageService.retrieveFromIPFS(
-      docData.encryptedIpfsCid
-    );
+    try {
+      // Check if we have the required fields for decryption
+      if (!docData.encryptedIpfsCid) {
+        console.error(`Document ${documentId} is missing encryptedIpfsCid`);
+        return res.status(400).json({
+          error: 'Document is missing required encryption data',
+          details: 'Missing IPFS CID',
+        });
+      }
 
-    // Decrypt the DEK
-    const encryptedDek = Buffer.from(docData.encryptedDek, 'base64');
-    const masterKey = crypto
-      .createHash('sha256')
-      .update(process.env.MASTER_KEY_SECRET)
-      .digest();
-    const dek = await EncryptionService.decryptKey(encryptedDek, masterKey);
+      if (!docData.encryptedDek) {
+        console.error(`Document ${documentId} is missing encryptedDek`);
+        return res.status(400).json({
+          error: 'Document is missing required encryption data',
+          details: 'Missing encrypted DEK',
+        });
+      }
 
-    // Decrypt the file
-    const decryptedFile = await EncryptionService.decryptFile(
-      encryptedFile,
-      dek
-    );
+      console.log(
+        `Retrieving encrypted file from IPFS with CID: ${docData.encryptedIpfsCid}`
+      );
 
-    // Return the decrypted file and document details
-    res.json({
-      id: docSnapshot.id,
-      documentName: docData.documentName,
-      documentType: docData.documentType,
-      documentTypeName:
-        docData.documentTypeName || getDocumentTypeName(docData.documentType),
-      status: docData.status,
-      ownerName: docData.ownerName,
-      decryptedFile: decryptedFile.toString('base64'),
-      mimeType: docData.mimeType,
-    });
+      // Get the encrypted file from IPFS
+      const encryptedFile = await storageService.retrieveFromIPFS(
+        docData.encryptedIpfsCid
+      );
+
+      console.log(
+        `Successfully retrieved encrypted file from IPFS (${encryptedFile.length} bytes)`
+      );
+
+      // Decrypt the DEK
+      console.log(`Decrypting DEK for document ${documentId}`);
+      const encryptedDek = Buffer.from(docData.encryptedDek, 'base64');
+
+      if (!process.env.MASTER_KEY_SECRET) {
+        console.error('MASTER_KEY_SECRET environment variable is not set');
+        return res.status(500).json({
+          error: 'Server configuration error',
+          details: 'Encryption key is not configured',
+        });
+      }
+
+      const masterKey = crypto
+        .createHash('sha256')
+        .update(process.env.MASTER_KEY_SECRET)
+        .digest();
+
+      const dek = await encryptionService.decryptKey(encryptedDek, masterKey);
+      console.log(`Successfully decrypted DEK (${dek.length} bytes)`);
+
+      // Decrypt the file
+      console.log(`Decrypting file content for document ${documentId}`);
+      const decryptedFile = await encryptionService.decryptFile(
+        encryptedFile,
+        dek
+      );
+      console.log(
+        `Successfully decrypted file (${decryptedFile.length} bytes)`
+      );
+
+      // Return the decrypted file and document details
+      res.json({
+        id: docSnapshot.id,
+        documentName: docData.documentName || 'Unnamed Document',
+        documentType: docData.documentType || 'unknown',
+        documentTypeName:
+          docData.documentTypeName ||
+          getDocumentTypeName(docData.documentType) ||
+          'Unknown Type',
+        status: docData.status || 'Unknown',
+        ownerName: docData.ownerName || 'Unknown User',
+        decryptedFile: decryptedFile.toString('base64'),
+        mimeType: docData.mimeType || 'application/octet-stream',
+        fileSize: decryptedFile.length,
+        decryptionSuccess: true,
+      });
+    } catch (decryptionError) {
+      console.error(
+        `Error decrypting document ${documentId}:`,
+        decryptionError
+      );
+
+      // Return a more detailed error response
+      return res.status(500).json({
+        error: 'Document decryption failed',
+        details: decryptionError.message,
+        documentId: documentId,
+        // Include basic document info that doesn't require decryption
+        documentInfo: {
+          id: docSnapshot.id,
+          documentName: docData.documentName || 'Unnamed Document',
+          documentType: docData.documentType || 'unknown',
+          documentTypeName:
+            docData.documentTypeName ||
+            getDocumentTypeName(docData.documentType) ||
+            'Unknown Type',
+          status: docData.status || 'Unknown',
+          ownerName: docData.ownerName || 'Unknown User',
+          mimeType: docData.mimeType || 'application/octet-stream',
+        },
+      });
+    }
   } catch (error) {
     console.error('Error getting secure document details:', error);
     res.status(500).json({
@@ -615,13 +762,24 @@ router.post('/:documentId/verify', verifyToken, async (req, res) => {
   try {
     const { documentId } = req.params;
     const { status, rejectionReason } = req.body;
+    console.log('Received verification request body:', req.body);
 
-    if (!status || !['Verified', 'Rejected'].includes(status)) {
-      return res.status(400).json({ error: 'Invalid status' });
+    const validStatuses = ['verified', 'rejected', 'revoked'];
+    if (!status || !validStatuses.includes(status.toLowerCase())) {
+      return res
+        .status(400)
+        .json({ error: 'Invalid status value', validStatuses });
     }
 
-    if (status === 'Rejected' && !rejectionReason) {
-      return res.status(400).json({ error: 'Rejection reason is required' });
+    // Rejection reason is required for 'rejected' and 'revoked' statuses
+    if (
+      (status.toLowerCase() === 'rejected' ||
+        status.toLowerCase() === 'revoked') &&
+      !rejectionReason
+    ) {
+      return res.status(400).json({
+        error: 'Rejection reason is required for rejected or revoked status',
+      });
     }
 
     // Get document from Firestore
@@ -636,21 +794,35 @@ router.post('/:documentId/verify', verifyToken, async (req, res) => {
     // Check if user is the verifying organization
     if (docData.verifyingOrgId !== req.user.uid) {
       return res.status(403).json({
-        error: 'Only the verifying organization can verify documents',
+        error: 'Only the verifying organization can verify or revoke documents',
       });
     }
 
-    // Check if document is in a verifiable state
-    if (docData.status !== 'Pending Verification') {
+    // Check if document is in a valid state for the requested action
+    const currentStatus = docData.status?.toLowerCase();
+    const requestedStatus = status.toLowerCase();
+
+    // Allow re-verification of documents in any status
+    // This is a temporary fix to allow organizations to verify documents that were previously verified or rejected
+    console.log(
+      `Current document status: ${currentStatus}, Requested status: ${requestedStatus}`
+    );
+
+    // Only enforce status transitions for revocation
+    if (requestedStatus === 'revoked' && currentStatus !== 'verified') {
       return res.status(400).json({
-        error: `Document cannot be verified in status: ${docData.status}`,
+        error: `Document can only be revoked from 'Verified' status. Current status: ${docData.status}`,
       });
     }
 
     // Update document status in Firestore
     await documentsCollection.doc(documentId).update({
-      status: `Updating Status to ${status}`,
-      rejectionReason: status === 'Rejected' ? rejectionReason : null,
+      status: `Updating Status to ${status}`, // Keep this for logging/intermediate state
+      rejectionReason:
+        status.toLowerCase() === 'rejected' ||
+        status.toLowerCase() === 'revoked'
+          ? rejectionReason
+          : null,
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
 
@@ -658,46 +830,61 @@ router.post('/:documentId/verify', verifyToken, async (req, res) => {
     try {
       const blockchainResult = await BlockchainService.updateVerificationStatus(
         docData.tokenId,
-        status,
+        status, // Pass the requested status
         docData.orgWalletAddress
       );
 
-      // Update document with blockchain confirmation
-      await documentsCollection.doc(documentId).update({
-        status,
+      // Update document with blockchain confirmation and final status
+      const updateData = {
+        status: requestedStatus, // Set the final status
         verificationTransactionHash: blockchainResult.transactionHash,
         verificationBlockNumber: blockchainResult.blockNumber,
-        verifiedAt: admin.firestore.FieldValue.serverTimestamp(),
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-      });
+      };
 
-      // Update verification request status
-      await VerificationRequestService.updateVerificationRequestStatus(
-        documentId,
-        status,
-        status === 'Rejected' ? rejectionReason : null
-      );
+      if (requestedStatus === 'verified') {
+        updateData.verifiedAt = admin.firestore.FieldValue.serverTimestamp();
+      } else if (requestedStatus === 'rejected') {
+        updateData.rejectedAt = admin.firestore.FieldValue.serverTimestamp();
+      } else if (requestedStatus === 'revoked') {
+        updateData.revokedAt = admin.firestore.FieldValue.serverTimestamp();
+      }
 
-      // Notify document owner (now handled by VerificationRequestService)
+      await documentsCollection.doc(documentId).update(updateData);
+
+      // Update verification request status (if applicable)
+      // Only update verification request if the document was pending verification
+      if (currentStatus === 'pending verification') {
+        await VerificationRequestService.updateVerificationRequestStatus(
+          documentId,
+          requestedStatus,
+          requestedStatus === 'rejected' ? rejectionReason : null
+        );
+      }
+
+      // Notify document owner (now handled by VerificationRequestService for initial verification/rejection)
+      // Need to add notification for revocation separately if required.
 
       res.json({
         documentId,
-        status,
-        message: `Document ${status.toLowerCase()} successfully`,
+        status: requestedStatus,
+        message: `Document ${requestedStatus} successfully`,
         transactionHash: blockchainResult.transactionHash,
       });
     } catch (error) {
+      console.error(`Error processing document ${requestedStatus}:`, error);
       // Update document to reflect blockchain failure
       await documentsCollection.doc(documentId).update({
-        status: 'Verification Failed',
+        status: `${status} Failed`, // Indicate which action failed
         error: error.message,
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       });
 
+      // Re-throw the error to be caught by the outer catch block
       throw error;
     }
   } catch (error) {
-    console.error('Error verifying document:', error);
+    console.error('Error handling document verification/revocation:', error);
     res
       .status(500)
       .json({ error: 'Document verification failed', details: error.message });

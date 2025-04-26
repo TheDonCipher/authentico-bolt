@@ -1,16 +1,38 @@
 # Authentico
 
-Authentico is a blockchain-based document verification platform built as a monorepo using npm workspaces. It includes a Next.js frontend, a Node.js backend, and Ethereum smart contracts.
+Authentico is a comprehensive document verification platform leveraging blockchain technology for secure and verifiable document management. Built as a monorepo with npm workspaces, it features a Next.js 14 frontend with App Router, a Node.js/Express backend, and Ethereum smart contracts deployed on the Sepolia testnet.
 
 ## Table of Contents
 
-1.  [Project Structure](#project-structure)
-2.  [Setup](#setup)
-3.  [Core Commands](#core-commands)
-4.  [Environment Variables](#environment-variables)
-5.  [Development](#development)
-6.  [Testing](#testing)
-7.  [Deployment](#deployment)
+1. [Overview](#overview)
+2. [Project Structure](#project-structure)
+3. [Setup](#setup)
+4. [Core Commands](#core-commands)
+5. [Environment Variables](#environment-variables)
+6. [Development](#development)
+7. [Testing](#testing)
+8. [Security Features](#security-features)
+9. [Deployment](#deployment)
+10. [Contributing](#contributing)
+
+## Overview
+
+Authentico provides a trustless, decentralized solution for document verification that:
+
+- **Eliminates centralized authorities** for document verification
+- **Reduces fraud** through immutable blockchain records
+- **Simplifies document sharing** via secure links and QR codes
+- **Protects document privacy** through end-to-end AES-256 encryption
+- **Creates a network** of verified organizations that can validate documents
+
+### Key Features
+
+- **Secure Document Upload**: Users can upload documents that are encrypted and stored on IPFS via Pinata
+- **Blockchain Anchoring**: Document metadata and hashes are anchored on the Ethereum Sepolia testnet
+- **Document Verification**: Verified organizations can review and verify documents
+- **Organization Verification**: Organizations can apply for verification status to become document verifiers
+- **Secure Document Sharing**: Users can share verified documents via links and QR codes
+- **Document Viewing**: Secure viewing of encrypted documents with proper authorization
 
 ## Project Structure
 
@@ -19,56 +41,67 @@ The Authentico project uses npm workspaces to manage the following packages:
 ```
 authentico/
 ├── frontend/         # Next.js 14 application (App Router)
-│   ├── app/
-│   ├── public/
-│   ├── package.json
-│   └── next.config.js
-├── backend/          # Node.js backend service (Express/Other)
-│   ├── index.js
-│   ├── users.js
-│   └── package.json
-├── smart-contracts/  # Ethereum smart contracts (Hardhat/Other)
-│   ├── contracts/
-│   ├── test/
-│   └── package.json
+│   ├── app/          # Pages and components
+│   ├── components/   # Reusable UI components
+│   ├── lib/          # Utility functions and services
+│   ├── public/       # Static assets
+│   ├── test/         # Test files
+│   ├── package.json  # Frontend dependencies
+│   └── next.config.js # Next.js configuration
+├── backend/          # Node.js backend service (Express)
+│   ├── controllers/  # Request handlers
+│   ├── middleware/   # Express middleware
+│   ├── models/       # Data models
+│   ├── routes/       # API routes
+│   ├── services/     # Business logic
+│   ├── test/         # Test files
+│   ├── index.js      # Main server file
+│   └── package.json  # Backend dependencies
+├── minimal-hardhat/  # Ethereum smart contracts (Hardhat)
+│   ├── contracts/    # Solidity smart contracts
+│   ├── scripts/      # Deployment scripts
+│   ├── test/         # Contract test files
+│   └── package.json  # Smart contract dependencies
+├── scripts/          # Utility scripts for the project
+├── docs/             # Project documentation
 ├── package.json      # Root package configuration & workspaces
 ├── tsconfig.json     # Root TypeScript configuration
 ├── docker-compose.yml # Docker Compose configuration
-├── Dockerfile        # Root Dockerfile (potentially for multi-stage builds)
+├── Dockerfile        # Root Dockerfile for multi-stage builds
 └── README.md         # This file
 ```
 
-- `frontend/`: Contains the Next.js user interface.
+- `frontend/`: Contains the Next.js user interface with components, contexts, and hooks.
 - `backend/`: Contains the Node.js API service handling business logic, Firebase integration, and Pinata interaction.
-- `smart-contracts/`: Contains the Solidity smart contracts and related scripts/tests.
+- `minimal-hardhat/`: Contains the Solidity smart contracts and related scripts/tests.
+- `scripts/`: Contains utility scripts for environment setup, deployment, and testing.
+- `docs/`: Contains detailed documentation for various aspects of the project.
 - Root-level files configure the monorepo, TypeScript, Docker, etc.
 
 ## Setup
 
-1.  **Clone the repository:**
+1. **Clone the repository:**
 
-    ```bash
-    git clone <repository-url>
-    cd authentico
-    ```
+   ```bash
+   git clone <repository-url>
+   cd authentico
+   ```
 
-2.  **Install dependencies:**
-    Run the following command from the root directory. It will install dependencies for all workspaces (`frontend`, `backend`, `smart-contracts`).
-    ```bash
-    npm install
-    # or use the explicit script:
-    # npm run install:all
-    ```
+2. **Install dependencies:**
+   Run the following command from the root directory. It will install dependencies for all workspaces (`frontend`, `backend`, `minimal-hardhat`).
+   ```bash
+   npm install
+   ```
 
 ## Core Commands
 
 These commands should be run from the **root** directory:
 
 - `npm install` or `npm run install:all`: Installs all dependencies for all workspaces.
-- `npm run dev`: Starts the frontend, backend, and any smart contract compilation/watch processes concurrently in development mode.
-- `npm run build`: Builds all workspaces for production (if a build script is present in their `package.json`).
-- `npm run test`: Runs tests in all workspaces (if a test script is present).
-- `npm run format`: Formats code across the entire project using Prettier.
+- `npm run dev`: Starts the frontend and backend in development mode.
+- `npm run build`: Builds the frontend and backend for production.
+- `npm run test`: Runs tests across all workspaces.
+- `npm run format`: Formats code using Prettier.
 
 ## Environment Variables
 
@@ -91,20 +124,10 @@ Environment variables are crucial for configuring services like Firebase, Pinata
 
 2. Fill in the required values in each `.env` file. The example files contain placeholders and comments explaining each variable.
 
-3. You can also use the setup script to copy the appropriate environment files:
-
-   ```bash
-   # For development environment
-   npm run setup:env:dev
-
-   # For production environment
-   npm run setup:env:prod
-   ```
-
-4. Validate your environment setup using:
-   ```bash
-   npm run validate:env
-   ```
+3. Validate your environment setup using:
+  ```bash
+  npm run validate:env
+  ```
 
 ### Important Notes
 
@@ -118,7 +141,7 @@ Environment variables are crucial for configuring services like Firebase, Pinata
   - Backend: `GATEWAY_URL`, `PINATA_JWT`
   - Frontend: `NEXT_PUBLIC_GATEWAY_URL`, `NEXT_PUBLIC_PINATA_JWT`
 
-Refer to `ENVIRONMENT_SETUP.md` for detailed information about all required environment variables.
+Refer to `config/*.env.example` files and `docs/ENVIRONMENT_SETUP.md` for detailed information about environment variables.
 
 ### Files Not to Be Committed
 
@@ -142,7 +165,7 @@ To start all services for development, run the following command from the root d
 npm run dev
 ```
 
-This command uses `concurrently` to run the development scripts defined in the `package.json` of each workspace (`frontend`, `backend`, `smart-contracts`).
+This command uses `concurrently` to run the development scripts defined in the `package.json` of each workspace (`frontend`, `backend`, `minimal-hardhat`).
 
 ## Testing
 
@@ -156,29 +179,6 @@ To run tests across all packages that have a test script defined:
 npm run test
 ```
 
-### Running Specific Test Suites
-
-The project includes specialized test scripts for different aspects of the application:
-
-```bash
-# Run environment verification tests
-npm run test:verify-env:dev
-
-# Run authentication tests
-npm run test:auth:dev
-
-# Run document management tests
-npm run test:document:dev
-
-# Run organization flow tests
-npm run test:organization:dev
-
-# Run end-to-end tests
-npm run test:e2e:dev
-```
-
-Replace `dev` with `staging` or `prod` to run tests in different environments.
-
 ### Test Coverage
 
 The test suites cover the following key areas of the application:
@@ -188,8 +188,73 @@ The test suites cover the following key areas of the application:
 3. **Organization Flows**: Organization application, admin approval, and document verification.
 4. **End-to-End Flows**: Complete user journeys from registration to document verification.
 
-For more detailed information about the test scripts, see the [test-scripts/README.md](test-scripts/README.md) file.
+### Testing Tools
+
+- **Jest**: For unit and integration tests
+- **Cypress**: For end-to-end tests
+- **Supertest**: For API testing
+
+## Security Features
+
+Authentico implements several security features to ensure the integrity and confidentiality of documents:
+
+### Encryption
+
+- **AES-256 Encryption**: All documents are encrypted using AES-256 before being uploaded to IPFS
+- **Secure Key Management**: Encryption keys are securely managed and never exposed
+- **End-to-End Encryption**: Documents remain encrypted throughout the verification process
+
+### Blockchain Security
+
+- **Immutable Records**: Document hashes and metadata are stored on the Ethereum blockchain
+- **Verification Status**: Document verification status is recorded on-chain
+- **Transaction Signing**: All blockchain transactions are securely signed using the sponsor wallet
+
+### API Security
+
+- **JWT Authentication**: API endpoints are secured using JSON Web Tokens
+- **Role-Based Access Control**: Different user roles have different access permissions
+- **Rate Limiting**: API endpoints are protected against abuse with rate limiting
+- **Input Validation**: All user inputs are validated to prevent injection attacks
 
 ## Deployment
 
-Refer to the Docker configuration (`Dockerfile`, `docker-compose.yml`) and potentially specific deployment guides for deploying the application. The Docker setup aims to build and run the frontend and backend services.
+Authentico can be deployed using several methods:
+
+### Vercel (Frontend)
+
+The frontend can be deployed to Vercel with the following command:
+
+```bash
+npm run deploy:vercel
+```
+
+### Render (Backend)
+
+The backend can be deployed to Render with the following command:
+
+```bash
+npm run deploy:render
+```
+
+### Docker
+
+Both frontend and backend can be deployed using Docker:
+
+```bash
+npm run deploy:docker
+```
+
+Refer to the Docker configuration (`Dockerfile`, `docker-compose.yml`) and [DEPLOYMENT_GUIDE.md](docs/DEPLOYMENT_GUIDE.md) for detailed deployment instructions.
+
+## Contributing
+
+We welcome contributions to the Authentico project. Please follow these guidelines:
+
+1. **Fork the repository** and create a new branch for your feature or bug fix
+2. **Write tests** for your changes
+3. **Ensure all tests pass** before submitting a pull request
+4. **Update documentation** to reflect your changes
+5. **Submit a pull request** with a clear description of your changes
+
+For more detailed contribution guidelines, please refer to [CONTRIBUTING.md](docs/CONTRIBUTING.md).

@@ -7,7 +7,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { AuthGuard } from '../../components/auth/AuthGuard';
 import { ProfileCard } from '../../components/dashboard/ProfileCard';
 import { NotificationBell } from '../../components/dashboard/NotificationBell';
-import { Loader } from '../../components/ui/Loader';
+import { NeubrutalistLoading } from '../../components/ui/NeubrutalistLoading';
 import { Toast } from '../../components/ui/Toast';
 import { getAuthToken } from '../../../lib/token-util';
 import { API_ENDPOINTS } from '../../../lib/constants';
@@ -162,9 +162,11 @@ export default function UsersPage() {
 
   if (authLoading || isLoading) {
     return (
-      <div className="min-h-screen bg-ivory flex items-center justify-center">
-        <Loader fullScreen text="Loading admin dashboard..." size="large" />
-      </div>
+      <NeubrutalistLoading
+        message="User Management"
+        subMessage="Loading user administration panel..."
+        fullScreen={true}
+      />
     );
   }
 
@@ -352,8 +354,11 @@ export default function UsersPage() {
 
               {isLoadingUsers ? (
                 <div className="bg-ivory p-6 border-2 border-deep-moss text-center">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-deep-moss mx-auto mb-4"></div>
-                  <p className="text-deep-moss">Loading users...</p>
+                  <NeubrutalistLoading
+                    message="Users"
+                    subMessage="Loading user data..."
+                    showSeal={false}
+                  />
                 </div>
               ) : error ? (
                 <div className="bg-ivory p-6 border-2 border-deep-moss text-center">

@@ -120,7 +120,11 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
   // Show full-screen loading when registering
   if (isLoading) {
     return (
-      <NeubrutalistLoading message="Creating Your Account" fullScreen={true} />
+      <NeubrutalistLoading
+        message="Creating Your Account"
+        subMessage="Establishing your blockchain identity and securing your credentials..."
+        fullScreen={true}
+      />
     );
   }
 
@@ -251,10 +255,12 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
             }`}
           >
             {isLoading ? (
-              <>
-                <LoadingSpinner size={16} className="mr-2" />
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 relative">
+                  <div className="absolute inset-0 animate-spin border-2 border-ivory rounded-full border-t-transparent"></div>
+                </div>
                 <span>Creating Blockchain Identity...</span>
-              </>
+              </div>
             ) : (
               'Register'
             )}

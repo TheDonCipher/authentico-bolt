@@ -9,6 +9,7 @@ import { NavBar } from './components/landing/NavBar';
 import { WalletConnectionModal } from './components/landing/WalletConnectionModal';
 import { Footer } from './components/layout/Footer';
 import { Toast } from './components/ui/Toast';
+import { NeubrutalistLoading } from './components/ui/NeubrutalistLoading';
 import {
   HeroSection,
   HowItWorksSection,
@@ -51,10 +52,18 @@ const NeubrutalistLanding = () => {
     setIsModalOpen(!isModalOpen);
   };
 
+  // State for loading
+  const [isLoading, setIsLoading] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState('');
+
   // Effects
   useEffect(() => {
     // If user is authenticated, redirect to dashboard
     if (user) {
+      // Show loading state with appropriate message
+      setIsLoading(true);
+      setLoadingMessage(`Welcome back, ${user.name || 'User'}`);
+
       // Get active org ID if in organization context
       const activeOrgId =
         activeContext === 'organization' && userOrganizations.length > 0
@@ -67,54 +76,64 @@ const NeubrutalistLanding = () => {
   }, [user, router, activeContext, userOrganizations]);
 
   return (
-    <div className="min-h-screen bg-ivory text-deep-moss flex flex-col relative overflow-x-hidden">
-      {/* Background Pattern */}
-      <div
-        className="fixed inset-0 pointer-events-none opacity-20"
-        style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%232E7D32' fill-opacity='0.4' fill-rule='evenodd'%3E%3Ccircle cx='3' cy='3' r='3'/%3E%3Ccircle cx='13' cy='13' r='3'/%3E%3C/g%3E%3C/svg%3E")`,
-          backgroundSize: '20px 20px',
-        }}
-      />
+    <>
+      {isLoading && (
+        <NeubrutalistLoading
+          message={loadingMessage || 'Redirecting'}
+          subMessage="Taking you to your dashboard..."
+          fullScreen={true}
+        />
+      )}
 
-      <NavBar toogleShow={toogleShow} openForm={() => {}} />
+      <div className="min-h-screen bg-ivory text-deep-moss flex flex-col relative overflow-x-hidden">
+        {/* Background Pattern */}
+        <div
+          className="fixed inset-0 pointer-events-none opacity-20"
+          style={{
+            backgroundImage: `url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%232E7D32' fill-opacity='0.4' fill-rule='evenodd'%3E%3Ccircle cx='3' cy='3' r='3'/%3E%3Ccircle cx='13' cy='13' r='3'/%3E%3C/g%3E%3C/svg%3E")`,
+            backgroundSize: '20px 20px',
+          }}
+        />
 
-      <main className="w-full flex flex-col flex-1 pt-16 sm:pt-20 md:pt-24 overflow-hidden">
-        {/* Hero Section */}
-        <HeroSection toogleShow={toogleShow} />
+        <NavBar toogleShow={toogleShow} openForm={() => {}} />
 
-        <AnimatePresence mode="wait">
-          {isModalOpen && (
-            <WalletConnectionModal
-              key="wallet-modal"
-              client={client}
-              wallets={wallets}
-              toogleShow={toogleShow}
-            />
-          )}
-        </AnimatePresence>
+        <main className="w-full flex flex-col flex-1 pt-16 sm:pt-20 md:pt-24 overflow-hidden">
+          {/* Hero Section */}
+          <HeroSection toogleShow={toogleShow} />
 
-        {/* Main Sections */}
-        <HowItWorksSection />
-        <FeaturesSection />
-        <WhoIsItForSection />
-        <FAQSection />
+          <AnimatePresence mode="wait">
+            {isModalOpen && (
+              <WalletConnectionModal
+                key="wallet-modal"
+                client={client}
+                wallets={wallets}
+                toogleShow={toogleShow}
+              />
+            )}
+          </AnimatePresence>
 
-        {/* Notifications */}
-        <AnimatePresence>
-          {toastMessage && (
-            <Toast
-              type={toastMessage.type}
-              message={toastMessage.message}
-              onClose={() => setToastMessage(null)}
-              duration={5000}
-            />
-          )}
-        </AnimatePresence>
-      </main>
+          {/* Main Sections */}
+          <HowItWorksSection />
+          <FeaturesSection />
+          <WhoIsItForSection />
+          <FAQSection />
 
-      <Footer />
-    </div>
+          {/* Notifications */}
+          <AnimatePresence>
+            {toastMessage && (
+              <Toast
+                type={toastMessage.type}
+                message={toastMessage.message}
+                onClose={() => setToastMessage(null)}
+                duration={5000}
+              />
+            )}
+          </AnimatePresence>
+        </main>
+
+        <Footer />
+      </div>
+    </>
   );
 };
 

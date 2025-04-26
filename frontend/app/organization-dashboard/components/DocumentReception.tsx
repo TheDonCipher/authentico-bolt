@@ -11,6 +11,7 @@ import {
   FileText,
   QrCode,
   Share2,
+  AlertTriangle,
 } from 'lucide-react';
 import { db } from '../../../lib/firebase';
 import {
@@ -28,11 +29,15 @@ import {
 } from 'firebase/firestore';
 import axios from 'axios';
 import { getAuthToken } from '../../../lib/token-util';
+import { getVerificationUrl } from '../../../lib/verification-util';
 import {
-  getVerificationUrl,
+  normalizeDocumentStatus,
   isDocumentVerified,
-} from '../../../lib/verification-util';
+  isDocumentRejected,
+  isDocumentPending,
+} from '../../../lib/document-status-util';
 import { Toast } from '../../components/ui/Toast';
+import { NeubrutalistLoading } from '../../components/ui/NeubrutalistLoading';
 import { useAuth } from '../../contexts/AuthContext';
 import DocumentViewerModal from './DocumentViewerModal';
 import { QRCodeSVG } from 'qrcode.react';
@@ -69,6 +74,7 @@ const DocumentReception: React.FC<DocumentReceptionProps> = ({
   } | null>(null);
   const [showRevokeConfirmation, setShowRevokeConfirmation] = useState(false);
   const [documentToRevoke, setDocumentToRevoke] = useState<string | null>(null);
+  const [revocationReason, setRevocationReason] = useState('');
   const [showQR, setShowQR] = useState<string | null>(null);
 
   // Pagination state
@@ -120,7 +126,7 @@ const DocumentReception: React.FC<DocumentReceptionProps> = ({
             documentName: data.documentName || 'Unnamed Document',
             documentType: data.documentType || 'unknown',
             documentTypeName: data.documentTypeName || 'Unknown Type',
-            status: data.status || 'Unknown',
+            status: normalizeDocumentStatus(data.status || 'Unknown'), // Normalize status for consistency
             createdAt: data.createdAt ? data.createdAt.toDate() : new Date(),
             ownerName: data.ownerName || 'Unknown User',
             ownerUid: data.ownerUid || '',
@@ -262,8 +268,8 @@ const DocumentReception: React.FC<DocumentReceptionProps> = ({
         throw new Error('Document not found');
       }
 
-      // Normalize status to lowercase for consistency
-      const normalizedStatus = action === 'Verified' ? 'verified' : 'rejected';
+      // Use our utility function to normalize status
+      const normalizedStatus = action;
 
       console.log(
         `Updating document ${documentId} status to ${normalizedStatus}`
@@ -272,7 +278,7 @@ const DocumentReception: React.FC<DocumentReceptionProps> = ({
       // Update the document status in Firestore directly
       await updateDoc(docRef, {
         status: normalizedStatus,
-        ...(normalizedStatus === 'verified'
+        ...(normalizedStatus === 'Verified'
           ? {
               verifiedAt: new Date(),
               verifiedBy: user?.uid,
@@ -290,7 +296,7 @@ const DocumentReception: React.FC<DocumentReceptionProps> = ({
         {
           status: normalizedStatus,
           rejectionReason:
-            normalizedStatus === 'rejected' ? rejectionReason : '',
+            normalizedStatus === 'Rejected' ? rejectionReason : '',
         },
         {
           headers: {
@@ -303,8 +309,9 @@ const DocumentReception: React.FC<DocumentReceptionProps> = ({
 
       // Update local state to remove the document from the pending list
       // and update its status in the documents list
-      setDocuments((prevDocuments) =>
-        prevDocuments.map((doc) => {
+      setDocuments((prevDocuments) => {
+        // First update the status of the document
+        const updatedDocs = prevDocuments.map((doc) => {
           if (doc.id === documentId) {
             return {
               ...doc,
@@ -312,8 +319,18 @@ const DocumentReception: React.FC<DocumentReceptionProps> = ({
             };
           }
           return doc;
-        })
-      );
+        });
+
+        // If we're in a filtered view that only shows pending documents,
+        // we should remove the document that was just verified/rejected
+        if (onVerificationStatusChange) {
+          return updatedDocs.filter(
+            (doc) => doc.id !== documentId || isDocumentPending(doc.status)
+          );
+        }
+
+        return updatedDocs;
+      });
 
       // Close document viewer if open
       setViewingDocument(null);
@@ -332,6 +349,79 @@ const DocumentReception: React.FC<DocumentReceptionProps> = ({
       setToastMessage({
         type: 'error',
         message: `Failed to ${action.toLowerCase()} document`,
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleRevokeVerification = async () => {
+    if (!documentToRevoke) return;
+
+    try {
+      setIsLoading(true);
+      const idToken = await getAuthToken();
+      if (!idToken) {
+        throw new Error('Not authenticated');
+      }
+
+      if (!revocationReason) {
+        setToastMessage({
+          type: 'error',
+          message: 'Revocation reason is required',
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      // Call API to revoke document verification
+      const response = await axios.post(
+        `/api/documents/${documentToRevoke}/verify`,
+        {
+          status: 'revoked',
+          rejectionReason: revocationReason,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${idToken}`,
+          },
+        }
+      );
+
+      console.log('Blockchain revocation response:', response.data);
+
+      // Update local state to reflect the revoked status
+      setDocuments((prevDocuments) =>
+        prevDocuments.map((doc) => {
+          if (doc.id === documentToRevoke) {
+            return {
+              ...doc,
+              status: 'revoked',
+            };
+          }
+          return doc;
+        })
+      );
+
+      // Close confirmation modal and reset states
+      setShowRevokeConfirmation(false);
+      setDocumentToRevoke(null);
+      setRevocationReason('');
+
+      // Notify parent component that verification status has changed
+      if (onVerificationStatusChange) {
+        onVerificationStatusChange();
+      }
+
+      setToastMessage({
+        type: 'success',
+        message: 'Document verification revoked successfully',
+      });
+    } catch (error) {
+      console.error('Error revoking document verification:', error);
+      setToastMessage({
+        type: 'error',
+        message: 'Failed to revoke document verification',
       });
     } finally {
       setIsLoading(false);
@@ -371,26 +461,32 @@ const DocumentReception: React.FC<DocumentReceptionProps> = ({
   };
 
   const getStatusBadge = (status: string) => {
-    // Normalize status to lowercase for consistency
-    const normalizedStatus = status?.toLowerCase() || '';
+    // Use our utility function to normalize status
+    const normalizedStatus = normalizeDocumentStatus(status);
 
     switch (normalizedStatus) {
-      case 'verified':
+      case 'Verified':
         return (
           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-300">
             <Check className="inline-block mr-1" size={12} />
             Verified
           </span>
         );
-      case 'rejected':
+      case 'Rejected':
         return (
           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 border border-red-300">
             <X className="inline-block mr-1" size={12} />
             Rejected
           </span>
         );
-      case 'pending':
-      case 'pending verification':
+      case 'Revoked':
+        return (
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-400 text-gray-800 border border-gray-600">
+            <AlertTriangle className="inline-block mr-1" size={12} />
+            Revoked
+          </span>
+        );
+      case 'Pending Verification':
         return (
           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 border border-yellow-300">
             <Clock className="inline-block mr-1" size={12} />
@@ -413,10 +509,12 @@ const DocumentReception: React.FC<DocumentReceptionProps> = ({
         <h2 className="text-2xl font-bold mb-6 text-deep-moss">
           Document Reception
         </h2>
-        <div className="animate-pulse">
-          <div className="h-8 bg-ivory w-1/3 mb-4"></div>
-          <div className="h-24 bg-ivory w-full mb-4"></div>
-          <div className="h-24 bg-ivory w-full mb-4"></div>
+        <div className="flex justify-center py-8">
+          <NeubrutalistLoading
+            message="Documents"
+            subMessage="Loading your document reception..."
+            showSeal={false}
+          />
         </div>
       </div>
     );

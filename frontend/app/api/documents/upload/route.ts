@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth, db } from '../../../../lib/firebase-admin-server';
 import { v4 as uuidv4 } from 'uuid';
 import axios from 'axios';
+import { getErrorMessage, isError } from '../../../../lib/utils/error-handling';
 
 // Get the API URL from environment variables
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
@@ -24,13 +25,16 @@ export async function POST(request: NextRequest) {
       const decodedToken = await auth.verifyIdToken(token);
       uid = decodedToken.uid;
     } catch (idTokenError) {
-      console.error('ID token verification failed:', idTokenError.message);
+      console.error(
+        'ID token verification failed:',
+        getErrorMessage(idTokenError)
+      );
       return NextResponse.json(
         {
           error: 'INVALID_TOKEN',
           message:
             'Invalid or expired authentication token. Please sign in again.',
-          details: idTokenError.message,
+          details: getErrorMessage(idTokenError),
         },
         { status: 401 }
       );
@@ -175,16 +179,29 @@ export async function POST(request: NextRequest) {
         console.log('Backend response received:', response.data);
       }
       return NextResponse.json(response.data);
-    } catch (error: any) {
+    } catch (error) {
       console.error('Document upload error details:', {
-        message: error.message,
-        code: error.code,
-        response: error.response?.data,
-        status: error.response?.status,
+        message: getErrorMessage(error),
+        code:
+          isError(error) && 'code' in error ? (error as any).code : undefined,
+        response:
+          error && typeof error === 'object' && 'response' in error
+            ? (error as any).response?.data
+            : undefined,
+        status:
+          error && typeof error === 'object' && 'response' in error
+            ? (error as any).response?.status
+            : undefined,
       });
 
       // If the backend is not available, create a mock response
-      if (error.code === 'ECONNREFUSED' || !error.response) {
+      if (
+        (error &&
+          typeof error === 'object' &&
+          'code' in error &&
+          (error as any).code === 'ECONNREFUSED') ||
+        !(error && typeof error === 'object' && 'response' in error)
+      ) {
         // Create a document ID
         const documentId = uuidv4();
 
@@ -206,13 +223,19 @@ export async function POST(request: NextRequest) {
       }
 
       // Check for specific error types
-      if (error.response?.status === 400) {
+      if (
+        error &&
+        typeof error === 'object' &&
+        'response' in error &&
+        (error as any).response?.status === 400
+      ) {
         return NextResponse.json(
           {
             error: 'INVALID_REQUEST',
             message:
               'Invalid document upload request. Please check your file and try again.',
-            details: error.response?.data?.error || error.message,
+            details:
+              (error as any).response?.data?.error || getErrorMessage(error),
           },
           { status: 400 }
         );
@@ -220,15 +243,26 @@ export async function POST(request: NextRequest) {
 
       // Return the error from the backend
       return NextResponse.json(
-        { error: error.response?.data?.error || 'Document upload failed' },
-        { status: error.response?.status || 500 }
+        {
+          error:
+            error && typeof error === 'object' && 'response' in error
+              ? (error as any).response?.data?.error || 'Document upload failed'
+              : 'Document upload failed',
+        },
+        {
+          status:
+            error && typeof error === 'object' && 'response' in error
+              ? (error as any).response?.status || 500
+              : 500,
+        }
       );
     }
-  } catch (error: any) {
-    console.error('Error in document upload API route:', error.message);
+  } catch (error) {
+    const errorMessage = getErrorMessage(error);
+    console.error('Error in document upload API route:', errorMessage);
 
     // Provide more detailed error messages based on error type
-    if (error.name === 'FirebaseError') {
+    if (isError(error) && error.name === 'FirebaseError') {
       return NextResponse.json(
         {
           error: 'FIREBASE_ERROR',
@@ -236,7 +270,7 @@ export async function POST(request: NextRequest) {
         },
         { status: 500 }
       );
-    } else if (error.message.includes('token')) {
+    } else if (errorMessage.includes('token')) {
       return NextResponse.json(
         {
           error: 'AUTHENTICATION_ERROR',
@@ -245,8 +279,8 @@ export async function POST(request: NextRequest) {
         { status: 401 }
       );
     } else if (
-      error.message.includes('file') ||
-      error.message.includes('document')
+      errorMessage.includes('file') ||
+      errorMessage.includes('document')
     ) {
       return NextResponse.json(
         {

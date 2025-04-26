@@ -7,7 +7,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { AuthGuard } from '../../components/auth/AuthGuard';
 import { ProfileCard } from '../../components/dashboard/ProfileCard';
 import { NotificationBell } from '../../components/dashboard/NotificationBell';
-import { Loader } from '../../components/ui/Loader';
+import { NeubrutalistLoading } from '../../components/ui/NeubrutalistLoading';
 import { Toast } from '../../components/ui/Toast';
 import {
   Home,
@@ -235,7 +235,7 @@ export default function DocumentsPage() {
   };
 
   if (!user) {
-    return <Loader />;
+    return <NeubrutalistLoading message="Authenticating" fullScreen={true} />;
   }
 
   return (
@@ -459,7 +459,10 @@ export default function DocumentsPage() {
 
                 {loading ? (
                   <div className="bg-white p-6 border-2 border-deep-moss text-center">
-                    <Loader text="Loading documents..." />
+                    <NeubrutalistLoading
+                      message="Loading Documents"
+                      subMessage="Retrieving document data..."
+                    />
                   </div>
                 ) : documents.length === 0 ? (
                   <div className="bg-white p-6 border-2 border-deep-moss text-center">

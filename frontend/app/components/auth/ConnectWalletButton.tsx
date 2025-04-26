@@ -4,9 +4,11 @@ import { ConnectButton, darkTheme } from 'thirdweb/react';
 import { useActiveAccount } from 'thirdweb/react';
 import { useAuth } from '../../contexts/AuthContext';
 import { Wallet } from 'lucide-react';
+import { NeubrutalistLoading } from '../ui/NeubrutalistLoading';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { Toast } from '../ui/Toast';
 import { AnimatePresence } from 'framer-motion';
+import { AuthResult, isSuccessfulAuthResult } from '../../types/auth';
 
 interface ConnectWalletButtonProps {
   client: any;
@@ -48,7 +50,7 @@ export const ConnectWalletButton: React.FC<ConnectWalletButtonProps> = ({
       clearError(); // Clear any previous errors
       const result = await login(account.address);
 
-      if (result.success) {
+      if (isSuccessfulAuthResult(result)) {
         setToastMessage({
           type: 'success',
           message:
@@ -59,7 +61,7 @@ export const ConnectWalletButton: React.FC<ConnectWalletButtonProps> = ({
           onSuccess();
         }
         // Redirect will happen automatically via AuthContext
-      } else if (result.newUser) {
+      } else if (result.success === false && result.newUser === true) {
         // New user needs to register
         setToastMessage({
           type: 'error',
@@ -79,15 +81,17 @@ export const ConnectWalletButton: React.FC<ConnectWalletButtonProps> = ({
           message: result.message || 'Failed to sign in. Please try again.',
         });
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Login error:', err);
       let errorMessage = 'An error occurred during sign in. Please try again.';
 
       // Handle specific error types
-      if (err.message && err.message.includes('authentication')) {
-        errorMessage = 'Authentication error. Please try again later.';
-      } else if (err.message) {
-        errorMessage = err.message;
+      if (err instanceof Error) {
+        if (err.message.includes('authentication')) {
+          errorMessage = 'Authentication error. Please try again later.';
+        } else {
+          errorMessage = err.message;
+        }
       }
 
       setToastMessage({
@@ -98,6 +102,17 @@ export const ConnectWalletButton: React.FC<ConnectWalletButtonProps> = ({
       setIsLoading(false);
     }
   };
+
+  // Show full-screen loading when signing in
+  if (isLoading) {
+    return (
+      <NeubrutalistLoading
+        message="Signing In"
+        subMessage="Verifying your blockchain credentials and preparing your dashboard..."
+        fullScreen={true}
+      />
+    );
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -137,20 +152,18 @@ export const ConnectWalletButton: React.FC<ConnectWalletButtonProps> = ({
       {account && (
         <button
           onClick={handleLogin}
-          disabled={isLoading || isAutoLogin}
+          disabled={isAutoLogin}
           className={`flex items-center justify-center gap-2 bg-forest-green text-ivory py-2 px-4 rounded-lg hover:bg-deep-moss transition-colors ${
-            isLoading || isAutoLogin ? 'opacity-70 cursor-not-allowed' : ''
+            isAutoLogin ? 'opacity-70 cursor-not-allowed' : ''
           } ${className}`}
         >
-          {isLoading || isAutoLogin ? (
-            <>
-              <LoadingSpinner size={16} />
-              <span>
-                {isAutoLogin
-                  ? 'Automatically Signing In...'
-                  : 'Verifying Wallet Credentials...'}
-              </span>
-            </>
+          {isAutoLogin ? (
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 relative">
+                <div className="absolute inset-0 animate-spin border-2 border-ivory rounded-full border-t-transparent"></div>
+              </div>
+              <span>Automatically Signing In...</span>
+            </div>
           ) : (
             <>
               <Wallet size={16} />

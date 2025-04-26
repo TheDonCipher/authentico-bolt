@@ -32,22 +32,35 @@ export async function POST(
     const body = await request.json();
     const { status, rejectionReason } = body;
 
-    if (!status || !['Verified', 'Rejected'].includes(status)) {
-      return NextResponse.json({ error: 'Invalid status' }, { status: 400 });
+    // Normalize status for consistency
+    const normalizedStatus = status
+      ? status.charAt(0).toUpperCase() + status.slice(1).toLowerCase()
+      : '';
+
+    if (
+      !normalizedStatus ||
+      !['Verified', 'Rejected', 'Revoked'].includes(normalizedStatus)
+    ) {
+      return NextResponse.json(
+        {
+          error: 'Invalid status. Must be one of: Verified, Rejected, Revoked',
+        },
+        { status: 400 }
+      );
     }
 
-    if (status === 'Rejected' && !rejectionReason) {
+    if (normalizedStatus === 'Rejected' && !rejectionReason) {
       return NextResponse.json(
         { error: 'Rejection reason is required' },
         { status: 400 }
       );
     }
 
-    // Forward the request to the backend
+    // Forward the request to the backend with normalized status
     const response = await axios.post(
       `${API_URL}/documents/${id}/verify`,
       {
-        status,
+        status: normalizedStatus,
         rejectionReason,
       },
       {

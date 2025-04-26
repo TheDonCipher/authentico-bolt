@@ -31,15 +31,51 @@ const nextConfig = {
   // Use rewrites for API routing based on environment
   async rewrites() {
     // Default API URL for local development
-    const apiUrl =
-      process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
+    let apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+
+    // Remove trailing slash if present
+    if (apiUrl.endsWith('/')) {
+      apiUrl = apiUrl.slice(0, -1);
+    }
+
+    // Force local API URL in development
+    if (process.env.NODE_ENV === 'development') {
+      apiUrl = 'http://localhost:8080';
+    }
 
     console.log(`Using API URL: ${apiUrl}`);
 
     return [
+      // Skip rewrites for Next.js API routes that we want to handle internally
+      // Organization routes
+      {
+        source: '/api/organizations/verified',
+        destination: '/api/organizations/verified',
+      },
+      // Admin routes
+      {
+        source: '/api/admin/:path*',
+        destination: '/api/admin/:path*',
+      },
+      // Auth routes
+      {
+        source: '/api/auth/:path*',
+        destination: '/api/auth/:path*',
+      },
+      // Document secure-details route - direct to backend
+      {
+        source: '/api/documents/:id/secure-details',
+        destination: `${apiUrl}/api/documents/:id/secure-details`,
+      },
+      // Document direct-view route - direct to backend
+      {
+        source: '/api/documents/:id/direct-view',
+        destination: `${apiUrl}/api/documents/:id/direct-view`,
+      },
+      // Default rewrite for all other API routes to the backend
       {
         source: '/api/:path*',
-        destination: `${apiUrl}/:path*`,
+        destination: `${apiUrl}/api/:path*`,
       },
     ];
   },

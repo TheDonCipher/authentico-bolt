@@ -6,7 +6,7 @@ import SidebarNavigation from '../organization-dashboard/components/SidebarNavig
 import { AuthGuard } from '../components/auth/AuthGuard';
 import { OrganizationVerificationCheck } from '../components/auth/OrganizationVerificationCheck';
 import { useAuth } from '../contexts/AuthContext';
-import { Loader } from '../components/ui/Loader';
+import { NeubrutalistLoading } from '../components/ui/NeubrutalistLoading';
 import { Toast } from '../components/ui/Toast';
 import { NotificationBell } from '../components/dashboard/NotificationBell';
 import { ProfileCard } from '../components/dashboard/ProfileCard';
@@ -89,9 +89,11 @@ export default function DocumentHistoryPage() {
 
   if (authLoading || isLoading) {
     return (
-      <div className="min-h-screen bg-ivory flex items-center justify-center">
-        <Loader fullScreen text="Loading document history..." size="large" />
-      </div>
+      <NeubrutalistLoading
+        message="Document History"
+        subMessage="Loading your document history..."
+        fullScreen={true}
+      />
     );
   }
 

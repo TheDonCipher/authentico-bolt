@@ -10,6 +10,7 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 import axios from 'axios';
+import { getErrorResponse } from '../../../lib/utils/error-utils';
 import { getAuthToken } from '../../../lib/token-util';
 import { Toast } from '../../components/ui/Toast';
 import { OrganizationApplication } from '../../types/organization';
@@ -189,7 +190,7 @@ const OrganizationApplications = () => {
       console.error('Error updating application status:', error);
 
       // Extract detailed error information
-      const errorResponse = error.response || {};
+      const errorResponse = getErrorResponse(error);
       const errorData = errorResponse.data || {};
       const errorStatus = errorResponse.status;
       const errorMessage =

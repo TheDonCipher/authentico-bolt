@@ -76,6 +76,8 @@ Follow these steps to set up your development environment:
 | `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET` | Firebase storage bucket | `your-project.appspot.com` |
 | `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID` | Firebase messaging sender ID | `123456789012` |
 | `NEXT_PUBLIC_FIREBASE_APP_ID` | Firebase app ID | `1:123456789012:web:abcdef1234567890` |
+| `NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID` | Firebase Measurement ID (optional) | `G-MEASUREMENT_ID` |
+| `NEXT_PUBLIC_WEBSOCKET_URL` | WebSocket URL | `ws://localhost:8080` |
 | `NEXT_PUBLIC_API_URL` | Backend API URL | `http://localhost:8080/api` |
 
 ### Backend Environment Variables
@@ -84,17 +86,7 @@ Follow these steps to set up your development environment:
 |----------|-------------|---------|
 | `NODE_ENV` | Environment type | `development` |
 | `PORT` | Server port | `8080` |
-| `FIREBASE_TYPE` | Firebase service account type | `service_account` |
-| `FIREBASE_PROJECT_ID` | Firebase project ID | `your-project-id` |
-| `FIREBASE_PRIVATE_KEY_ID` | Firebase private key ID | `your_private_key_id` |
-| `FIREBASE_PRIVATE_KEY` | Firebase private key | `-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n` |
-| `FIREBASE_CLIENT_EMAIL` | Firebase client email | `firebase-adminsdk-xxx@your-project.iam.gserviceaccount.com` |
-| `FIREBASE_CLIENT_ID` | Firebase client ID | `123456789012345678901` |
-| `FIREBASE_AUTH_URI` | Firebase auth URI | `https://accounts.google.com/o/oauth2/auth` |
-| `FIREBASE_TOKEN_URI` | Firebase token URI | `https://oauth2.googleapis.com/token` |
-| `FIREBASE_AUTH_PROVIDER_X509_CERT_URL` | Firebase auth provider cert URL | `https://www.googleapis.com/oauth2/v1/certs` |
-| `FIREBASE_CLIENT_X509_CERT_URL` | Firebase client cert URL | `https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-xxx%40your-project.iam.gserviceaccount.com` |
-| `FIREBASE_UNIVERSE_DOMAIN` | Firebase universe domain | `googleapis.com` |
+| Firebase Admin SDK variables | Firebase Admin SDK configuration |  |
 | `PINATA_JWT` | Pinata JWT token | `your_pinata_jwt_token` |
 | `GATEWAY_URL` | Pinata gateway URL | `https://fuchsia-fantastic-python-686.mypinata.cloud` |
 | `BLOCKCHAIN_RPC_URL` | Blockchain RPC URL | `https://sepolia.infura.io/v3/your_infura_key` |
@@ -131,7 +123,7 @@ When deploying to Vercel, add the frontend environment variables in the Vercel p
 - `NEXT_PUBLIC_FIREBASE_APP_ID`
 - `NEXT_PUBLIC_API_URL` (set to your production backend URL)
 
-### Render (Backend)
+### Render (Backend)`
 
 When deploying to Render, add the backend environment variables in the Render environment settings. The following variables are required:
 

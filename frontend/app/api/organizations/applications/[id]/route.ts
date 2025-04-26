@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyAuth } from '../../../../../lib/auth-middleware';
+import { verifyAuth, isAuthSuccess } from '../../../../../lib/auth-middleware';
 import { db } from '../../../../../lib/firebase-admin-server.js';
 import { FieldValue } from 'firebase-admin/firestore';
 import { AuditLogService } from '../../../../../lib/services/AuditLogService';
 import { OrganizationVerificationStatus } from '../../../../types/user';
+import {
+  getErrorMessage,
+  isError,
+} from '../../../../../lib/utils/error-handling';
 
 export async function PUT(
   request: NextRequest,
@@ -14,7 +18,7 @@ export async function PUT(
     // Verify the authentication token
     const authResult = await verifyAuth(request);
 
-    if (!authResult.success) {
+    if (!isAuthSuccess(authResult)) {
       return NextResponse.json(
         { error: authResult.error },
         { status: authResult.status }
@@ -118,8 +122,8 @@ export async function PUT(
       );
     }
 
-    const applicationData = applicationDoc.data();
-    const organizationId = applicationData.organizationId;
+    const applicationData = applicationDoc.data() || {};
+    const organizationId = applicationData.organizationId || '';
 
     // Update the application status
     await db
@@ -150,7 +154,7 @@ export async function PUT(
         }
 
         // Get the current verification status
-        const orgData = orgDoc.data();
+        const orgData = orgDoc.data() || {};
         const currentStatus: OrganizationVerificationStatus =
           orgData.verificationStatus ||
           (orgData.isVerified ? 'verified' : 'not_verified');
@@ -172,7 +176,9 @@ export async function PUT(
           );
         } catch (updateError) {
           console.error(
-            `Error updating organization document: ${updateError.message}`
+            `Error updating organization document: ${getErrorMessage(
+              updateError
+            )}`
           );
           throw updateError;
         }
@@ -190,7 +196,9 @@ export async function PUT(
             `Successfully created audit log for organization ${organizationId}`
           );
         } catch (auditError) {
-          console.error(`Error creating audit log: ${auditError.message}`);
+          console.error(
+            `Error creating audit log: ${getErrorMessage(auditError)}`
+          );
           // Continue even if audit log creation fails
         }
 
@@ -209,7 +217,7 @@ export async function PUT(
           );
         } catch (notificationError) {
           console.error(
-            `Error creating notification: ${notificationError.message}`
+            `Error creating notification: ${getErrorMessage(notificationError)}`
           );
           // Continue even if notification creation fails
         }
@@ -221,8 +229,10 @@ export async function PUT(
           .collection('organizationApplications')
           .doc(applicationId)
           .update({
-            processingError:
-              updateError.message || 'Error updating organization status',
+            processingError: getErrorMessage(
+              updateError,
+              'Error updating organization status'
+            ),
             updatedAt: FieldValue.serverTimestamp(),
           });
 
@@ -231,7 +241,10 @@ export async function PUT(
           success: true,
           warning:
             'Application marked as approved, but organization status update failed',
-          error: updateError.message || 'Error updating organization status',
+          error: getErrorMessage(
+            updateError,
+            'Error updating organization status'
+          ),
         });
       }
     } else if (status === 'rejected' && organizationId) {
@@ -251,7 +264,7 @@ export async function PUT(
         }
 
         // Get the current verification status
-        const orgData = orgDoc.data();
+        const orgData = orgDoc.data() || {};
         const currentStatus: OrganizationVerificationStatus =
           orgData.verificationStatus ||
           (orgData.isVerified ? 'verified' : 'not_verified');
@@ -278,7 +291,9 @@ export async function PUT(
           );
         } catch (updateError) {
           console.error(
-            `Error updating organization document: ${updateError.message}`
+            `Error updating organization document: ${getErrorMessage(
+              updateError
+            )}`
           );
           throw updateError;
         }
@@ -296,7 +311,9 @@ export async function PUT(
             `Successfully created audit log for organization ${organizationId}`
           );
         } catch (auditError) {
-          console.error(`Error creating audit log: ${auditError.message}`);
+          console.error(
+            `Error creating audit log: ${getErrorMessage(auditError)}`
+          );
           // Continue even if audit log creation fails
         }
 
@@ -317,7 +334,7 @@ export async function PUT(
           );
         } catch (notificationError) {
           console.error(
-            `Error creating notification: ${notificationError.message}`
+            `Error creating notification: ${getErrorMessage(notificationError)}`
           );
           // Continue even if notification creation fails
         }
@@ -332,8 +349,10 @@ export async function PUT(
           .collection('organizationApplications')
           .doc(applicationId)
           .update({
-            processingError:
-              updateError.message || 'Error updating organization status',
+            processingError: getErrorMessage(
+              updateError,
+              'Error updating organization status'
+            ),
             updatedAt: FieldValue.serverTimestamp(),
           });
 
@@ -342,7 +361,10 @@ export async function PUT(
           success: true,
           warning:
             'Application marked as rejected, but organization status update failed',
-          error: updateError.message || 'Error updating organization status',
+          error: getErrorMessage(
+            updateError,
+            'Error updating organization status'
+          ),
         });
       }
     }
@@ -353,10 +375,10 @@ export async function PUT(
       applicationId: applicationId,
       status: status,
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error updating organization application:', error);
     return NextResponse.json(
-      { error: error.message || 'Failed to update application' },
+      { error: getErrorMessage(error, 'Failed to update application') },
       { status: 500 }
     );
   }

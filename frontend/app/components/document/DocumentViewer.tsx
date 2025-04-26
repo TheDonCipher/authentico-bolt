@@ -128,14 +128,123 @@ export const DocumentViewer = (props: DocumentViewerProps) => {
 
     // Handle fallback mode
     if (props.fallback) {
+      // For PDF and image types, we'll still try to render them with the placeholder data
+      // This gives a better user experience than just showing a message
+      if (mimeType === 'application/pdf' || mimeType.startsWith('image/')) {
+        const blobUrl = createBlobUrl();
+        if (!blobUrl) {
+          // If we can't create a blob URL, fall back to the message
+          return renderFallbackMessage();
+        }
+
+        // For PDFs, render in an iframe
+        if (mimeType === 'application/pdf') {
+          return (
+            <div className="border-2 border-deep-moss bg-white h-[600px] relative">
+              <div className="absolute top-0 left-0 right-0 bg-soft-sage bg-opacity-80 p-2 text-center z-10">
+                <p className="text-deep-moss text-sm font-bold">
+                  This is a placeholder document. The actual content may differ.
+                </p>
+              </div>
+              <iframe
+                src={blobUrl}
+                className="w-full h-full"
+                title="PDF Document (Placeholder)"
+                onLoad={() => {
+                  // Don't revoke immediately for PDFs as the iframe needs to keep using it
+                }}
+                onError={() => {
+                  URL.revokeObjectURL(blobUrl);
+                  setError('Failed to load PDF placeholder');
+                }}
+              />
+              {status && (
+                <div
+                  className={`stamp-container ${
+                    animateStamp ? 'stamp-animation' : 'stamp-animation-initial'
+                  }`}
+                >
+                  <DocumentSeal
+                    status={status}
+                    date={updatedAt}
+                    size="large"
+                    className={`${
+                      animateStamp
+                        ? 'stamp-ink-animation'
+                        : 'stamp-ink-animation-initial'
+                    }`}
+                  />
+                </div>
+              )}
+            </div>
+          );
+        }
+
+        // For images, render in an img tag
+        if (mimeType.startsWith('image/')) {
+          return (
+            <div className="border-2 border-deep-moss bg-white relative">
+              <div className="absolute top-0 left-0 right-0 bg-soft-sage bg-opacity-80 p-2 text-center z-10">
+                <p className="text-deep-moss text-sm font-bold">
+                  This is a placeholder image. The actual content may differ.
+                </p>
+              </div>
+              <img
+                src={blobUrl}
+                alt="Document (Placeholder)"
+                className="max-w-full h-auto mx-auto"
+                onLoad={() => URL.revokeObjectURL(blobUrl)}
+                onError={() => {
+                  URL.revokeObjectURL(blobUrl);
+                  setError('Failed to load image placeholder');
+                }}
+              />
+              {status && (
+                <div
+                  className={`stamp-container ${
+                    animateStamp ? 'stamp-animation' : 'stamp-animation-initial'
+                  }`}
+                >
+                  <DocumentSeal
+                    status={status}
+                    date={updatedAt}
+                    size="large"
+                    className={`${
+                      animateStamp
+                        ? 'stamp-ink-animation'
+                        : 'stamp-ink-animation-initial'
+                    }`}
+                  />
+                </div>
+              )}
+            </div>
+          );
+        }
+      }
+
+      // For other types or if we couldn't create a blob URL, show a message
+      return renderFallbackMessage();
+    }
+
+    // Helper function to render the fallback message
+    function renderFallbackMessage() {
       return (
         <div className="bg-soft-sage bg-opacity-30 p-6 border-2 border-deep-moss text-center relative">
           <p className="text-deep-moss mb-4 font-bold">
             Document Preview Unavailable
           </p>
           <p className="text-deep-moss mb-4">
-            The document content cannot be displayed at this time. Please try
-            again later or contact support.
+            The document content cannot be displayed at this time. This could be
+            due to:
+          </p>
+          <ul className="text-deep-moss mb-4 list-disc list-inside text-left max-w-md mx-auto">
+            <li>Encryption key issues</li>
+            <li>IPFS storage connectivity problems</li>
+            <li>Document format incompatibility</li>
+            <li>Temporary server issues</li>
+          </ul>
+          <p className="text-deep-moss mb-4">
+            Please try again later or contact support if the issue persists.
           </p>
           <div className="p-4 bg-ivory border border-deep-moss inline-block">
             <p className="text-sm text-deep-moss mb-2">Document Information:</p>

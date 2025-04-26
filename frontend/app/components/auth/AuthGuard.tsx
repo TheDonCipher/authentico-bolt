@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../contexts/AuthContext';
 import { useOrganization } from '../../contexts/OrganizationContext';
-import { LoadingSpinner } from '../ui/LoadingSpinner';
+import { NeubrutalistLoading } from '../ui/NeubrutalistLoading';
 
 interface AuthGuardProps {
   children: React.ReactNode;
@@ -89,10 +89,11 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({
   if (loading || isLoadingOrgs) {
     console.log('AuthGuard rendering loading state');
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <LoadingSpinner size={40} />
-        <p className="ml-2 text-lg">Verifying Access Credentials...</p>
-      </div>
+      <NeubrutalistLoading
+        message="Access Verification"
+        subMessage="Verifying your access credentials..."
+        fullScreen={true}
+      />
     );
   }
 

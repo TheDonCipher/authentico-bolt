@@ -34,14 +34,11 @@ class EncryptionService {
   async encryptKey(dek, masterKey) {
     const iv = await promisify(crypto.randomBytes)(this.ivLength);
     const cipher = crypto.createCipheriv(this.algorithm, masterKey, iv);
-    
-    const encryptedDek = Buffer.concat([
-      cipher.update(dek),
-      cipher.final(),
-    ]);
-    
+
+    const encryptedDek = Buffer.concat([cipher.update(dek), cipher.final()]);
+
     const authTag = cipher.getAuthTag();
-    
+
     // Format: IV + AuthTag + EncryptedDEK
     return Buffer.concat([iv, authTag, encryptedDek]);
   }
@@ -55,16 +52,18 @@ class EncryptionService {
    */
   async decryptKey(encryptedDek, masterKey) {
     const iv = encryptedDek.slice(0, this.ivLength);
-    const authTag = encryptedDek.slice(this.ivLength, this.ivLength + this.authTagLength);
-    const encryptedData = encryptedDek.slice(this.ivLength + this.authTagLength);
-    
+    const authTag = encryptedDek.slice(
+      this.ivLength,
+      this.ivLength + this.authTagLength
+    );
+    const encryptedData = encryptedDek.slice(
+      this.ivLength + this.authTagLength
+    );
+
     const decipher = crypto.createDecipheriv(this.algorithm, masterKey, iv);
     decipher.setAuthTag(authTag);
-    
-    return Buffer.concat([
-      decipher.update(encryptedData),
-      decipher.final(),
-    ]);
+
+    return Buffer.concat([decipher.update(encryptedData), decipher.final()]);
   }
 
   /**
@@ -76,14 +75,14 @@ class EncryptionService {
   async encryptFile(fileBuffer, key) {
     const iv = await promisify(crypto.randomBytes)(this.ivLength);
     const cipher = crypto.createCipheriv(this.algorithm, key, iv);
-    
+
     const encryptedData = Buffer.concat([
       cipher.update(fileBuffer),
       cipher.final(),
     ]);
-    
+
     const authTag = cipher.getAuthTag();
-    
+
     // Format: IV + AuthTag + EncryptedData
     return Buffer.concat([iv, authTag, encryptedData]);
   }
@@ -96,16 +95,18 @@ class EncryptionService {
    */
   async decryptFile(encryptedBuffer, key) {
     const iv = encryptedBuffer.slice(0, this.ivLength);
-    const authTag = encryptedBuffer.slice(this.ivLength, this.ivLength + this.authTagLength);
-    const encryptedData = encryptedBuffer.slice(this.ivLength + this.authTagLength);
-    
+    const authTag = encryptedBuffer.slice(
+      this.ivLength,
+      this.ivLength + this.authTagLength
+    );
+    const encryptedData = encryptedBuffer.slice(
+      this.ivLength + this.authTagLength
+    );
+
     const decipher = crypto.createDecipheriv(this.algorithm, key, iv);
     decipher.setAuthTag(authTag);
-    
-    return Buffer.concat([
-      decipher.update(encryptedData),
-      decipher.final(),
-    ]);
+
+    return Buffer.concat([decipher.update(encryptedData), decipher.final()]);
   }
 
   /**
@@ -118,4 +119,4 @@ class EncryptionService {
   }
 }
 
-module.exports = new EncryptionService();
+module.exports = EncryptionService;

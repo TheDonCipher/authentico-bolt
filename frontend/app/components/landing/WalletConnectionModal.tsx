@@ -3,12 +3,14 @@ import { motion } from 'framer-motion';
 import { ConnectButton, darkTheme, useActiveAccount } from 'thirdweb/react';
 import { Wallet, X } from 'lucide-react';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
+import { NeubrutalistLoading } from '../ui/NeubrutalistLoading';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../contexts/AuthContext';
 import { useOrganization } from '../../contexts/OrganizationContext';
 import { redirectToDashboard } from '../../../lib/redirect-utils';
 import { Toast } from '../ui/Toast';
 import { AnimatePresence } from 'framer-motion';
+import { AuthResult, isSuccessfulAuthResult } from '../../types/auth';
 
 interface WalletConnectionModalProps {
   client: any;
@@ -55,7 +57,7 @@ export const WalletConnectionModal: React.FC<WalletConnectionModalProps> = ({
       setIsLoading(true);
       const result = await login(account.address);
 
-      if (result.success) {
+      if (isSuccessfulAuthResult(result)) {
         setToastMessage({
           type: 'success',
           message:
@@ -80,7 +82,7 @@ export const WalletConnectionModal: React.FC<WalletConnectionModalProps> = ({
           // Don't close the modal - the redirect will navigate away from this page
           redirectToDashboard(router, user, activeContext, activeOrgId);
         }, 1000);
-      } else if (result.newUser) {
+      } else if (result.success === false && result.newUser === true) {
         // New user needs to register
         setToastMessage({
           type: 'error',
@@ -91,11 +93,14 @@ export const WalletConnectionModal: React.FC<WalletConnectionModalProps> = ({
           // Do NOT close the modal before redirecting
         }, 2000);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Login error:', err);
       setToastMessage({
         type: 'error',
-        message: err.message || 'Failed to sign in. Please try again.',
+        message:
+          err instanceof Error
+            ? err.message
+            : 'Failed to sign in. Please try again.',
       });
     } finally {
       setIsLoading(false);
@@ -126,7 +131,7 @@ export const WalletConnectionModal: React.FC<WalletConnectionModalProps> = ({
         initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.95, opacity: 0 }}
-        className="bg-ivory p-4 sm:p-6 md:p-8 border-2 sm:border-4 border-deep-moss shadow-brutal sm:shadow-[8px_8px_0px_0px_rgba(27,67,50,0.8)] w-full max-w-md cursor-default overflow-y-auto max-h-[90vh]"
+        className="bg-[#1F2937] p-4 sm:p-6 md:p-8 border-2 sm:border-4 border-deep-moss shadow-brutal sm:shadow-[8px_8px_0px_0px_rgba(27,67,50,0.8)] w-full max-w-md cursor-default overflow-y-auto max-h-[90vh]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Toast Notifications */}
@@ -141,23 +146,23 @@ export const WalletConnectionModal: React.FC<WalletConnectionModalProps> = ({
           )}
         </AnimatePresence>
         <div className="flex justify-between items-center mb-4 sm:mb-6">
-          <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-[#2C3E50]">
+          <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-white">
             Get Started with Authentico
           </h3>
           <button
             onClick={handleClose}
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors touch-target"
+            className="p-2 hover:bg-gray-700 rounded-full transition-colors touch-target"
             aria-label="Close modal"
           >
-            <X size={18} className="sm:w-5 sm:h-5" />
+            <X size={18} className="sm:w-5 sm:h-5 text-white" />
           </button>
         </div>
 
         <div className="mb-4 sm:mb-6">
-          <p className="font-bold text-base sm:text-lg text-[#1E3A8A] mb-2 sm:mb-4">
+          <p className="font-bold text-base sm:text-lg text-[#81D4FA] mb-2 sm:mb-4">
             Follow these steps:
           </p>
-          <ol className="list-decimal list-inside space-y-1 sm:space-y-2 text-sm sm:text-base text-gray-600">
+          <ol className="list-decimal list-inside space-y-1 sm:space-y-2 text-sm sm:text-base text-gray-300">
             <li>Connect your wallet using the button below</li>
             <li>
               Sign in if you&apos;re a returning user, or sign up if you&apos;re
@@ -175,10 +180,22 @@ export const WalletConnectionModal: React.FC<WalletConnectionModalProps> = ({
                 accentText: '#ffffff',
                 accentButtonBg: '#2E7D32', // Forest Green
                 primaryButtonBg: '#1B4332', // Deep Moss
+                modalBg: '#1F2937', // Dark background
+                modalOverlayBg: 'rgba(0, 0, 0, 0.7)', // Darker overlay
+                secondaryButtonBg: '#374151', // Dark secondary button
+                secondaryButtonHoverBg: '#4B5563', // Darker on hover
+                secondaryButtonText: '#FFFFFF', // White text
+                connectedButtonBg: '#2E7D32', // Forest Green
+                primaryText: '#FFFFFF', // White text
+                secondaryText: '#D1D5DB', // Light gray text
               },
               fontFamily: 'Archivo',
             })}
-            connectButton={{ label: 'Connect Wallet' }}
+            connectButton={{
+              label: 'Connect Wallet',
+              className:
+                'bg-forest-green text-ivory border-2 border-deep-moss hover:bg-deep-moss transition-colors font-bold py-2 px-4 shadow-[4px_4px_0px_0px_rgba(27,67,50,0.8)]',
+            }}
             connectModal={{
               size: 'wide',
               welcomeScreen: {
@@ -190,11 +207,11 @@ export const WalletConnectionModal: React.FC<WalletConnectionModalProps> = ({
         </div>
 
         {account && (
-          <div className="mb-4 sm:mb-6 p-2 sm:p-3 bg-soft-sage border-2 border-deep-moss rounded">
-            <p className="text-xs sm:text-sm font-medium text-deep-moss">
+          <div className="mb-4 sm:mb-6 p-2 sm:p-3 bg-[#374151] border-2 border-deep-moss rounded">
+            <p className="text-xs sm:text-sm font-medium text-gray-200">
               Connected Wallet:
             </p>
-            <p className="font-mono text-xs sm:text-sm truncate">
+            <p className="font-mono text-xs sm:text-sm truncate text-gray-300">
               {account.address}
             </p>
             <p className="text-sap-green text-xs sm:text-sm font-bold mt-1 sm:mt-2">
@@ -214,14 +231,17 @@ export const WalletConnectionModal: React.FC<WalletConnectionModalProps> = ({
                 className="w-full bg-forest-green text-ivory text-base sm:text-lg font-bold py-2 sm:py-3 px-4 sm:px-6 rounded-lg border-2 border-deep-moss hover:bg-deep-moss transition duration-300 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed touch-target"
               >
                 {isLoading || isAutoLogin ? (
-                  <>
-                    <LoadingSpinner />
-                    <span>
-                      {isAutoLogin
-                        ? 'Automatically Signing In...'
-                        : 'Verifying Wallet Credentials...'}
-                    </span>
-                  </>
+                  <div className="flex items-center justify-center w-full">
+                    <NeubrutalistLoading
+                      message={isAutoLogin ? 'Auto Sign-In' : 'Verification'}
+                      subMessage={
+                        isAutoLogin
+                          ? 'Automatically signing you in...'
+                          : 'Verifying your wallet credentials...'
+                      }
+                      showSeal={false}
+                    />
+                  </div>
                 ) : (
                   <>
                     <Wallet
@@ -243,11 +263,11 @@ export const WalletConnectionModal: React.FC<WalletConnectionModalProps> = ({
               </motion.button>
             </div>
           ) : (
-            <div className="p-3 sm:p-4 bg-soft-sage border-2 border-deep-moss rounded text-center">
-              <p className="text-deep-moss text-sm sm:text-base font-medium">
+            <div className="p-3 sm:p-4 bg-[#374151] border-2 border-deep-moss rounded text-center">
+              <p className="text-gray-200 text-sm sm:text-base font-medium">
                 Please connect your wallet first
               </p>
-              <p className="text-xs text-gray-600 mt-1 sm:mt-2">
+              <p className="text-xs text-gray-400 mt-1 sm:mt-2">
                 You need to connect your wallet to sign in or register
               </p>
             </div>

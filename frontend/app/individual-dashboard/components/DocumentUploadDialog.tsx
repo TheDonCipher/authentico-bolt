@@ -1,16 +1,17 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { X, Upload, AlertCircle, RefreshCw } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
-import axios from 'axios';
-import { getAuthToken } from '../../../lib/token-util';
-import {
-  getVerifiedOrganizations,
-  uploadDocument,
-} from '../../../lib/api-client';
-import { getDocumentTypeName } from '../../constants/documentTypes';
+import useSecureDocumentUpload from '../../../lib/hooks/useSecureDocumentUpload';
+import { isAdmin } from '../../../lib/authorization-util';
+import { getVerifiedOrganizations } from '../../../lib/api-client';
 import { Document } from '../../models/Document';
+import {
+  validateFileType,
+  validateFileSize,
+} from '../../../lib/validation-util';
+import { useToast } from '../../components/ui/ToastProvider';
 
 interface DocumentUploadDialogProps {
   isOpen: boolean;
@@ -25,91 +26,154 @@ export const DocumentUploadDialog = ({
   onSuccess,
   documentToReupload = null,
 }: DocumentUploadDialogProps) => {
+  // Form state
   const [documentName, setDocumentName] = useState('');
   const [documentType, setDocumentType] = useState('identity');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
+  // Organization state
   const [verifyingOrgs, setVerifyingOrgs] = useState<any[]>([]);
   const [selectedOrganization, setSelectedOrganization] = useState('');
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [error, setError] = useState<string | null>(null);
+  const [isLoadingOrgs, setIsLoadingOrgs] = useState(false);
+  const [orgLoadError, setOrgLoadError] = useState<string | null>(null);
+
+  // Upload hook
+  const {
+    uploadDocument,
+    isUploading,
+    progress: uploadProgress,
+    error,
+    resetUploadState,
+  } = useSecureDocumentUpload();
+
+  // Auth and toast
   const { user } = useAuth();
+  const { showToast } = useToast();
 
+  // Check if user is admin
+  const isAdminUser = user ? isAdmin(user) : false;
+
+  // Refs to prevent infinite loops
+  const hasInitializedRef = useRef(false);
+  const hasSetOrgRef = useRef(false);
+  const hasSetInitialOrgRef = useRef(false); // For backward compatibility
+
+  // Initialize form when dialog opens
   useEffect(() => {
-    // Reset form when dialog opens
-    if (isOpen) {
-      // If we have a document to re-upload, pre-fill the form
-      if (documentToReupload) {
-        // Access properties safely with optional chaining
-        setDocumentName(documentToReupload?.documentName || '');
-        setDocumentType(documentToReupload?.documentType || 'identity');
-        setSelectedOrganization(documentToReupload?.verifyingOrgId || '');
-      } else {
-        // Otherwise reset the form
-        setDocumentName('');
-        setDocumentType('identity');
-        setSelectedOrganization('');
-      }
-
-      // Always reset these fields
-      setSelectedFile(null);
-      setError(null);
-      setUploadProgress(0);
-      fetchVerifyingOrganizations();
+    if (!isOpen) {
+      // Reset flags when dialog closes
+      hasInitializedRef.current = false;
+      hasSetOrgRef.current = false;
+      return;
     }
-  }, [isOpen, documentToReupload]);
 
-  const fetchVerifyingOrganizations = async () => {
-    try {
-      // Use the getVerifiedOrganizations function from api-client
-      // which handles token management internally
-      const organizations = await getVerifiedOrganizations();
+    // Skip if already initialized
+    if (hasInitializedRef.current) return;
 
-      // Only log in development environment
-      if (process.env.NODE_ENV === 'development') {
-        console.log(`Fetched ${organizations.length} verifying organizations`);
-      }
+    // Mark as initialized
+    hasInitializedRef.current = true;
 
-      // Ensure we have unique organizations by ID
-      const uniqueOrgs: any[] = [];
-      const orgIds = new Set();
+    // Reset form state
+    resetUploadState();
+    setSelectedFile(null);
 
-      organizations.forEach((org) => {
-        if (!orgIds.has(org.id)) {
-          orgIds.add(org.id);
-          uniqueOrgs.push(org);
-        }
-      });
-
-      // Only update state if we have new data
-      if (
-        uniqueOrgs.length !== verifyingOrgs.length ||
-        uniqueOrgs.some((org) => !verifyingOrgs.find((o) => o.id === org.id))
-      ) {
-        setVerifyingOrgs(uniqueOrgs);
-
-        // If there are organizations, select the first one by default
-        if (uniqueOrgs.length > 0 && !selectedOrganization) {
-          setSelectedOrganization(uniqueOrgs[0].id);
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching verifying organizations:', error);
-      setError('Failed to load verifying organizations. Please try again.');
+    // Set initial form values
+    if (documentToReupload) {
+      setDocumentName(documentToReupload.documentName || '');
+      setDocumentType(documentToReupload.documentType || 'identity');
+    } else {
+      setDocumentName('');
+      setDocumentType('identity');
     }
-  };
 
+    // Fetch organizations
+    const fetchOrganizations = async () => {
+      try {
+        setIsLoadingOrgs(true);
+        setOrgLoadError(null);
+
+        console.log('Fetching organizations...');
+        const organizations = await getVerifiedOrganizations(
+          isAdminUser,
+          false
+        );
+
+        if (organizations && organizations.length > 0) {
+          console.log(
+            `Successfully fetched ${organizations.length} organizations`
+          );
+
+          // Process and deduplicate organizations
+          const uniqueOrgs: any[] = [];
+          const orgIds = new Set();
+
+          organizations.forEach((org) => {
+            if (!orgIds.has(org.id)) {
+              orgIds.add(org.id);
+              uniqueOrgs.push(org);
+            }
+          });
+
+          // Sort alphabetically by organization name
+          uniqueOrgs.sort((a, b) =>
+            (a.organizationName || a.name).localeCompare(
+              b.organizationName || b.name
+            )
+          );
+
+          // Update state
+          setVerifyingOrgs(uniqueOrgs);
+
+          // Set initial selected organization
+          if (!hasSetOrgRef.current) {
+            if (documentToReupload?.verifyingOrgId) {
+              setSelectedOrganization(documentToReupload.verifyingOrgId);
+            } else if (uniqueOrgs.length > 0) {
+              setSelectedOrganization(uniqueOrgs[0].id);
+            }
+            hasSetOrgRef.current = true;
+          }
+        } else {
+          console.warn('No organizations returned from API');
+          setVerifyingOrgs([]);
+        }
+      } catch (error) {
+        console.error('Failed to fetch organizations:', error);
+        setOrgLoadError('Failed to load organizations. Please try refreshing.');
+        setVerifyingOrgs([]);
+      } finally {
+        setIsLoadingOrgs(false);
+      }
+    };
+
+    fetchOrganizations();
+  }, [isOpen, documentToReupload, isAdminUser, resetUploadState]);
+
+  // Handle file selection
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Check file size (limit to 10MB)
-      if (file.size > 10 * 1024 * 1024) {
-        setError('File size exceeds 10MB limit');
+      // Validate file size
+      if (!validateFileSize(file)) {
+        showToast({
+          type: 'error',
+          message: 'File size exceeds 10MB limit',
+        });
+        return;
+      }
+
+      // Validate file type
+      if (!validateFileType(file)) {
+        showToast({
+          type: 'error',
+          message:
+            'Invalid file type. Please upload PDF, JPEG, or PNG files only.',
+        });
         return;
       }
 
       setSelectedFile(file);
-      setError(null);
+      resetUploadState();
 
       // Auto-fill document name from filename if empty
       if (!documentName) {
@@ -119,144 +183,141 @@ export const DocumentUploadDialog = ({
     }
   };
 
+  // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validate inputs
-    if (!documentName.trim()) {
-      setError('Please enter a document name');
-      return;
-    }
-
+    // Validate form
     if (!selectedFile) {
-      setError('Please select a file to upload');
+      showToast({
+        type: 'error',
+        message: 'Please select a file to upload',
+      });
       return;
     }
 
     if (!selectedOrganization) {
-      setError('Please select a verifying organization');
+      showToast({
+        type: 'error',
+        message: 'Please select an organization',
+      });
       return;
     }
 
-    setIsUploading(true);
-    setError(null);
-
     try {
-      // Create a new FormData object
-      const formData = new FormData();
-
-      // Add the file with proper name and type
-      const fileExtension = selectedFile.name.split('.').pop() || '';
-      const safeFileName = `${documentName.replace(
-        /[^a-z0-9]/gi,
-        '_'
-      )}.${fileExtension}`;
-
-      // Create a new File object with the correct name and type
-      // Use the original file's content type or default to a safe type
-      const fileType = selectedFile.type || 'application/octet-stream';
-      const fileWithProperName = new File([selectedFile], safeFileName, {
-        type: fileType,
-      });
-
-      // Append the file with the exact field name expected by the backend
-      formData.append('document_file', fileWithProperName);
-
-      if (process.env.NODE_ENV === 'development') {
-        console.log(
-          `Attaching file: ${fileWithProperName.name} (${fileWithProperName.size} bytes, ${fileWithProperName.type})`
-        );
-      }
-
-      // Append other form fields
-      formData.append('documentName', documentName);
-      formData.append('documentType', documentType);
-      formData.append('verifyingOrgId', selectedOrganization);
-
-      // Validate form data before sending
-      if (!formData.has('document_file')) {
-        throw new Error('File not properly attached to form data');
-      }
-
-      // Verify the file is accessible in the form data
-      const fileEntry = formData.get('document_file');
-      if (!(fileEntry instanceof File)) {
-        throw new Error('File entry is not a valid File object');
-      }
-
-      // Verify file size is within limits
-      if (fileEntry.size > 10 * 1024 * 1024) {
-        throw new Error('File size exceeds 10MB limit');
-      }
-
-      // Verify file type is acceptable
-      const acceptableTypes = [
-        'application/pdf',
-        'image/jpeg',
-        'image/jpg',
-        'image/png',
-      ];
-      if (!acceptableTypes.includes(fileEntry.type)) {
-        console.warn(
-          `File type ${fileEntry.type} may not be supported by the backend`
-        );
-      }
-
-      // Log form data for debugging in development
-      if (process.env.NODE_ENV === 'development') {
-        console.log('Form data entries:');
-        // Convert entries to array first to avoid TypeScript iteration issues
-        Array.from(formData.entries()).forEach((pair) => {
-          console.log(
-            `- ${pair[0]}: ${
-              pair[1] instanceof File
-                ? `File: ${pair[1].name} (${pair[1].size} bytes, ${pair[1].type})`
-                : pair[1]
-            }`
-          );
-        });
-      }
-
-      // Use the uploadDocument function from api-client.js which is specifically designed for file uploads
-      try {
-        const response = await uploadDocument(formData, (percentCompleted) => {
-          setUploadProgress(percentCompleted);
-        });
-
-        // Ensure we maintain authentication state
-        const currentUser = user;
-
-        // Call success callback and close dialog
-        onSuccess();
-        onClose();
-
-        // Verify authentication state is maintained
-        if (!user && currentUser) {
-          console.error('Authentication state lost after document upload');
-          // Attempt to restore session
-          window.location.reload();
+      // Use the secure document upload hook
+      await uploadDocument(
+        selectedFile,
+        documentName,
+        documentType,
+        selectedOrganization,
+        {
+          onProgress: (progress) => {
+            console.log(`Upload progress: ${progress}%`);
+          },
+          onSuccess: () => {
+            showToast({
+              type: 'success',
+              message: 'Document uploaded successfully!',
+            });
+            onSuccess();
+            onClose();
+          },
+          onError: (error) => {
+            showToast({
+              type: 'error',
+              message: error.message,
+              duration: 7000, // Show longer for errors
+            });
+          },
         }
-      } catch (uploadError) {
-        console.error('Error in document upload:', uploadError);
-        setError(
-          uploadError.response?.data?.message ||
-            uploadError.message ||
-            'Failed to upload document. Please try again.'
-        );
-        throw uploadError; // Re-throw to be caught by the outer catch block
-      }
-    } catch (error: any) {
-      console.error('Document upload error in component:', error.message);
-      setError(
-        error.response?.data?.message ||
-          error.message ||
-          'Failed to upload document. Please try again.'
       );
-    } finally {
-      setIsUploading(false);
+    } catch (error: any) {
+      console.error('Error in document upload:', error);
+      // Error handling is already done in the hook
     }
   };
 
+  // Handle refreshing the organization list
+  const handleRefreshOrgs = async () => {
+    if (isLoadingOrgs) return;
+
+    setIsLoadingOrgs(true);
+    setOrgLoadError(null);
+
+    try {
+      showToast({
+        type: 'success',
+        message: 'Refreshing organization list...',
+        duration: 2000,
+      });
+
+      // Fetch fresh CSRF token
+      try {
+        console.log(
+          'Fetching fresh CSRF token before refreshing organizations...'
+        );
+        await fetch('/api/auth/csrf-token', {
+          method: 'GET',
+          credentials: 'include',
+        });
+        await new Promise((resolve) => setTimeout(resolve, 300));
+      } catch (csrfError) {
+        console.warn('Error fetching CSRF token:', csrfError);
+      }
+
+      // Fetch organizations
+      const organizations = await getVerifiedOrganizations(isAdminUser, false);
+
+      if (organizations && organizations.length > 0) {
+        // Process and deduplicate organizations
+        const uniqueOrgs: any[] = [];
+        const orgIds = new Set();
+
+        organizations.forEach((org) => {
+          if (!orgIds.has(org.id)) {
+            orgIds.add(org.id);
+            uniqueOrgs.push(org);
+          }
+        });
+
+        // Sort alphabetically by organization name
+        uniqueOrgs.sort((a, b) =>
+          (a.organizationName || a.name).localeCompare(
+            b.organizationName || b.name
+          )
+        );
+
+        // Update state
+        setVerifyingOrgs(uniqueOrgs);
+
+        showToast({
+          type: 'success',
+          message: `Successfully loaded ${uniqueOrgs.length} organizations`,
+          duration: 2000,
+        });
+      } else {
+        setVerifyingOrgs([]);
+        showToast({
+          type: 'error',
+          message: 'No verified organizations available',
+          duration: 3000,
+        });
+      }
+    } catch (error) {
+      console.error('Error refreshing organizations:', error);
+      setOrgLoadError('Failed to load organizations. Please try again.');
+      showToast({
+        type: 'error',
+        message: 'Failed to refresh organizations',
+        duration: 3000,
+      });
+    } finally {
+      setIsLoadingOrgs(false);
+    }
+  };
+
+  // Don't render anything if dialog is closed
   if (!isOpen) return null;
 
   return (
@@ -360,37 +421,90 @@ export const DocumentUploadDialog = ({
           </div>
 
           <div>
-            <label
-              htmlFor="verifyingOrg"
-              className="block font-bold mb-1 text-deep-moss"
-            >
-              Verifying Organization *
-            </label>
-            <select
-              id="verifyingOrg"
-              value={selectedOrganization}
-              onChange={(e) => setSelectedOrganization(e.target.value)}
-              className="w-full p-2 border-2 border-deep-moss focus:outline-none focus:border-forest-green"
-              disabled={isUploading}
-              required
-            >
-              <option value="" disabled>
-                Select an organization
-              </option>
-              {verifyingOrgs.length === 0 && (
+            <div className="flex justify-between items-center mb-1">
+              <label
+                htmlFor="verifyingOrg"
+                className="block font-bold text-deep-moss"
+              >
+                Verifying Organization *
+              </label>
+              <button
+                type="button"
+                onClick={handleRefreshOrgs}
+                className="text-deep-moss hover:text-forest-green flex items-center text-sm"
+                disabled={isUploading || isLoadingOrgs}
+              >
+                <RefreshCw
+                  size={14}
+                  className={`mr-1 ${isLoadingOrgs ? 'animate-spin' : ''}`}
+                />
+                {isLoadingOrgs ? 'Refreshing...' : 'Refresh List'}
+              </button>
+            </div>
+            <div className="relative">
+              <select
+                id="verifyingOrg"
+                value={selectedOrganization}
+                onChange={(e) => {
+                  // Only update if the value actually changed
+                  const value = e.target.value;
+                  if (value !== selectedOrganization) {
+                    setSelectedOrganization(value);
+                    // The ref will be updated in the useEffect
+
+                    // Mark that we've manually set the organization
+                    hasSetInitialOrgRef.current = true;
+                  }
+                }}
+                className={`w-full p-2 border-2 ${
+                  orgLoadError ? 'border-burnt-sienna' : 'border-deep-moss'
+                } focus:outline-none focus:border-forest-green`}
+                disabled={isUploading || isLoadingOrgs}
+                required
+              >
                 <option value="" disabled>
-                  Loading organizations...
+                  {isLoadingOrgs
+                    ? 'Loading organizations...'
+                    : 'Select an organization'}
                 </option>
+                {!isLoadingOrgs && verifyingOrgs.length === 0 && (
+                  <option value="" disabled>
+                    {orgLoadError
+                      ? 'Error loading organizations'
+                      : 'No organizations available'}
+                  </option>
+                )}
+                {verifyingOrgs.map((org) => (
+                  <option key={org.id} value={org.id}>
+                    {org.organizationName || org.name}{' '}
+                    {org.verificationBadge ? '✓' : ''}
+                  </option>
+                ))}
+              </select>
+              {isLoadingOrgs && (
+                <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
+                  <div className="w-4 h-4 border-2 border-forest-green border-t-transparent rounded-full animate-spin"></div>
+                </div>
               )}
-              {verifyingOrgs.map((org) => (
-                <option key={org.id} value={org.id}>
-                  {org.name} {org.verificationBadge ? '✓' : ''}
-                </option>
-              ))}
-            </select>
-            <p className="text-sm text-deep-moss mt-1">
-              Only verified organizations (✓) can verify your documents.
-            </p>
+            </div>
+            <div className="flex justify-between items-start mt-1">
+              <p className="text-sm text-deep-moss">
+                Only verified organizations (✓) can verify your documents.
+              </p>
+              <div className="text-sm">
+                {isLoadingOrgs ? (
+                  <span className="text-amber-600">Loading...</span>
+                ) : orgLoadError ? (
+                  <span className="text-burnt-sienna">{orgLoadError}</span>
+                ) : verifyingOrgs.length > 0 ? (
+                  <span className="text-forest-green">
+                    {verifyingOrgs.length} organizations
+                  </span>
+                ) : (
+                  <span className="text-amber-600">No organizations found</span>
+                )}
+              </div>
+            </div>
           </div>
 
           <div>
@@ -425,7 +539,7 @@ export const DocumentUploadDialog = ({
                     <Upload className="mx-auto mb-2" size={24} />
                     <p>Click to select a file or drag and drop</p>
                     <p className="text-sm mt-1">
-                      Supported formats: PDF, JPG, PNG, DOC, DOCX
+                      Supported formats: PDF, JPG, PNG
                     </p>
                     <p className="text-sm mt-1">Max size: 10MB</p>
                   </div>

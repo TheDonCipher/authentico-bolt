@@ -1,4 +1,5 @@
-const firebase = require('firebase');
+const { initializeApp } = require('firebase/app');
+const { getFirestore, collection } = require('firebase/firestore');
 const admin = require('firebase-admin');
 const fs = require('fs');
 const path = require('path');
@@ -14,7 +15,7 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase client SDK
-firebase.initializeApp(firebaseConfig);
+const firebaseApp = initializeApp(firebaseConfig);
 
 // Initialize Firebase Admin SDK
 // Try to use service account file if it exists, otherwise use environment variables
@@ -56,16 +57,16 @@ if (fs.existsSync(serviceAccountPath)) {
 admin.initializeApp(adminConfig);
 
 // Database references
-const db = firebase.firestore();
+const db = getFirestore(firebaseApp);
 const adminDb = admin.firestore();
 
 // Standardize on a single collection name (lowercase)
 const USER_COLLECTION = 'users';
-const User = db.collection(USER_COLLECTION);
+const User = collection(db, USER_COLLECTION);
 const AdminUser = adminDb.collection(USER_COLLECTION);
 
 module.exports = {
-  firebase,
+  firebaseApp,
   admin,
   db,
   adminDb,

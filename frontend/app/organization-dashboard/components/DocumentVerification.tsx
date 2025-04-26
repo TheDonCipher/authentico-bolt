@@ -2,6 +2,12 @@
 
 import React, { useState } from 'react';
 import { Check, X, Eye, AlertTriangle } from 'lucide-react';
+import {
+  normalizeDocumentStatus,
+  isDocumentPending,
+  isDocumentVerified,
+  isDocumentRejected,
+} from '../../../lib/document-status-util';
 import axios from 'axios';
 import { getAuthToken } from '../../../lib/token-util';
 import { getFirestore, doc, getDoc, updateDoc } from 'firebase/firestore';
@@ -42,7 +48,7 @@ const DocumentVerification: React.FC<DocumentVerificationProps> = ({
 
       // Update the document status in Firestore directly
       await updateDoc(docRef, {
-        status: 'verified', // Use lowercase for consistency
+        status: 'Verified', // Use capitalized for consistency
         verifiedAt: new Date(),
         verifiedBy: request.verifyingOrgId,
       });
@@ -51,7 +57,7 @@ const DocumentVerification: React.FC<DocumentVerificationProps> = ({
       await axios.post(
         `/api/documents/${request.documentId}/verify`,
         {
-          status: 'verified', // Use lowercase for consistency
+          status: 'Verified', // Use capitalized for consistency
         },
         {
           headers: {
@@ -99,7 +105,7 @@ const DocumentVerification: React.FC<DocumentVerificationProps> = ({
 
       // Update the document status in Firestore directly
       await updateDoc(docRef, {
-        status: 'rejected', // Use lowercase for consistency
+        status: 'Rejected', // Use capitalized for consistency
         rejectedAt: new Date(),
         rejectedBy: request.verifyingOrgId,
         rejectionReason: rejectionReason,
@@ -108,7 +114,7 @@ const DocumentVerification: React.FC<DocumentVerificationProps> = ({
       await axios.post(
         `/api/documents/${request.documentId}/verify`,
         {
-          status: 'rejected', // Use lowercase for consistency
+          status: 'Rejected', // Use capitalized for consistency
           rejectionReason: rejectionReason,
         },
         {
@@ -143,21 +149,16 @@ const DocumentVerification: React.FC<DocumentVerificationProps> = ({
     }
   };
 
-  // Check the document status to determine which actions to show
+  // Get the document status using our utility functions
   const getDocumentStatus = () => {
     if (!request || !request.documentId) return 'pending';
 
     // Try to get status from different possible fields
     const status = request.status || request.documentStatus;
 
-    // Normalize status to lowercase for consistency
-    if (status) {
-      if (typeof status === 'string') {
-        return status.toLowerCase();
-      }
-      return status;
-    }
-
+    // Use our utility functions to determine the status
+    if (isDocumentVerified(status)) return 'verified';
+    if (isDocumentRejected(status)) return 'rejected';
     return 'pending';
   };
 

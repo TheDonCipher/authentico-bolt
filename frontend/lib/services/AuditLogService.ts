@@ -42,8 +42,12 @@ export class AuditLogService {
             `Organization with ID ${organizationId} not found when creating audit log`
           );
         }
-      } catch (orgError) {
-        console.error(`Error getting organization data: ${orgError.message}`);
+      } catch (orgError: unknown) {
+        console.error(
+          `Error getting organization data: ${
+            orgError instanceof Error ? orgError.message : 'Unknown error'
+          }`
+        );
         // Continue with default organization name
       }
 
@@ -59,8 +63,12 @@ export class AuditLogService {
             `User with ID ${updatedBy} not found when creating audit log`
           );
         }
-      } catch (userError) {
-        console.error(`Error getting updater data: ${userError.message}`);
+      } catch (userError: unknown) {
+        console.error(
+          `Error getting updater data: ${
+            userError instanceof Error ? userError.message : 'Unknown error'
+          }`
+        );
         // Continue with default updater name
       }
 

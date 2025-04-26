@@ -148,8 +148,12 @@ export const PersonalSignUp: React.FC<PersonalSignUpProps> = ({
       });
 
       router.push('/individul-dashboard');
-    } catch (error) {
-      setError(error.message || 'An error occurred. Please try again.');
+    } catch (error: unknown) {
+      setError(
+        error instanceof Error
+          ? error.message
+          : 'An error occurred. Please try again.'
+      );
     } finally {
       setLoading(false);
     }

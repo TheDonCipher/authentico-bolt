@@ -70,26 +70,123 @@ export async function GET(request: NextRequest) {
       pendingOrgsSnapshot,
       verifiedDocsSnapshot,
       rejectedDocsSnapshot,
+      verifiedOrgsSnapshot,
+      verifiedOrgsLegacySnapshot,
     ] = await Promise.all([
       db.collection(USER_COLLECTION).count().get(),
       db.collection(DOCUMENT_COLLECTION).count().get(),
-      db.collection(ORGANIZATION_COLLECTION).count().get(),
       db
-        .collection(ORGANIZATION_COLLECTION)
+        .collection(USER_COLLECTION)
+        .where('userType', '==', 'organization')
+        .count()
+        .get(),
+      db
+        .collection(USER_COLLECTION)
+        .where('userType', '==', 'organization')
         .where('status', '==', 'pending')
         .count()
         .get(),
+      // Query for all variations of verified status
+      Promise.all([
+        db
+          .collection(DOCUMENT_COLLECTION)
+          .where('status', '==', 'Verified')
+          .count()
+          .get(),
+        db
+          .collection(DOCUMENT_COLLECTION)
+          .where('status', '==', 'verified')
+          .count()
+          .get(),
+        db
+          .collection(DOCUMENT_COLLECTION)
+          .where('status', '==', 'VERIFIED')
+          .count()
+          .get(),
+        // For numeric status codes if used
+        db
+          .collection(DOCUMENT_COLLECTION)
+          .where('status', '==', '2')
+          .count()
+          .get(),
+      ]),
+      // Query for all variations of rejected status
+      Promise.all([
+        db
+          .collection(DOCUMENT_COLLECTION)
+          .where('status', '==', 'Rejected')
+          .count()
+          .get(),
+        db
+          .collection(DOCUMENT_COLLECTION)
+          .where('status', '==', 'rejected')
+          .count()
+          .get(),
+        db
+          .collection(DOCUMENT_COLLECTION)
+          .where('status', '==', 'REJECTED')
+          .count()
+          .get(),
+        // For numeric status codes if used
+        db
+          .collection(DOCUMENT_COLLECTION)
+          .where('status', '==', '3')
+          .count()
+          .get(),
+      ]),
       db
-        .collection(DOCUMENT_COLLECTION)
-        .where('status', '==', 'Verified')
+        .collection(USER_COLLECTION)
+        .where('userType', '==', 'organization')
+        .where('verificationStatus', '==', 'verified')
         .count()
         .get(),
       db
-        .collection(DOCUMENT_COLLECTION)
-        .where('status', '==', 'Rejected')
+        .collection(USER_COLLECTION)
+        .where('userType', '==', 'organization')
+        .where('isVerified', '==', true)
         .count()
         .get(),
     ]);
+
+    // Calculate total verified organizations (avoiding duplicates)
+    const verifiedOrgsCount = verifiedOrgsSnapshot.data().count;
+    const verifiedOrgsLegacyCount = verifiedOrgsLegacySnapshot.data().count;
+
+    // We can't simply add these counts as there might be overlap
+    // For a more accurate count, we'd need to fetch the actual documents and deduplicate
+    // For now, we'll use the higher count as an approximation
+    const totalVerifiedOrgs = Math.max(
+      verifiedOrgsCount,
+      verifiedOrgsLegacyCount
+    );
+
+    // Calculate total verified documents from all queries
+    const [
+      verifiedUppercase,
+      verifiedLowercase,
+      verifiedAllCaps,
+      verifiedNumeric,
+    ] = verifiedDocsSnapshot;
+
+    const totalVerifiedDocs =
+      verifiedUppercase.data().count +
+      verifiedLowercase.data().count +
+      verifiedAllCaps.data().count +
+      verifiedNumeric.data().count;
+
+    // Calculate total rejected documents from all queries
+    const [
+      rejectedUppercase,
+      rejectedLowercase,
+      rejectedAllCaps,
+      rejectedNumeric,
+    ] = rejectedDocsSnapshot;
+
+    const totalRejectedDocs =
+      rejectedUppercase.data().count +
+      rejectedLowercase.data().count +
+      rejectedAllCaps.data().count +
+      rejectedNumeric.data().count;
 
     // Return the statistics
     return NextResponse.json({
@@ -97,8 +194,9 @@ export async function GET(request: NextRequest) {
       documents: documentsSnapshot.data().count,
       organizations: organizationsSnapshot.data().count,
       pendingOrganizations: pendingOrgsSnapshot.data().count,
-      verifiedDocuments: verifiedDocsSnapshot.data().count,
-      rejectedDocuments: rejectedDocsSnapshot.data().count,
+      verifiedOrganizations: totalVerifiedOrgs,
+      verifiedDocuments: totalVerifiedDocs,
+      rejectedDocuments: totalRejectedDocs,
     });
   } catch (error: any) {
     console.error('Error fetching admin statistics:', error);

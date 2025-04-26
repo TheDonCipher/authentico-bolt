@@ -8,7 +8,9 @@ import {
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  'Access-Control-Allow-Headers':
+    'Content-Type, Authorization, x-xsrf-token, Cookie',
+  'Access-Control-Allow-Credentials': 'true',
 };
 
 // Handle OPTIONS requests (preflight)
@@ -21,7 +23,33 @@ export async function OPTIONS() {
 
 export async function POST(request: NextRequest) {
   try {
-    const { token, userData } = await request.json();
+    // Get CSRF token from request headers
+    const csrfToken = request.headers.get('x-xsrf-token');
+    console.log('CSRF token from set-cookies request:', csrfToken);
+
+    // Safely parse the request body
+    let requestBody;
+    try {
+      const text = await request.text();
+      console.log('Request body text:', text);
+
+      if (!text || text.trim() === '') {
+        return NextResponse.json(
+          { error: 'Empty request body' },
+          { status: 400, headers: corsHeaders }
+        );
+      }
+
+      requestBody = JSON.parse(text);
+    } catch (parseError) {
+      console.error('Error parsing request body:', parseError);
+      return NextResponse.json(
+        { error: 'Invalid JSON in request body' },
+        { status: 400, headers: corsHeaders }
+      );
+    }
+
+    const { token, userData } = requestBody;
 
     if (!token || !userData) {
       return NextResponse.json(

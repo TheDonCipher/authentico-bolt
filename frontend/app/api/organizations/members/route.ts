@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyAuth } from '../../../../lib/auth-middleware';
+import { verifyAuth, isAuthSuccess } from '../../../../lib/auth-middleware';
 import { db, auth } from '../../../../lib/firebase-admin-server';
 
 export async function GET(request: NextRequest) {
@@ -7,7 +7,7 @@ export async function GET(request: NextRequest) {
     // Verify the authentication token
     const authResult = await verifyAuth(request);
 
-    if (!authResult.success) {
+    if (!isAuthSuccess(authResult)) {
       return NextResponse.json(
         { error: authResult.error },
         { status: authResult.status }
@@ -84,7 +84,7 @@ export async function GET(request: NextRequest) {
           .doc(memberData.userId)
           .get();
         if (userDoc.exists) {
-          const userData = userDoc.data();
+          const userData = userDoc.data() || {};
           members.push({
             id: doc.id,
             userId: memberData.userId,
@@ -118,7 +118,7 @@ export async function POST(request: NextRequest) {
     // Verify the authentication token
     const authResult = await verifyAuth(request);
 
-    if (!authResult.success) {
+    if (!isAuthSuccess(authResult)) {
       return NextResponse.json(
         { error: authResult.error },
         { status: authResult.status }

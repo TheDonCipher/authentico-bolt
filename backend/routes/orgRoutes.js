@@ -201,6 +201,108 @@ router.get('/application/status', verifyToken, async (req, res) => {
 });
 
 /**
+ * Get all verified organizations directly from Firestore
+ * GET /api/organizations/direct-firestore
+ */
+router.get('/direct-firestore', verifyToken, async (req, res) => {
+  try {
+    console.log('Direct Firestore request for verified organizations');
+
+    // Query for verified organizations with all verification fields
+    const verifiedOrgs = [];
+    const verifiedOrgIds = new Set();
+
+    // Query for organizations with verificationStatus=verified
+    const verifiedWithStatusSnapshot = await usersCollection
+      .where('userType', '==', 'organization')
+      .where('verificationStatus', '==', 'verified')
+      .get();
+
+    console.log(
+      `Found ${verifiedWithStatusSnapshot.size} organizations with verificationStatus=verified`
+    );
+
+    // Query for organizations with isVerified=true
+    const verifiedWithLegacySnapshot = await usersCollection
+      .where('userType', '==', 'organization')
+      .where('isVerified', '==', true)
+      .get();
+
+    console.log(
+      `Found ${verifiedWithLegacySnapshot.size} organizations with isVerified=true`
+    );
+
+    // Query for organizations with status=verified
+    const verifiedWithStatusFieldSnapshot = await usersCollection
+      .where('userType', '==', 'organization')
+      .where('status', '==', 'verified')
+      .get();
+
+    console.log(
+      `Found ${verifiedWithStatusFieldSnapshot.size} organizations with status=verified`
+    );
+
+    // Process all snapshots
+    [
+      verifiedWithStatusSnapshot,
+      verifiedWithLegacySnapshot,
+      verifiedWithStatusFieldSnapshot,
+    ].forEach((snapshot) => {
+      snapshot.forEach((doc) => {
+        if (!verifiedOrgIds.has(doc.id)) {
+          verifiedOrgIds.add(doc.id);
+
+          const data = doc.data();
+          const orgDetails = data.orgDetails || {};
+
+          verifiedOrgs.push({
+            id: doc.id,
+            name: data.name || orgDetails.name || 'Unnamed Organization',
+            organizationName:
+              data.organizationName ||
+              data.name ||
+              orgDetails.name ||
+              'Unnamed Organization',
+            website: data.website || orgDetails.website || null,
+            description: data.description || orgDetails.description || null,
+            verificationBadge:
+              data.verificationBadge || data.status === 'verified' || false,
+            documentTypes: Array.isArray(data.documentTypes)
+              ? data.documentTypes
+              : Array.isArray(orgDetails.documentTypes)
+              ? orgDetails.documentTypes
+              : [],
+            industry: data.industry || orgDetails.industry || null,
+            phoneNumber: data.phoneNumber || orgDetails.phoneNumber || null,
+            email: data.email || orgDetails.email || null,
+            status: 'verified',
+            verificationStatus: 'verified',
+            isVerified: true,
+            createdAt: data.createdAt ? data.createdAt.toDate() : null,
+            updatedAt: data.updatedAt ? data.updatedAt.toDate() : null,
+            verifiedAt: data.verifiedAt ? data.verifiedAt.toDate() : null,
+          });
+        }
+      });
+    });
+
+    console.log(
+      `Returning ${verifiedOrgs.length} unique verified organizations from direct Firestore query`
+    );
+    res.json(verifiedOrgs);
+  } catch (error) {
+    console.error(
+      'Error getting verified organizations from Firestore:',
+      error
+    );
+    res.status(500).json({
+      error: 'Failed to get organizations from Firestore',
+      details: error.message,
+    });
+  }
+});
+
+/**
  * Get all verified organizations
  * GET /api/organizations/verified
  */
@@ -216,14 +318,40 @@ router.get('/verified', verifyToken, async (req, res) => {
       );
     }
 
-    // Query for verified organizations
-    const snapshot = await usersCollection
+    // Query for verified organizations with both new and legacy verification fields
+    // First, get organizations with the new verificationStatus field
+    const verifiedWithStatusSnapshot = await usersCollection
+      .where('userType', '==', 'organization')
+      .where('verificationStatus', '==', 'verified')
+      .get();
+
+    // Then, get organizations with the legacy isVerified field
+    const verifiedWithLegacySnapshot = await usersCollection
       .where('userType', '==', 'organization')
       .where('isVerified', '==', true)
       .get();
 
+    // Combine the results, ensuring no duplicates
+    const verifiedOrgIds = new Set();
+    const verifiedDocs = [];
+
+    // Add docs from the new status query
+    verifiedWithStatusSnapshot.forEach((doc) => {
+      verifiedOrgIds.add(doc.id);
+      verifiedDocs.push(doc);
+    });
+
+    // Add docs from the legacy query if not already included
+    verifiedWithLegacySnapshot.forEach((doc) => {
+      if (!verifiedOrgIds.has(doc.id)) {
+        verifiedDocs.push(doc);
+      }
+    });
+
+    console.log(`Found ${verifiedDocs.length} verified organizations in total`);
+
     // Format results
-    const organizations = snapshot.docs.map((doc) => {
+    const organizations = verifiedDocs.map((doc) => {
       const data = doc.data();
       // Check if organization details are in the orgDetails field
       const orgDetails = data.orgDetails || {};

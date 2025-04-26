@@ -1,18 +1,32 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 import axios from 'axios';
 
 // Get the backend API URL from environment variables
-const BACKEND_API_URL = process.env.NEXT_PUBLIC_API_URL;
-// Remove '/api' from the end if it exists to avoid duplication
-const baseUrl = BACKEND_API_URL?.endsWith('/api')
-  ? BACKEND_API_URL
+let BACKEND_API_URL =
+  process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
+
+// Remove trailing slash if present
+if (BACKEND_API_URL.endsWith('/')) {
+  BACKEND_API_URL = BACKEND_API_URL.slice(0, -1);
+}
+
+// Ensure the URL has the correct format
+const baseUrl = BACKEND_API_URL.endsWith('/api')
+  ? BACKEND_API_URL.slice(0, -4) // Remove '/api' to avoid duplication
   : BACKEND_API_URL;
+
+// For local development, ensure we're using the correct URL
+if (process.env.NODE_ENV === 'development') {
+  console.log('Using development API URL: http://localhost:8080');
+}
 
 // CORS headers to allow cross-origin requests
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  'Access-Control-Allow-Headers':
+    'Content-Type, Authorization, x-xsrf-token, Cookie',
+  'Access-Control-Allow-Credentials': 'true',
 };
 
 // Handle OPTIONS requests (preflight)
@@ -23,7 +37,7 @@ export async function OPTIONS() {
   });
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   if (!BACKEND_API_URL) {
     console.error('Backend API URL is not configured.');
     return NextResponse.json(
@@ -35,27 +49,52 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
 
+    // Get CSRF token from request headers
+    const csrfToken = request.headers.get('x-xsrf-token');
+    console.log('CSRF token from registration request:', csrfToken);
+
+    // Get cookies from the request to forward to the backend
+    const requestCookies = request.headers.get('cookie');
+    console.log('Cookies from registration request:', requestCookies);
+
     // Forward the request to the backend registration endpoint
-    console.log(`Forwarding registration request to: ${baseUrl}/auth/register`);
+    console.log(
+      `Forwarding registration request to: ${baseUrl}/api/auth/register`
+    );
     const backendResponse = await axios.post(
-      `${baseUrl}/auth/register`, // Adjust endpoint if needed
+      `${baseUrl}/api/auth/register`, // Ensure we're using the correct endpoint
       body,
       {
         headers: {
           'Content-Type': 'application/json',
+          'x-xsrf-token': csrfToken || '', // Forward CSRF token to backend (lowercase to match backend expectation)
+          Cookie: requestCookies || '', // Forward cookies to the backend
           // Forward any other relevant headers if necessary
         },
         // Ensure Axios throws errors for non-2xx responses
         validateStatus: (status) => status >= 200 && status < 300,
         timeout: 10000, // 10 second timeout
+        withCredentials: true, // Include cookies in the request
       }
     );
 
-    // Return the response from the backend with CORS headers
-    return NextResponse.json(backendResponse.data, {
+    // Get the cookies from the backend response
+    const cookies = backendResponse.headers['set-cookie'];
+
+    // Create a response with the data from the backend
+    const response = NextResponse.json(backendResponse.data, {
       status: backendResponse.status,
       headers: corsHeaders,
     });
+
+    // Forward the cookies from the backend to the frontend
+    if (cookies && cookies.length > 0) {
+      for (const cookie of cookies) {
+        response.headers.append('Set-Cookie', cookie);
+      }
+    }
+
+    return response;
   } catch (error: any) {
     console.error('Error proxying registration request:', error);
 

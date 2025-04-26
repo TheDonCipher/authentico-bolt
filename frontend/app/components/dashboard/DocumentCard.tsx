@@ -16,6 +16,7 @@ import { DocumentSeal } from '../document/DocumentSeal';
 import { getDocumentTypeName } from '../../constants/documentTypes';
 import { Toast } from '../ui/Toast';
 import { DocumentViewer } from '../document/DocumentViewer';
+import { NeubrutalistLoading } from '../ui/NeubrutalistLoading';
 import axios from 'axios';
 import { getAuthToken } from '../../../lib/token-util';
 import {
@@ -383,33 +384,12 @@ export const DocumentCard = ({
 
       {/* Loading Indicator */}
       {isLoading && (
-        <div className="fixed inset-0 z-50 bg-black bg-opacity-30 flex items-center justify-center p-3 sm:p-4">
-          <div className="bg-ivory p-4 sm:p-6 border-2 sm:border-4 border-deep-moss shadow-brutal sm:shadow-[8px_8px_0px_0px_rgba(27,67,50,0.8)]">
-            <div className="flex flex-col items-center">
-              <div className="relative w-12 h-12 sm:w-16 sm:h-16">
-                {[0, 1, 2].map((index) => (
-                  <div
-                    key={index}
-                    className="absolute top-0 left-0 w-full h-full border-2 sm:border-4 border-deep-moss animate-pulse"
-                    style={{
-                      rotate: `${index * 15}deg`,
-                      backgroundColor:
-                        index === 0
-                          ? 'var(--soft-sage)'
-                          : index === 1
-                          ? 'var(--ivory)'
-                          : 'var(--stone-gray)',
-                      animationDelay: `${index * 0.2}s`,
-                    }}
-                  />
-                ))}
-              </div>
-              <p className="mt-3 sm:mt-4 text-center font-bold text-deep-moss text-sm sm:text-base">
-                Loading Document...
-              </p>
-            </div>
-          </div>
-        </div>
+        <NeubrutalistLoading
+          message="Document"
+          subMessage="Loading document content..."
+          fullScreen={true}
+          showSeal={true}
+        />
       )}
     </div>
   );

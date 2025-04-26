@@ -155,8 +155,12 @@ export const OrganizationSignUp: React.FC<OrganizationSignUpProps> = ({
         role: '0',
       });
       router.push('/organization-dashboard');
-    } catch (error) {
-      setError(error.message || 'An error occurred. Please try again.');
+    } catch (error: unknown) {
+      setError(
+        error instanceof Error
+          ? error.message
+          : 'An error occurred. Please try again.'
+      );
     } finally {
       setLoading(false);
     }

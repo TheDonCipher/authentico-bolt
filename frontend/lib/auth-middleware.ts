@@ -1,11 +1,42 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from './firebase-admin-server';
+import { DecodedIdToken } from 'firebase-admin/auth';
+
+/**
+ * Interface for successful authentication result
+ */
+export interface AuthSuccess {
+  success: true;
+  uid: string;
+  decodedToken: DecodedIdToken;
+}
+
+/**
+ * Interface for failed authentication result
+ */
+export interface AuthFailure {
+  success: false;
+  error: string;
+  status: number;
+}
+
+/**
+ * Type for authentication result
+ */
+export type AuthResult = AuthSuccess | AuthFailure;
+
+/**
+ * Type guard to check if auth result is successful
+ */
+export function isAuthSuccess(result: AuthResult): result is AuthSuccess {
+  return result.success === true;
+}
 
 /**
  * Middleware to verify authentication tokens
  * This can be used in API routes to protect endpoints
  */
-export async function verifyAuth(request: NextRequest) {
+export async function verifyAuth(request: NextRequest): Promise<AuthResult> {
   try {
     // Get the authorization header
     const authHeader = request.headers.get('authorization');

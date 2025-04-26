@@ -6,7 +6,7 @@ import SidebarNavigation from '../organization-dashboard/components/SidebarNavig
 import { AuthGuard } from '../components/auth/AuthGuard';
 import { OrganizationVerificationCheck } from '../components/auth/OrganizationVerificationCheck';
 import { useAuth } from '../contexts/AuthContext';
-import { Loader } from '../components/ui/Loader';
+import { NeubrutalistLoading } from '../components/ui/NeubrutalistLoading';
 import { Toast } from '../components/ui/Toast';
 import { NotificationBell } from '../components/dashboard/NotificationBell';
 import { ProfileCard } from '../components/dashboard/ProfileCard';
@@ -33,9 +33,11 @@ export default function VerificationQueuePage() {
 
   if (authLoading || isLoading) {
     return (
-      <div className="min-h-screen bg-ivory flex items-center justify-center">
-        <Loader fullScreen text="Loading verification queue..." size="large" />
-      </div>
+      <NeubrutalistLoading
+        message="Verification Queue"
+        subMessage="Loading your verification queue..."
+        fullScreen={true}
+      />
     );
   }
 

@@ -7,7 +7,7 @@ import { useOrganization } from '../../../contexts/OrganizationContext';
 import { ContextSwitcher } from '../../../components/dashboard/ContextSwitcher';
 import { ProfileCard } from '../../../components/dashboard/ProfileCard';
 import { NotificationBell } from '../../../components/dashboard/NotificationBell';
-import { Loader } from '../../../components/ui/Loader';
+import { NeubrutalistLoading } from '../../../components/ui/NeubrutalistLoading';
 import { Toast } from '../../../components/ui/Toast';
 import {
   collection,
@@ -23,7 +23,12 @@ import { db } from '../../../../lib/firebase';
 import DocumentReception from '../../../organization-dashboard/components/DocumentReception';
 import OrganizationVerificationStatus from '../../../organization-dashboard/components/OrganizationVerificationStatus';
 import VerificationQueue from './components/VerificationQueue';
-import { Eye } from 'lucide-react';
+import { Eye, Check, X, Clock } from 'lucide-react';
+import {
+  normalizeDocumentStatus,
+  getStatusBadgeClasses,
+  isDocumentPending,
+} from '../../../../lib/document-status-util';
 
 interface ToastMessage {
   type: 'success' | 'error' | 'warning';
@@ -73,15 +78,39 @@ export default function OrganizationDashboardPage() {
           // Now, try to get the organization application data which might have more details
           let applicationData: Record<string, any> = {};
           try {
-            const appQuery = query(
+            // Try multiple queries to find the organization application
+            // First try with orgId field
+            const appQuery1 = query(
               collection(db, 'organizationApplications'),
               where('orgId', '==', orgId)
             );
-            const appDocs = await getDocs(appQuery);
+            let appDocs = await getDocs(appQuery1);
+
+            // If not found, try with organizationId field
+            if (appDocs.empty) {
+              const appQuery2 = query(
+                collection(db, 'organizationApplications'),
+                where('organizationId', '==', orgId)
+              );
+              appDocs = await getDocs(appQuery2);
+            }
+
+            // If not found, try with submittedBy field
+            if (appDocs.empty) {
+              const appQuery3 = query(
+                collection(db, 'organizationApplications'),
+                where('submittedBy', '==', orgId)
+              );
+              appDocs = await getDocs(appQuery3);
+            }
 
             if (!appDocs.empty) {
               applicationData = appDocs.docs[0].data() as Record<string, any>;
               console.log('Organization application data:', applicationData);
+            } else {
+              console.log(
+                'No organization application found for this organization'
+              );
             }
           } catch (appError) {
             console.error('Error fetching organization application:', appError);
@@ -174,18 +203,13 @@ export default function OrganizationDashboardPage() {
         `Found ${docsSnapshot.docs.length} total documents for this organization`
       );
 
-      // Filter for pending documents in memory - check for multiple possible status values
+      // Filter for pending documents in memory using our utility function
       const pendingDocs = docsSnapshot.docs
         .filter((doc) => {
           const data = doc.data();
-          const status = data.status?.toLowerCase?.() || '';
-          // Check for any status that indicates pending verification
-          return (
-            status === 'pending verification' ||
-            status === 'pending' ||
-            status === 'awaiting verification' ||
-            status === 'submitted'
-          );
+          const status = data.status || '';
+          // Use our utility function to check if document is pending verification
+          return isDocumentPending(status);
         })
         .map((doc) => {
           const data = doc.data();
@@ -242,17 +266,13 @@ export default function OrganizationDashboardPage() {
             `Found ${requestsSnapshot.docs.length} verification requests`
           );
 
-          // Filter for pending requests in memory - check for multiple possible status values
+          // Filter for pending requests in memory using our utility function
           const pendingRequests = requestsSnapshot.docs
             .filter((doc) => {
               const data = doc.data();
-              const status = data.status?.toLowerCase?.() || '';
-              // Check for any status that indicates pending
-              return (
-                status === 'pending' ||
-                status === 'awaiting verification' ||
-                status === 'submitted'
-              );
+              const status = data.status || '';
+              // Use our utility function to check if document is pending verification
+              return isDocumentPending(status);
             })
             .map((doc) => {
               const data = doc.data();
@@ -385,16 +405,50 @@ export default function OrganizationDashboardPage() {
   // We don't allow email editing - the application email is used for all communications
   console.log('Organization contact email:', contactEmail);
 
+  // State to handle loading timeout
+  const [loadingTimeout, setLoadingTimeout] = useState(false);
+
+  // Set a timeout to prevent infinite loading
+  useEffect(() => {
+    if (authLoading || isLoadingOrgs || isLoading) {
+      const timer = setTimeout(() => {
+        setLoadingTimeout(true);
+      }, 15000); // 15 seconds timeout
+
+      return () => clearTimeout(timer);
+    }
+  }, [authLoading, isLoadingOrgs, isLoading]);
+
   // Loading state
   if (authLoading || isLoadingOrgs || isLoading) {
+    if (loadingTimeout) {
+      return (
+        <div className="min-h-screen bg-ivory text-deep-moss flex flex-col items-center justify-center p-4">
+          <div className="bg-soft-sage border-4 border-deep-moss p-6 shadow-brutal max-w-md w-full text-center">
+            <h2 className="text-2xl font-bold mb-4 text-deep-moss">
+              Loading Taking Too Long
+            </h2>
+            <p className="mb-4">
+              We're having trouble loading your organization dashboard. This
+              could be due to network issues or authentication problems.
+            </p>
+            <button
+              onClick={() => window.location.reload()}
+              className="bg-forest-green text-ivory px-4 py-2 font-bold border-2 border-deep-moss hover:shadow-brutal hover:-translate-y-0.5 transition-all"
+            >
+              Refresh Page
+            </button>
+          </div>
+        </div>
+      );
+    }
+
     return (
-      <div className="min-h-screen bg-ivory flex items-center justify-center">
-        <Loader
-          fullScreen
-          text="Loading organization dashboard..."
-          size="large"
-        />
-      </div>
+      <NeubrutalistLoading
+        message="Organization Dashboard"
+        subMessage="Loading your organization data..."
+        fullScreen={true}
+      />
     );
   }
 
@@ -599,17 +653,54 @@ export default function OrganizationDashboardPage() {
                           {doc.ownerName || doc.ownerUid || 'Unknown User'}
                         </td>
                         <td className="p-2 whitespace-nowrap">
-                          <span
-                            className={`px-2 py-1 rounded-full text-xs font-medium ${
-                              doc.status === 'verified'
-                                ? 'bg-green-100 text-green-800'
-                                : doc.status === 'rejected'
-                                ? 'bg-red-100 text-red-800'
-                                : 'bg-yellow-100 text-yellow-800'
-                            }`}
-                          >
-                            {doc.status || 'pending'}
-                          </span>
+                          {(() => {
+                            const normalizedStatus = normalizeDocumentStatus(
+                              doc.status
+                            );
+
+                            switch (normalizedStatus) {
+                              case 'Pending Verification':
+                                return (
+                                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 border border-yellow-300">
+                                    <Clock
+                                      className="inline-block mr-1"
+                                      size={12}
+                                    />
+                                    Pending
+                                  </span>
+                                );
+                              case 'Verified':
+                                return (
+                                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-300">
+                                    <Check
+                                      className="inline-block mr-1"
+                                      size={12}
+                                    />
+                                    Verified
+                                  </span>
+                                );
+                              case 'Rejected':
+                                return (
+                                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 border border-red-300">
+                                    <X
+                                      className="inline-block mr-1"
+                                      size={12}
+                                    />
+                                    Rejected
+                                  </span>
+                                );
+                              default:
+                                return (
+                                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 border border-yellow-300">
+                                    <Clock
+                                      className="inline-block mr-1"
+                                      size={12}
+                                    />
+                                    Pending
+                                  </span>
+                                );
+                            }
+                          })()}
                         </td>
                         <td className="p-2 whitespace-nowrap">
                           <div className="flex space-x-2">
@@ -654,17 +745,51 @@ export default function OrganizationDashboardPage() {
                       </div>
                       <div>
                         <p className="text-xs text-gray-600">Status:</p>
-                        <span
-                          className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
-                            doc.status === 'verified'
-                              ? 'bg-green-100 text-green-800'
-                              : doc.status === 'rejected'
-                              ? 'bg-red-100 text-red-800'
-                              : 'bg-yellow-100 text-yellow-800'
-                          }`}
-                        >
-                          {doc.status || 'pending'}
-                        </span>
+                        {(() => {
+                          const normalizedStatus = normalizeDocumentStatus(
+                            doc.status
+                          );
+
+                          switch (normalizedStatus) {
+                            case 'Pending Verification':
+                              return (
+                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 border border-yellow-300">
+                                  <Clock
+                                    className="inline-block mr-1"
+                                    size={12}
+                                  />
+                                  Pending
+                                </span>
+                              );
+                            case 'Verified':
+                              return (
+                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-300">
+                                  <Check
+                                    className="inline-block mr-1"
+                                    size={12}
+                                  />
+                                  Verified
+                                </span>
+                              );
+                            case 'Rejected':
+                              return (
+                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 border border-red-300">
+                                  <X className="inline-block mr-1" size={12} />
+                                  Rejected
+                                </span>
+                              );
+                            default:
+                              return (
+                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 border border-yellow-300">
+                                  <Clock
+                                    className="inline-block mr-1"
+                                    size={12}
+                                  />
+                                  Pending
+                                </span>
+                              );
+                          }
+                        })()}
                       </div>
                     </div>
                     <div className="mb-3">

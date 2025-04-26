@@ -2,12 +2,21 @@ import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { CheckCircle, AlertCircle, AlertTriangle, Info, X } from 'lucide-react';
 
-export const Toast: React.FC<{
+export interface ToastProps {
   type: 'success' | 'error' | 'warning' | 'info';
   message: string;
   onClose?: () => void;
   duration?: number; // Duration in milliseconds
-}> = ({ type, message, onClose, duration = 5000 }) => {
+  details?: string; // Optional details for expandable toasts
+}
+
+export const Toast: React.FC<ToastProps> = ({
+  type,
+  message,
+  onClose,
+  duration = 5000,
+  details,
+}) => {
   // Auto-dismiss timer
   useEffect(() => {
     if (duration && onClose) {
@@ -115,6 +124,11 @@ export const Toast: React.FC<{
             <p className="text-deep-moss text-sm sm:text-base font-medium line-clamp-3">
               {message}
             </p>
+            {details && (
+              <p className="text-deep-moss text-xs sm:text-sm mt-1 opacity-80">
+                {details}
+              </p>
+            )}
           </div>
         </div>
       </div>

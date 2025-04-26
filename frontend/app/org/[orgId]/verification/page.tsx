@@ -10,6 +10,10 @@ import { db } from '../../../../lib/firebase';
 import { getAuthToken } from '../../../../lib/token-util';
 import axios from 'axios';
 import { Check, X, AlertTriangle, FileText, Clock } from 'lucide-react';
+import {
+  normalizeDocumentStatus,
+  isDocumentPending,
+} from '../../../../lib/document-status-util';
 import Link from 'next/link';
 import { Toast } from '../../../components/ui/Toast';
 
@@ -115,10 +119,7 @@ export default function VerificationPage() {
               documentId: data.documentId,
               documentName: data.documentName || 'Unnamed Document',
               documentType: data.documentType || 'Unknown Type',
-              status: (data.status || 'pending') as
-                | 'pending'
-                | 'verified'
-                | 'rejected',
+              status: normalizeDocumentStatus(data.status || 'pending'),
               createdAt: data.createdAt?.toDate() || new Date(),
               updatedAt: data.updatedAt?.toDate(),
               ownerId: data.ownerId,
@@ -132,7 +133,13 @@ export default function VerificationPage() {
             return b.createdAt.getTime() - a.createdAt.getTime();
           });
 
-          setVerificationRequests(sortedRequests);
+          // Ensure the status is one of the allowed values
+          const typedRequests = sortedRequests.map((req) => ({
+            ...req,
+            status: req.status as 'pending' | 'verified' | 'rejected',
+          }));
+
+          setVerificationRequests(typedRequests);
           setError(null);
           setLoading(false);
           return; // Exit early if we found requests
@@ -179,7 +186,7 @@ export default function VerificationPage() {
                   data.documentName || data.name || 'Unnamed Document',
                 documentType:
                   data.documentType || data.documentTypeName || 'Unknown Type',
-                status: 'pending',
+                status: normalizeDocumentStatus('pending'),
                 createdAt:
                   data.createdAt?.toDate() ||
                   data.uploadedAt?.toDate() ||
@@ -225,12 +232,13 @@ export default function VerificationPage() {
         );
 
         if (!documentsSnapshot.empty) {
-          // Filter for pending documents in memory since we're not using the 'in' operator
+          // Filter for pending documents in memory using our utility function
           const pendingDocs = documentsSnapshot.docs
             .filter((doc) => {
               const data = doc.data();
-              const status = (data.status || '').toLowerCase();
-              return status.includes('pending') || status === '';
+              const status = data.status || '';
+              // Use our utility function to check if document is pending verification
+              return isDocumentPending(status);
             })
             .map((doc) => {
               const data = doc.data();
@@ -241,7 +249,7 @@ export default function VerificationPage() {
                   data.documentName || data.name || 'Unnamed Document',
                 documentType:
                   data.documentType || data.documentTypeName || 'Unknown Type',
-                status: 'pending',
+                status: normalizeDocumentStatus('pending'),
                 createdAt:
                   data.createdAt?.toDate() ||
                   data.uploadedAt?.toDate() ||
@@ -516,22 +524,54 @@ export default function VerificationPage() {
                         {request.createdAt.toLocaleDateString()}
                       </td>
                       <td className="p-3">
-                        {request.status === 'pending' ? (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 border border-amber-800">
-                            Pending
-                          </span>
-                        ) : request.status === 'verified' ? (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-800">
-                            Verified
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 border border-red-800">
-                            Rejected
-                          </span>
-                        )}
+                        {(() => {
+                          const normalizedStatus = normalizeDocumentStatus(
+                            request.status
+                          );
+
+                          switch (normalizedStatus) {
+                            case 'Pending Verification':
+                              return (
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 border border-amber-800">
+                                  <Clock
+                                    className="inline-block mr-1"
+                                    size={12}
+                                  />
+                                  Pending Verification
+                                </span>
+                              );
+                            case 'Verified':
+                              return (
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-800">
+                                  <Check
+                                    className="inline-block mr-1"
+                                    size={12}
+                                  />
+                                  Verified
+                                </span>
+                              );
+                            case 'Rejected':
+                              return (
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 border border-red-800">
+                                  <X className="inline-block mr-1" size={12} />
+                                  Rejected
+                                </span>
+                              );
+                            default:
+                              return (
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 border border-amber-800">
+                                  <Clock
+                                    className="inline-block mr-1"
+                                    size={12}
+                                  />
+                                  Pending Verification
+                                </span>
+                              );
+                          }
+                        })()}
                       </td>
                       <td className="p-3">
-                        {request.status === 'pending' ? (
+                        {isDocumentPending(request.status) ? (
                           <DocumentVerification
                             request={request}
                             onVerificationComplete={() => {

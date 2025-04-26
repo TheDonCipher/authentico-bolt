@@ -24,13 +24,24 @@ export const StatusBadge = ({ status }: StatusBadgeProps) => {
     statusKey = '1';
   }
 
-  const statusConfig = {
+  const statusConfig: Record<
+    string,
+    { bgColor: string; icon: React.FC<any>; text: string }
+  > = {
     '0': { bgColor: 'bg-sap-green', icon: Check, text: 'Verified' },
     '1': { bgColor: 'bg-sunflower', icon: RefreshCw, text: 'Pending' },
     '2': { bgColor: 'bg-burnt-sienna', icon: X, text: 'Rejected' },
   };
 
-  const { bgColor, icon: Icon, text: displayText } = statusConfig[statusKey];
+  // Ensure statusKey is a valid key in statusConfig
+  const validStatusKey = Object.keys(statusConfig).includes(statusKey)
+    ? statusKey
+    : '1';
+  const {
+    bgColor,
+    icon: Icon,
+    text: displayText,
+  } = statusConfig[validStatusKey];
 
   return (
     <span

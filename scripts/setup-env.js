@@ -1,9 +1,9 @@
 /**
  * Environment Setup Script
- * 
+ *
  * This script helps set up the environment by copying the appropriate
  * environment configuration files to the correct locations.
- * 
+ *
  * Usage: node scripts/setup-env.js [environment]
  * Example: node scripts/setup-env.js production
  */
@@ -20,6 +20,7 @@ const rootDir = path.resolve(__dirname, '..');
 const configDir = path.join(rootDir, 'config');
 const frontendDir = path.join(rootDir, 'frontend');
 const backendDir = path.join(rootDir, 'backend');
+// const minimalHardhatDir = path.join(rootDir, 'minimal-hardhat'); // Commented out as not used
 
 // Source environment file
 const sourceEnvFile = path.join(configDir, `${environment}.env.example`);
@@ -28,44 +29,80 @@ const sourceEnvFile = path.join(configDir, `${environment}.env.example`);
 const rootEnvFile = path.join(rootDir, '.env');
 const frontendEnvFile = path.join(frontendDir, '.env');
 const backendEnvFile = path.join(backendDir, '.env');
+// const minimalHardhatEnvFile = path.join(minimalHardhatDir, '.env'); // Commented out as not used
 
 // Check if source file exists
 if (!fs.existsSync(sourceEnvFile)) {
-  console.error(`Error: Environment file for ${environment} not found at ${sourceEnvFile}`);
+  console.error(
+    `Error: Environment file for ${environment} not found at ${sourceEnvFile}`
+  );
   console.error('Available environments:');
-  
+
   // List available environment files
   const files = fs.readdirSync(configDir);
-  files.forEach(file => {
+  files.forEach((file) => {
     if (file.endsWith('.env.example')) {
       console.error(`  - ${file.replace('.env.example', '')}`);
     }
   });
-  
+
   process.exit(1);
 }
 
 // Read source file
 const envContent = fs.readFileSync(sourceEnvFile, 'utf8');
 
+// Ensure directories exist
+const ensureDirectoryExists = (dirPath) => {
+  if (fs.existsSync(dirPath)) {
+    return true;
+  }
+  console.warn(
+    `Warning: Directory ${dirPath} does not exist. Skipping environment setup for this path.`
+  );
+  return false;
+};
+
 // Write to destination files
 try {
   // Root .env
   fs.writeFileSync(rootEnvFile, envContent);
   console.log(`Created ${rootEnvFile}`);
-  
+
   // Frontend .env
-  fs.writeFileSync(frontendEnvFile, envContent);
-  console.log(`Created ${frontendEnvFile}`);
-  
+  if (ensureDirectoryExists(frontendDir)) {
+    fs.writeFileSync(frontendEnvFile, envContent);
+    console.log(`Created ${frontendEnvFile}`);
+
+    // Also create .env.local for Next.js
+    fs.writeFileSync(path.join(frontendDir, '.env.local'), envContent);
+    console.log(`Created ${path.join(frontendDir, '.env.local')}`);
+  }
+
   // Backend .env
-  fs.writeFileSync(backendEnvFile, envContent);
-  console.log(`Created ${backendEnvFile}`);
-  
+  if (ensureDirectoryExists(backendDir)) {
+    fs.writeFileSync(backendEnvFile, envContent);
+    console.log(`Created ${backendEnvFile}`);
+  }
+
+  // Note: We're skipping minimal-hardhat as contracts are already deployed
+  // If you need to set up environment for minimal-hardhat again, uncomment the relevant
+  // variables at the top of this file and uncomment the code below
+  /*
+  const minimalHardhatDir = path.join(rootDir, 'minimal-hardhat');
+  const minimalHardhatEnvFile = path.join(minimalHardhatDir, '.env');
+
+  if (ensureDirectoryExists(minimalHardhatDir)) {
+    fs.writeFileSync(minimalHardhatEnvFile, envContent);
+    console.log(`Created ${minimalHardhatEnvFile}`);
+  }
+  */
+
   console.log('\nEnvironment setup complete!');
-  console.log('\nIMPORTANT: You must edit the .env files and fill in your actual values.');
+  console.log(
+    '\nIMPORTANT: You must edit the .env files and fill in your actual values.'
+  );
   console.log('Do not commit these files to version control.');
-  
 } catch (error) {
   console.error('Error creating environment files:', error);
   process.exit(1);

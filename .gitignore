@@ -82,6 +82,7 @@ $RECYCLE.BIN/
 !.env.example
 !frontend/.env.example
 !backend/.env.example
+!backend/.env.test.example
 !config/*.env.example
 
 # Service account and credential files

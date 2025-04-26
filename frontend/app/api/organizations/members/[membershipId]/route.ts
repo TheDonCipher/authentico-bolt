@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyAuth } from '../../../../../lib/auth-middleware';
+import { verifyAuth, isAuthSuccess } from '../../../../../lib/auth-middleware';
 import { db } from '../../../../../lib/firebase-admin-server';
 
 export async function PUT(
@@ -11,7 +11,7 @@ export async function PUT(
     // Verify the authentication token
     const authResult = await verifyAuth(request);
 
-    if (!authResult.success) {
+    if (!isAuthSuccess(authResult)) {
       return NextResponse.json(
         { error: authResult.error },
         { status: authResult.status }
@@ -33,7 +33,7 @@ export async function PUT(
       );
     }
 
-    const membershipData = membershipDoc.data();
+    const membershipData = membershipDoc.data() || {};
 
     // Check if the requester has permission to update this membership
     const isAdmin = authResult.decodedToken.admin === true;
@@ -42,7 +42,7 @@ export async function PUT(
       // Check if user is the organization owner or has admin role
       const orgDoc = await db
         .collection('users')
-        .doc(membershipData.orgId)
+        .doc(membershipData.orgId || '')
         .get();
 
       if (!orgDoc.exists) {
@@ -52,14 +52,14 @@ export async function PUT(
         );
       }
 
-      const orgData = orgDoc.data();
+      const orgData = orgDoc.data() || {};
       const isOrgOwner = orgData.ownerUid === authResult.uid;
 
       if (!isOrgOwner) {
         // Check if user has admin role in the organization
         const requesterMembershipQuery = await db
           .collection('organizationMembers')
-          .where('orgId', '==', membershipData.orgId)
+          .where('orgId', '==', membershipData.orgId || '')
           .where('userId', '==', authResult.uid)
           .limit(1)
           .get();
@@ -116,7 +116,7 @@ export async function DELETE(
     // Verify the authentication token
     const authResult = await verifyAuth(request);
 
-    if (!authResult.success) {
+    if (!isAuthSuccess(authResult)) {
       return NextResponse.json(
         { error: authResult.error },
         { status: authResult.status }
@@ -136,7 +136,7 @@ export async function DELETE(
       );
     }
 
-    const membershipData = membershipDoc.data();
+    const membershipData = membershipDoc.data() || {};
 
     // Check if the requester has permission to delete this membership
     const isAdmin = authResult.decodedToken.admin === true;
@@ -145,7 +145,7 @@ export async function DELETE(
       // Check if user is the organization owner or has admin role
       const orgDoc = await db
         .collection('users')
-        .doc(membershipData.orgId)
+        .doc(membershipData.orgId || '')
         .get();
 
       if (!orgDoc.exists) {
@@ -155,14 +155,14 @@ export async function DELETE(
         );
       }
 
-      const orgData = orgDoc.data();
+      const orgData = orgDoc.data() || {};
       const isOrgOwner = orgData.ownerUid === authResult.uid;
 
       if (!isOrgOwner) {
         // Check if user has admin role in the organization
         const requesterMembershipQuery = await db
           .collection('organizationMembers')
-          .where('orgId', '==', membershipData.orgId)
+          .where('orgId', '==', membershipData.orgId || '')
           .where('userId', '==', authResult.uid)
           .limit(1)
           .get();

@@ -61,18 +61,55 @@ if (missingDeps.length > 0) {
   console.log('All required dependencies are already installed.');
 }
 
-// Ensure TypeScript version compatibility
-console.log('Checking TypeScript version compatibility...');
+// Always force install TypeScript dependencies to ensure compatibility
+console.log('Installing TypeScript dependencies (forced)...');
 try {
   // Force specific versions to ensure compatibility
   execSync(
-    'npm install --save-dev typescript@5.8.3 @types/react@18.3.20 @types/react-dom@18.3.20',
+    'npm install --save-dev typescript@5.8.3 @types/react@18.2.0 @types/react-dom@18.2.0',
     { stdio: 'inherit' }
   );
-  console.log('TypeScript dependencies updated successfully!');
+  console.log('TypeScript dependencies installed successfully!');
+
+  // Verify installation
+  try {
+    const updatedPackageJson = JSON.parse(
+      fs.readFileSync(packageJsonPath, 'utf8')
+    );
+    console.log(
+      'Current TypeScript version:',
+      updatedPackageJson.devDependencies.typescript
+    );
+    console.log(
+      'Current @types/react version:',
+      updatedPackageJson.devDependencies['@types/react']
+    );
+    console.log(
+      'Current @types/react-dom version:',
+      updatedPackageJson.devDependencies['@types/react-dom']
+    );
+  } catch (verifyError) {
+    console.error('Error verifying installed dependencies:', verifyError);
+  }
 } catch (error) {
-  console.error('Error updating TypeScript dependencies:', error);
-  // Continue anyway, as this is not critical
+  console.error('Error installing TypeScript dependencies:', error);
+  console.log('Attempting alternative installation method...');
+
+  try {
+    // Try an alternative approach with explicit versioning
+    execSync('npm install --save-dev typescript@5.8.3', { stdio: 'inherit' });
+    execSync('npm install --save-dev @types/react@18.2.0', {
+      stdio: 'inherit',
+    });
+    execSync('npm install --save-dev @types/react-dom@18.2.0', {
+      stdio: 'inherit',
+    });
+    console.log('TypeScript dependencies installed via alternative method!');
+  } catch (altError) {
+    console.error('Alternative installation also failed:', altError);
+    // This is critical for the build, so exit
+    process.exit(1);
+  }
 }
 
 console.log('Vercel build preparation completed.');

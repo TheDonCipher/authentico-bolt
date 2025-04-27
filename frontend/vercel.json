@@ -1,6 +1,6 @@
 {
   "framework": "nextjs",
-  "buildCommand": "npm run deploy:fixes && npm run build",
+  "buildCommand": "npm install --save-dev typescript@5.8.3 @types/react@18.2.0 @types/react-dom@18.2.0 && npm run build:vercel",
   "outputDirectory": ".next",
   "env": {
     "NODE_ENV": "production"

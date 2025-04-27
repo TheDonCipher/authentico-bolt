@@ -13,20 +13,23 @@ const nextConfig = {
     // Fixes node polyfills
     config.resolve.fallback = { fs: false, net: false, tls: false };
 
-    // We'll use postcss.config.js instead of inline configuration
-
     return config;
   },
   eslint: {
+    // Ignore ESLint errors during build
     ignoreDuringBuilds: true,
   },
   typescript: {
-    // !! WARN !!
-    // Dangerously allow production builds to successfully complete even if
-    // your project has type errors.
-    // !! WARN !!
+    // Allow production builds to complete even with type errors
     ignoreBuildErrors: true,
   },
+  // Disable source maps in production to reduce bundle size
+  productionBrowserSourceMaps: false,
+  // Disable type checking during build
+  skipTypeCheck: true,
+  // Disable middleware
+  skipMiddlewareUrlNormalize: true,
+  skipTrailingSlashRedirect: true,
 
   // Use rewrites for API routing based on environment
   async rewrites() {

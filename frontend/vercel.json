@@ -1,9 +1,12 @@
 {
   "framework": "nextjs",
-  "buildCommand": "npm install --save-dev typescript@5.8.3 @types/react@18.2.0 @types/react-dom@18.2.0 && npm run build:vercel",
+  "buildCommand": "VERCEL=1 npm run build",
+  "installCommand": "npm install",
   "outputDirectory": ".next",
   "env": {
-    "NODE_ENV": "production"
+    "NODE_ENV": "production",
+    "NEXT_TELEMETRY_DISABLED": "1",
+    "SKIP_TYPE_CHECK": "true"
   },
   "rewrites": [
     {

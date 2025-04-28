@@ -52,11 +52,23 @@ if (!admin.apps.length) {
 
     // Ensure the private key is properly formatted
     if (typeof serviceAccountKey.private_key === 'string') {
-      // Make sure newlines are properly handled
-      serviceAccountKey.private_key = serviceAccountKey.private_key.replace(
-        /\\n/g,
-        '\n'
-      );
+      // Handle different formats of private key
+      // First, remove any surrounding quotes if present
+      let privateKey = serviceAccountKey.private_key;
+      if (privateKey.startsWith('"') && privateKey.endsWith('"')) {
+        privateKey = privateKey.slice(1, -1);
+      }
+
+      // Then replace escaped newlines with actual newlines
+      privateKey = privateKey.replace(/\\n/g, '\n');
+
+      // Ensure the key has the correct format
+      if (!privateKey.includes('-----BEGIN PRIVATE KEY-----')) {
+        console.error('Private key does not have the correct format');
+      }
+
+      // Update the service account key with the properly formatted private key
+      serviceAccountKey.private_key = privateKey;
     }
 
     // Log key details for debugging (don't log the full key in production)

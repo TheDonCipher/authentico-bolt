@@ -67,6 +67,7 @@ interface AuthContextType {
   clearError: () => void;
   isAdmin: boolean;
   isAutoLogin?: boolean; // Added isAutoLogin property
+  backendStatus: 'online' | 'offline' | 'unknown'; // Backend connectivity status
 }
 
 // Create the auth context
@@ -88,6 +89,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [unregisteredWallets, setUnregisteredWallets] = useState<string[]>([]);
   // Track auto-login state
   const [isAutoLogin, setIsAutoLogin] = useState<boolean>(false);
+  // Track backend connectivity status
+  const [backendStatus, setBackendStatus] = useState<
+    'online' | 'offline' | 'unknown'
+  >('unknown');
   const router = useRouter();
   const account = useActiveAccount();
 
@@ -201,11 +206,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           const errorMessage = 'Network error. API server may be offline.';
           setError(errorMessage);
 
+          // Update backend status
+          setBackendStatus('offline');
+
           // Show warning toast
           showToast({
             type: 'warning',
             message: (result as { message?: string }).message || errorMessage,
           });
+
+          // Check if this is a backend offline situation
+          if ((result as any).backendOffline) {
+            console.log('Backend is offline, using limited functionality mode');
+            // Here you could implement additional fallback behavior
+          }
 
           return {
             success: false,
@@ -432,30 +446,61 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   }, [router, account, showToast]);
 
-  // Initialize CSRF protection
+  // Initialize CSRF protection and check backend status
   useEffect(() => {
     // Fetch CSRF token from the backend when the component mounts
     const fetchCsrfToken = async () => {
       try {
         console.log('Fetching initial CSRF token from backend...');
+
+        // Set a timeout for the fetch request
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+
         const csrfResponse = await fetch('/api/auth/csrf-token', {
           method: 'GET',
           credentials: 'include', // Include cookies in the request
+          signal: controller.signal,
         });
+
+        clearTimeout(timeoutId);
 
         if (!csrfResponse.ok) {
           console.error(
             'Failed to get initial CSRF token from backend:',
             await csrfResponse.text()
           );
+          setBackendStatus('offline');
         } else {
-          console.log('Successfully fetched initial CSRF token from backend');
+          const data = await csrfResponse.json();
+          console.log(
+            `Successfully fetched initial CSRF token from ${
+              data.source || 'backend'
+            }`
+          );
+
+          // Check if we're using client-side token generation
+          if (data.source === 'client-side') {
+            console.warn(
+              'Backend API server appears to be offline. Using client-side CSRF token generation.'
+            );
+            setBackendStatus('offline');
+          } else {
+            setBackendStatus('online');
+          }
         }
       } catch (csrfError) {
         console.error(
           'Error fetching initial CSRF token:',
           getErrorMessage(csrfError)
         );
+
+        // Check if this was a timeout/abort error
+        if (csrfError.name === 'AbortError') {
+          console.warn('CSRF token request timed out. Backend is offline.');
+          setBackendStatus('offline');
+        }
+
         // Fall back to client-side token generation
         const csrfToken = initCsrfProtection();
         console.log(
@@ -466,6 +511,43 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     };
 
     fetchCsrfToken();
+
+    // Set up periodic backend status checks
+    const checkBackendStatus = async () => {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+        const response = await fetch('/api/health', {
+          signal: controller.signal,
+        });
+
+        clearTimeout(timeoutId);
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.services?.backend === true) {
+            setBackendStatus('online');
+          } else {
+            setBackendStatus('offline');
+          }
+        } else {
+          setBackendStatus('offline');
+        }
+      } catch (error) {
+        console.error('Error checking backend status:', error);
+        if (error.name === 'AbortError') {
+          setBackendStatus('offline');
+        }
+      }
+    };
+
+    // Check backend status every minute
+    const intervalId = setInterval(checkBackendStatus, 60000);
+
+    return () => {
+      clearInterval(intervalId);
+    };
   }, []);
 
   // Listen for auth state changes
@@ -745,6 +827,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         setActiveContext,
         isAdmin,
         isAutoLogin,
+        backendStatus,
       }}
     >
       {isInitializing || loading ? (

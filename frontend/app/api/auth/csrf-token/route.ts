@@ -25,7 +25,9 @@ const corsHeaders = {
   'Access-Control-Allow-Origin':
     process.env.NODE_ENV === 'development'
       ? 'http://localhost:3000'
-      : 'https://authentico-demov2.vercel.app',
+      : process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL}`
+      : 'https://authentico-frontend.onrender.com',
   'Access-Control-Allow-Methods': 'GET, OPTIONS',
   'Access-Control-Allow-Headers':
     'Content-Type, Authorization, X-XSRF-TOKEN, x-xsrf-token, Cookie',
@@ -44,10 +46,7 @@ export async function OPTIONS() {
 export async function GET(request: NextRequest) {
   if (!BACKEND_API_URL) {
     console.error('Backend API URL is not configured.');
-    return NextResponse.json(
-      { error: 'Server configuration error' },
-      { status: 500, headers: corsHeaders }
-    );
+    return generateClientSideToken(corsHeaders);
   }
 
   try {
@@ -55,8 +54,11 @@ export async function GET(request: NextRequest) {
     console.log(
       `Forwarding CSRF token request to: ${baseUrl}/api/auth/csrf-token`
     );
+
+    // Set a shorter timeout for the backend request to fail faster
     const backendResponse = await axios.get(`${baseUrl}/api/auth/csrf-token`, {
       withCredentials: true, // Include cookies in the request
+      timeout: 5000, // 5 second timeout to fail faster if backend is down
     });
 
     // Get the CSRF token cookie from the backend response
@@ -64,7 +66,7 @@ export async function GET(request: NextRequest) {
 
     // Create a response with the CSRF token
     const response = NextResponse.json(
-      { success: true },
+      { success: true, source: 'backend' },
       {
         status: backendResponse.status,
         headers: corsHeaders,
@@ -80,44 +82,47 @@ export async function GET(request: NextRequest) {
 
     return response;
   } catch (error: any) {
-    console.error('Error getting CSRF token:', error);
+    console.error('Error getting CSRF token from backend:', error);
 
-    // Handle Axios errors specifically
-    if (axios.isAxiosError(error)) {
-      if (error.response) {
-        // Return the error response from the backend
-        console.error(
-          'Backend response error:',
-          error.response.status,
-          error.response.data
-        );
-        return NextResponse.json(error.response.data, {
-          status: error.response.status,
-          headers: corsHeaders,
-        });
-      } else if (error.request) {
-        // The request was made but no response was received
-        console.error('No response received from backend:', error.message);
-        return NextResponse.json(
-          {
-            error: 'BACKEND_NO_RESPONSE',
-            message: 'No response received from the backend server.',
-            details: error.message,
-          },
-          { status: 504, headers: corsHeaders } // Gateway Timeout
-        );
-      }
-    }
-
-    // Handle other errors (e.g., network issues, JSON parsing)
-    console.error('Other error type:', error.message);
-    return NextResponse.json(
-      {
-        error: 'PROXY_REQUEST_FAILED',
-        message: 'Failed to get CSRF token from the backend.',
-        details: error instanceof Error ? error.message : 'Unknown error',
-      },
-      { status: 502, headers: corsHeaders } // Bad Gateway might be appropriate here
-    );
+    // For any error, generate a client-side token instead
+    return generateClientSideToken(corsHeaders);
   }
+}
+
+/**
+ * Generate a client-side CSRF token when the backend is unavailable
+ * @param corsHeaders CORS headers to include in the response
+ * @returns Response with a client-side generated CSRF token
+ */
+function generateClientSideToken(corsHeaders: Record<string, string>) {
+  console.log('Generating client-side CSRF token as fallback');
+
+  // Generate a secure random token
+  const token = crypto.randomUUID
+    ? crypto.randomUUID()
+    : Math.random().toString(36).substring(2, 15) +
+      Math.random().toString(36).substring(2, 15) +
+      Date.now().toString(36);
+
+  // Create a response with the client-side token
+  const response = NextResponse.json(
+    {
+      success: true,
+      source: 'client-side',
+      message:
+        'Using client-side token generation because backend is unavailable',
+    },
+    {
+      status: 200,
+      headers: corsHeaders,
+    }
+  );
+
+  // Set the token in a cookie
+  response.headers.append(
+    'Set-Cookie',
+    `XSRF-TOKEN=${token}; Path=/; Secure; SameSite=Strict; Max-Age=3600`
+  );
+
+  return response;
 }

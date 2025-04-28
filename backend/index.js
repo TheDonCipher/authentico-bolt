@@ -248,5 +248,15 @@ app.use((err, req, res, next) => {
 const port = process.env.PORT || 8080;
 app.listen(port, () => {
   console.log(`Server is listening on port ${port}`);
-  console.log(`API available at http://localhost:${port}/api`);
+
+  // Display the correct API URL based on environment
+  if (process.env.NODE_ENV === 'production') {
+    // In production, use the actual service URL
+    const serviceUrl =
+      process.env.SERVICE_URL || 'https://authentico-backend.onrender.com';
+    console.log(`API available at ${serviceUrl}/api`);
+  } else {
+    // In development, use localhost
+    console.log(`API available at http://localhost:${port}/api`);
+  }
 });

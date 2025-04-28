@@ -1,3 +1,0 @@
-@echo off
-echo Running basic Cypress tests...
-npx cypress run --spec "cypress/integration/basic/**/*.spec.{js,jsx,ts,tsx}"

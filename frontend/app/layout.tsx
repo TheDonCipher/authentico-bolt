@@ -10,6 +10,7 @@ import ToastProvider from './components/ui/ToastProvider';
 import localFont from 'next/font/local';
 import { Inter } from 'next/font/google';
 import CsrfInitializer from './components/security/CsrfInitializer';
+import BackendStatusIndicator from './components/ui/BackendStatusIndicator';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -62,6 +63,8 @@ export default function RootLayout({ children }: { children: ReactNode }) {
                 <OrganizationProvider>
                   {/* Initialize CSRF protection */}
                   <CsrfInitializer />
+                  {/* Backend status indicator */}
+                  <BackendStatusIndicator />
                   {children}
                 </OrganizationProvider>
               </AuthProvider>

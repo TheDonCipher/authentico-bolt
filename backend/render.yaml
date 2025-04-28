@@ -16,6 +16,8 @@ services:
       # Server configuration
       - key: PORT
         value: 10000
+      - key: SERVICE_URL
+        value: https://authentico-backend.onrender.com
 
       # Firebase Admin Configuration
       - key: FIREBASE_TYPE

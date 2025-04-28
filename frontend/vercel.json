@@ -1,71 +1,11 @@
 {
   "framework": "nextjs",
-  "buildCommand": "VERCEL=1 npm run build",
-  "installCommand": "npm install",
   "outputDirectory": ".next",
+  "installCommand": "npm install",
+  "devCommand": "npm run dev",
+  "ignoreCommand": "git diff --quiet HEAD^ HEAD ./",
+  "regions": ["iad1"],
   "env": {
-    "NODE_ENV": "production",
-    "NEXT_TELEMETRY_DISABLED": "1",
-    "SKIP_TYPE_CHECK": "true"
-  },
-  "rewrites": [
-    {
-      "source": "/api/documents/:id/direct-view",
-      "destination": "/api/documents/:id/direct-view"
-    },
-    {
-      "source": "/api/documents/:id/fallback-view",
-      "destination": "/api/documents/:id/fallback-view"
-    },
-    {
-      "source": "/api/debug/:path*",
-      "destination": "/api/debug/:path*"
-    },
-    {
-      "source": "/api/test",
-      "destination": "/api/test"
-    },
-    {
-      "source": "/api/documents/:id/secure-details",
-      "destination": "$NEXT_PUBLIC_API_URL/documents/:id/secure-details"
-    },
-    {
-      "source": "/api/documents/:path*",
-      "destination": "$NEXT_PUBLIC_API_URL/documents/:path*"
-    },
-    {
-      "source": "/api/:path*",
-      "has": [
-        {
-          "type": "header",
-          "key": "x-skip-rewrite",
-          "value": "true"
-        }
-      ],
-      "destination": "/api/:path*"
-    },
-    {
-      "source": "/api/:path*",
-      "destination": "$NEXT_PUBLIC_API_URL/:path*"
-    }
-  ],
-  "headers": [
-    {
-      "source": "/(.*)",
-      "headers": [
-        {
-          "key": "X-Content-Type-Options",
-          "value": "nosniff"
-        },
-        {
-          "key": "X-Frame-Options",
-          "value": "DENY"
-        },
-        {
-          "key": "X-XSS-Protection",
-          "value": "1; mode=block"
-        }
-      ]
-    }
-  ]
+    "NEXT_TELEMETRY_DISABLED": "1"
+  }
 }

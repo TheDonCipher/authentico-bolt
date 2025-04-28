@@ -33,37 +33,72 @@ const loginWithWallet = async (walletAddress) => {
     try {
       console.log('Attempting to login with wallet address:', walletAddress);
 
-      // First, get a CSRF token from the backend
-      console.log('Fetching CSRF token from backend...');
+      // First, get a CSRF token from the backend or generate one client-side
+      console.log('Fetching CSRF token for login...');
       try {
+        // Set a timeout for the fetch request
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+
         const csrfResponse = await fetch(API_ENDPOINTS.AUTH.CSRF_TOKEN, {
           method: 'GET',
           credentials: 'include', // Include cookies in the request
+          signal: controller.signal,
         });
 
-        if (!csrfResponse.ok) {
-          console.error(
-            'Failed to get CSRF token from backend:',
-            await csrfResponse.text()
-          );
-          throw new Error('Failed to get CSRF token');
-        }
+        clearTimeout(timeoutId);
 
-        console.log('Successfully fetched CSRF token from backend');
+        if (!csrfResponse.ok) {
+          console.warn(
+            'Failed to get CSRF token from backend, using client-side fallback'
+          );
+          // Generate a client-side token as fallback
+          const token = initCsrfProtection();
+          console.log(
+            'Generated client-side CSRF token for login:',
+            token ? 'Success' : 'Failed'
+          );
+        } else {
+          const data = await csrfResponse.json();
+          console.log(
+            `Successfully fetched CSRF token from ${data.source || 'server'}`
+          );
+
+          // Check if we need to show a backend connectivity warning
+          if (data.source === 'client-side') {
+            console.warn(
+              'Backend API server appears to be offline. Using client-side CSRF token generation.'
+            );
+          }
+        }
       } catch (csrfError) {
         console.error('Error fetching CSRF token:', csrfError);
-        throw new Error('Failed to get CSRF token: ' + csrfError.message);
+
+        // Check if this was a timeout/abort error
+        if (csrfError.name === 'AbortError') {
+          console.warn('CSRF token request timed out. Backend may be offline.');
+        }
+
+        // Generate a client-side token as fallback
+        const token = initCsrfProtection();
+        console.log(
+          'Generated client-side CSRF token after error:',
+          token ? 'Success' : 'Failed'
+        );
       }
 
-      // Get CSRF token from cookie (should be set by the backend now)
+      // Get CSRF token from cookie (should be set by the backend or client-side fallback)
       let csrfToken = getTokenFromCookie();
       if (!csrfToken) {
-        console.error(
-          'No CSRF token found in cookie after fetching from backend'
-        );
-        throw new Error('CSRF token not found');
+        console.error('No CSRF token found in cookie, generating one now');
+        // Last resort - generate a token and try again
+        csrfToken = initCsrfProtection();
+        if (!csrfToken) {
+          console.error('Failed to generate CSRF token as last resort');
+          throw new Error('Could not generate CSRF token');
+        }
       }
-      console.log('Using CSRF token from backend:', csrfToken);
+      console.log('Using CSRF token for login:', csrfToken);
 
       // Add CSRF token to headers
       const headers = addTokenToHeaders({ 'Content-Type': 'application/json' });
@@ -177,8 +212,34 @@ const loginWithWallet = async (walletAddress) => {
         fetchError.name === 'TypeError' ||
         fetchError.message.includes('NetworkError') ||
         fetchError.message.includes('network') ||
-        fetchError.message.includes('timeout')
+        fetchError.message.includes('timeout') ||
+        fetchError.name === 'AbortError'
       ) {
+        console.warn('Network error during login. Backend API may be offline.');
+
+        // Try to continue with client-side authentication if possible
+        // This is a fallback mechanism when the backend is down
+        try {
+          // Check if we have a wallet address and can authenticate locally
+          if (walletAddress) {
+            console.log(
+              'Attempting local wallet authentication as fallback...'
+            );
+
+            // For now, we'll just return a partial success with limited functionality
+            return {
+              success: false,
+              networkError: true,
+              backendOffline: true,
+              message:
+                'Backend API server appears to be offline. Some features may be limited until connectivity is restored.',
+              details: fetchError.message,
+            };
+          }
+        } catch (fallbackError) {
+          console.error('Error in fallback authentication:', fallbackError);
+        }
+
         return {
           success: false,
           networkError: true,

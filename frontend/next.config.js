@@ -33,20 +33,25 @@ const nextConfig = {
 
   // Use rewrites for API routing based on environment
   async rewrites() {
-    // Default API URL for local development
-    let apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+    // Set production API URL for Render deployment
+    let apiUrl =
+      process.env.NODE_ENV === 'production'
+        ? 'https://authentico-backend.onrender.com'
+        : process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
     // Remove trailing slash if present
     if (apiUrl.endsWith('/')) {
       apiUrl = apiUrl.slice(0, -1);
     }
 
-    // Force local API URL in development
+    // Force local API URL in development, but not in production
     if (process.env.NODE_ENV === 'development') {
       apiUrl = 'http://localhost:8080';
     }
 
-    console.log(`Using API URL: ${apiUrl}`);
+    console.log(
+      `Using API URL: ${apiUrl} (Environment: ${process.env.NODE_ENV})`
+    );
 
     return [
       // Skip rewrites for Next.js API routes that we want to handle internally

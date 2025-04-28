@@ -8,7 +8,10 @@
 const CSRF_CONFIG = {
   tokenName: 'XSRF-TOKEN', // Match the backend cookie name
   headerName: 'x-xsrf-token', // Match the backend header name (lowercase for consistency)
-  cookieOptions: 'path=/; secure; samesite=strict',
+  cookieOptions:
+    typeof window !== 'undefined' && window.location.hostname === 'localhost'
+      ? 'path=/; secure; samesite=lax'
+      : 'path=/; secure; samesite=none',
   tokenLength: 64,
 };
 

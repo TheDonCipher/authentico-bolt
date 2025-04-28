@@ -31,11 +31,21 @@ export default function CsrfInitializer() {
           const controller = new AbortController();
           const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
 
-          const csrfResponse = await fetch('/api/auth/csrf-token', {
-            method: 'GET',
-            credentials: 'include',
-            signal: controller.signal,
-          });
+          // Add cache-busting parameter to prevent caching issues
+          const cacheBuster = `?_=${Date.now()}`;
+          const csrfResponse = await fetch(
+            `/api/auth/csrf-token${cacheBuster}`,
+            {
+              method: 'GET',
+              credentials: 'include',
+              signal: controller.signal,
+              headers: {
+                'Cache-Control': 'no-cache, no-store, must-revalidate',
+                Pragma: 'no-cache',
+                Expires: '0',
+              },
+            }
+          );
 
           clearTimeout(timeoutId);
 
@@ -44,6 +54,25 @@ export default function CsrfInitializer() {
             console.log(
               `Successfully fetched CSRF token from ${data.source || 'server'}`
             );
+
+            // Wait a moment for cookies to be properly set
+            await new Promise((resolve) => setTimeout(resolve, 300));
+
+            // Verify the token was actually set in cookies
+            const tokenSet = document.cookie
+              .split(';')
+              .some((cookie) => cookie.trim().startsWith('XSRF-TOKEN='));
+
+            if (!tokenSet) {
+              console.warn(
+                'CSRF token not found in cookies after fetch, generating client-side token'
+              );
+              const token = initCsrfProtection();
+              console.log(
+                'Generated client-side CSRF token:',
+                token ? 'Success' : 'Failed'
+              );
+            }
 
             // Check if we need to show a backend connectivity warning
             if (data.source === 'client-side') {

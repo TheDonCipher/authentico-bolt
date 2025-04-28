@@ -22,11 +22,17 @@ if (process.env.NODE_ENV === 'development') {
 
 // CORS headers to allow cross-origin requests
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin':
+    process.env.NODE_ENV === 'development'
+      ? 'http://localhost:3000'
+      : process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL}`
+      : 'https://authentico-demov2.vercel.app',
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
   'Access-Control-Allow-Headers':
-    'Content-Type, Authorization, x-xsrf-token, Cookie',
+    'Content-Type, Authorization, X-XSRF-TOKEN, x-xsrf-token, Cookie',
   'Access-Control-Allow-Credentials': 'true',
+  'Access-Control-Expose-Headers': 'Set-Cookie',
 };
 
 // Handle OPTIONS requests (preflight)
@@ -49,9 +55,23 @@ export async function POST(request: NextRequest) {
   try {
     let body = await request.json();
 
-    // Get CSRF token from request headers
-    const csrfToken = request.headers.get('x-xsrf-token');
-    console.log('CSRF token from request:', csrfToken);
+    // Get CSRF token from request headers or cookies
+    let csrfToken = request.headers.get('x-xsrf-token');
+
+    // If no token in headers, try to get it from cookies
+    if (!csrfToken) {
+      const cookies = request.headers.get('cookie');
+      if (cookies) {
+        const csrfCookie = cookies
+          .split(';')
+          .find((c) => c.trim().startsWith('XSRF-TOKEN='));
+        if (csrfCookie) {
+          csrfToken = csrfCookie.split('=')[1];
+        }
+      }
+    }
+
+    console.log('CSRF token for login request:', csrfToken);
 
     // Add CSRF token to the request body as a fallback
     body = {

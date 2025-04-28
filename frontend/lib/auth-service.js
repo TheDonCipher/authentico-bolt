@@ -101,13 +101,23 @@ const loginWithWallet = async (walletAddress) => {
       console.log('Using CSRF token for login:', csrfToken);
 
       // Add CSRF token to headers
-      const headers = addTokenToHeaders({ 'Content-Type': 'application/json' });
+      const headers = addTokenToHeaders({
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        Pragma: 'no-cache',
+        Expires: '0',
+      });
       console.log('Request headers:', headers);
 
-      const response = await fetch('/api/auth/login', {
+      // Add cache-busting parameter to prevent caching issues
+      const cacheBuster = `?_=${Date.now()}`;
+      const response = await fetch(`/api/auth/login${cacheBuster}`, {
         method: 'POST',
         headers,
-        body: JSON.stringify({ walletAddress }),
+        body: JSON.stringify({
+          walletAddress,
+          _csrf: csrfToken, // Explicitly include CSRF token in the body
+        }),
         credentials: 'include', // Include cookies in the request
       });
 

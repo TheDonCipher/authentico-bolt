@@ -27,7 +27,7 @@ const corsHeaders = {
       ? 'http://localhost:3000'
       : process.env.VERCEL_URL
       ? `https://${process.env.VERCEL_URL}`
-      : 'https://authentico-frontend.onrender.com',
+      : 'https://authentico-demov2.vercel.app',
   'Access-Control-Allow-Methods': 'GET, OPTIONS',
   'Access-Control-Allow-Headers':
     'Content-Type, Authorization, X-XSRF-TOKEN, x-xsrf-token, Cookie',
@@ -118,10 +118,15 @@ function generateClientSideToken(corsHeaders: Record<string, string>) {
     }
   );
 
-  // Set the token in a cookie
+  // Set the token in a cookie with domain settings appropriate for deployment
+  const cookieOptions =
+    process.env.NODE_ENV === 'development'
+      ? `Path=/; Secure; SameSite=Lax; Max-Age=3600`
+      : `Path=/; Secure; SameSite=None; Max-Age=3600`;
+
   response.headers.append(
     'Set-Cookie',
-    `XSRF-TOKEN=${token}; Path=/; Secure; SameSite=Strict; Max-Age=3600`
+    `XSRF-TOKEN=${token}; ${cookieOptions}`
   );
 
   return response;

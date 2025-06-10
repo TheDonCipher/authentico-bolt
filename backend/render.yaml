@@ -23,15 +23,15 @@ services:
       - key: FIREBASE_TYPE
         value: service_account
       - key: FIREBASE_PROJECT_ID
-        value: your_project_id_here
+        value: authentico-backend
       - key: FIREBASE_PRIVATE_KEY_ID
-        value: your_private_key_id_here
+        value: f21cf9b60fa17b580d86b6cf4ba46ffc8fb6ce09
       - key: FIREBASE_PRIVATE_KEY
-        value: your_private_key_here
+        value: -----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCjdnM5cVCmSbaQ\n5aQrbU9ohsk1L0AgZnBEwhph3hRDFuyAJWnib46mqoR/H2eaiRKsM89LcNtbUxMl\ni6l2e9xEnZcFKDR6RAD3lmWVLy6RNe6ALxxOjqJd1hILrsTHuWUCrfcaCQdn/g9n\nm1o5bJtGi9G1Q0fUy6KGP5Zme49ezjvF9CYBD/s1nmwVDReuD/vc60bop8Ev4zrt\nL36koZ5QMbUQqDinxylta8aZhYzcdvdej5f/j3mID2dhnCWykbGh2SqG30GvhSGs\nI4ttkreGtfS8GktWpWk+w6cqIrFHCEu58570E8LXhsyc4Ht4baSgbh86zX5krbCt\nFjpT38ZlAgMBAAECggEAB/ywbiDbjjiBV2ylHCsb63FUkQj1QvAGcdGjLN+HUWzk\nEvHhDduiFoIz9asw6oPime/xI9BIo5p4T8gWeG/eaCrkF3AqukOq4W4jmgnDZnyC\nYhiLM0p0ZA3i9VetjU3BggNClO7Wgg4PriIQ40frgWOxFECMmLj3gMRIIstMStdI\nVTjkm1XwIYu2XzT/HTysTJlThiktkqtIVJHbVxWSSFN+Nyd5M1zCsGuerZ1lne01\nJldDzD+yI5uiGvt8LWuPgfink8wqm/XWegIKP138Z37bgfag32hxFCIUN8E4tn0F\neVfhMJuwL/CGibLYFXMnY7xyr0hs1/krIASbg2bleQKBgQDd7OOlDCauwXqibvEX\nnI/ChC2KYFdPnKHr/Tpt82NjNpRjcT468mtBWVxmqlHoJbh8JwrKEJl0vC/1R+j5\n6Cl9w8vowCcVmWwEmyuUHLveDedaR0KH5y+b39YAG2dBVm2Yd3tK1m2Vd0zbD0fd\nH49mspQTRJs47IheNrwYhsczvQKBgQC8j5kZ82im2fXyToWAGYMjmaU+bBPyjoet\nzW01Ozuu7UN/qJerqMVeR+D/3PfyZLIft6KxO4cV8KUra7wm5tP4/Ho3aElMMZAi\niOcoTwq2GSdCwJ5ge2gXyuE7tNH755eGhZ1R5fpf2aTZpuhmXO0f0a8+P3TBJoWv\nvec12KezyQKBgFhEKd6xUIldJruISJfNi1ggXkSVQOTHNZe45g5pKXSCds5+cfPc\nC1C4jAnBYEZnClNG7AGmTIKjfqed7EnJTwdYYre2BVWP6eiDFvgX3ZjaCtRbV1ja\nWJM0mdb9Dzprd7eWfhEr6/Xwtz7BeyG1tcFw8XggZ2Rin3JpbrKKmJw5AoGARCyr\nDy3pZYIioVPwgqs2tdVkYFhVMfqEZbuDQ57B6nIQWISNKdxgV8EnQXsUDoiHul37\nrZa3NaCHJ1bRdUM52qj2SzgiYDD/Su0ynmlNlx8rCcB4wqt7rDaHDr5GuYw3RcTj\nZ2v+BU+8gZEOL4xjk4CNmrT4sqkJ5suDX/2QTLkCgYEAmdq4vz9+T78DMs8VXcAn\nR9zHVsTpgEFzlKtCc/NQnnpoLLgRwhtwTRdxmsaZ3rFLQ/zDCDspk6EBJ651/cqH\nLbViMbDfMpHB+okLDmxenB27l5FRiXziiJK+fNtPmRkcPwTNW6wvfE4yzdsmci9L\nIk6dt35UjHLGzuEidc9pRqc=\n-----END PRIVATE KEY-----\n
       - key: FIREBASE_CLIENT_EMAIL
-        value: your_client_email_here
+        value: firebase-adminsdk-fbsvc@authentico-backend.iam.gserviceaccount.com
       - key: FIREBASE_CLIENT_ID
-        value: your_client_id_here
+        value: 107591713606685347756
       - key: FIREBASE_AUTH_URI
         value: https://accounts.google.com/o/oauth2/auth
       - key: FIREBASE_TOKEN_URI
@@ -39,13 +39,13 @@ services:
       - key: FIREBASE_AUTH_PROVIDER_X509_CERT_URL
         value: https://www.googleapis.com/oauth2/v1/certs
       - key: FIREBASE_CLIENT_X509_CERT_URL
-        value: your_cert_url_here
+        value: https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-fbsvc%40authentico-backend.iam.gserviceaccount.com
       - key: FIREBASE_UNIVERSE_DOMAIN
         value: googleapis.com
 
       # Pinata Configuration (IPFS)
       - key: PINATA_JWT
-        value: your_pinata_jwt_here
+        value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySW5mb3JtYXRpb24iOnsiaWQiOiJiOTFhZTE0Yi05MWUxLTQyMTEtYjQwMi03MmYzNmNmMThiYWIiLCJlbWFpbCI6ImV1Z2VuaXVzcmF0c2hpcGFAZ21haWwuY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsInBpbl9wb2xpY3kiOnsicmVnaW9ucyI6W3siZGVzaXJlZFJlcGxpY2F0aW9uQ291bnQiOjEsImlkIjoiRlJBMSJ9LHsiZGVzaXJlZFJlcGxpY2F0aW9uQ291bnQiOjEsImlkIjoiTllDMSJ9XSwidmVyc2lvbiI6MX0sIm1mYV9lbmFibGVkIjpmYWxzZSwic3RhdHVzIjoiQUNUSVZFIn0sImF1dGhlbnRpY2F0aW9uVHlwZSI6InNjb3BlZEtleSIsInNjb3BlZEtleUtleSI6IjM3NDRkMmJlY2Q0MTczNDQ3YWU4Iiwic2NvcGVkS2V5U2VjcmV0IjoiY2Y1Njg4NzdkMWQ3YzZjYTA5N2ZhYmVhOTExODdmZjgxM2IzY2Y5MjNiNWE3Y2M4NGI0Y2ZlZjU2YWM3NzY2MiIsImV4cCI6MTc3NjI2NzkyMn0.7GOauLyT1JiA_8M8e8dMqLVSPgVdwIJ-osD2HoWferg
       - key: GATEWAY_URL
         value: https://fuchsia-fantastic-python-686.mypinata.cloud
 
@@ -53,8 +53,8 @@ services:
       - key: BLOCKCHAIN_RPC_URL
         value: https://sepolia.infura.io/v3/your_infura_key_here
       - key: SPONSOR_WALLET_PRIVATE_KEY
-        value: your_private_key_here
+        value: f6be3c8e26e7bb64b2d0fdead52fc64803f5c0ecfba361a215d61292882069c7
 
       # Encryption
       - key: MASTER_KEY_SECRET
-        value: your_32_character_master_key_secret
+        value: 334b7304194f927277c17c2b9dec22ed

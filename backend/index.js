@@ -136,10 +136,12 @@ app.use(
 );
 
 // Pinata setup with standardized gateway URL
+console.log('Initializing Pinata SDK...');
 const pinata = new PinataSDK({
   pinataJwt: process.env.PINATA_JWT,
   pinataGateway: process.env.GATEWAY_URL,
 });
+console.log('Pinata SDK initialized.');
 
 // Log environment information (without sensitive data)
 console.log(`Server starting in ${process.env.NODE_ENV || 'development'} mode`);
@@ -171,6 +173,7 @@ app.get('/', async (req, res) => {
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
+  console.log('Received request for /api/health');
   res.status(200).json({
     status: 'ok',
     timestamp: new Date().toISOString(),
@@ -181,6 +184,7 @@ app.get('/api/health', (req, res) => {
       blockchain: true,
     },
   });
+  console.log('Responded to /api/health with status 200');
 });
 
 // Legacy upload route - redirects to new document upload endpoint
@@ -246,6 +250,7 @@ app.use((err, req, res, next) => {
 
 // Use standardized port from environment variables
 const port = process.env.PORT || 8080;
+console.log('Attempting to start server...');
 app.listen(port, () => {
   console.log(`Server is listening on port ${port}`);
 
